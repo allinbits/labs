@@ -63,10 +63,10 @@ func fmtGuildRoleKey(guildID, roleID string) string {
 	return ufmt.Sprintf("%s|%s", guildID, roleID)
 }
 
-func validateEncodedClaim(encodedClaim string) (*Claim, error) {
+func validateEncodedClaim(encodedClaim string, skipVerifyAddress bool) (*Claim, error) {
 
 	// decode the base64 encoded claim
-	decodedClaim, err := base64.StdEncoding.DecodeString(encodedClaim)
+	decodedClaim, err := base64.RawURLEncoding.DecodeString(encodedClaim)
 	if err != nil {
 		return nil, err
 	}
@@ -90,9 +90,11 @@ func validateEncodedClaim(encodedClaim string) (*Claim, error) {
 		return nil, err
 	}
 
-	// verify address
-	if err := verifyAddress(claim.addr); err != nil {
-		return nil, err
+	if !skipVerifyAddress {
+		// verify address
+		if err := verifyAddress(claim.addr); err != nil {
+			return nil, err
+		}
 	}
 
 	return claim, nil

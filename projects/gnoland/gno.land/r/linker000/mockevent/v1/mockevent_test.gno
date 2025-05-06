@@ -17,6 +17,7 @@ func TestJoinAsAttendee(t *testing.T) {
 	if HasRole("attendee", alice) != false {
 		t.Error("alice should not be in attendees yet")
 	}
+
 	cross(JoinAsAttendee)()
 	if HasRole("attendee", alice) != true {
 		t.Error("alice not found in attendee role")
@@ -175,6 +176,7 @@ func TestTreeToSlice(t *testing.T) {
 		}
 	}
 }
+
 
 func TestToMDList(t *testing.T) {
 	addrs := []std.Address{

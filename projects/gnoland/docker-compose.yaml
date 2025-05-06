@@ -1,0 +1,35 @@
+services:
+  gnodev-labs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Set your desired commit hash here or use the default from Dockerfile
+        COMMIT_HASH: ${GNO_COMMIT_HASH:-52bed78d803a98e70e6596b568990cc285233327}
+    ports:
+      - "8888:8888" # Main API port
+      - "26656:26656" # P2P communication
+      - "26657:26657" # RPC interface
+    volumes:
+      # For local package development - map your local directories to container
+      # If you want the ability to hot-reload inside of the container, add your labs based namespace here
+      - ./gno.land/r/linker000:/gnoroot/examples/gno.land/r/linker000
+    environment:
+      - GNO_HOME=/gnoroot
+    command:
+      [
+        "-v",
+        "-web-listener",
+        "0.0.0.0:8888",
+        "-node-rpc-listener",
+        "0.0.0.0:26657",
+        "-balance-file",
+        "/gnoroot/gno.land/genesis/genesis_balances.txt",
+      ]
+
+    # Optional healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:26657/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

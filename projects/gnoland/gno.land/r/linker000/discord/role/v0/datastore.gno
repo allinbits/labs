@@ -49,8 +49,7 @@ func (ds *datastore) removeByPathRoleGuild(realmPath, roleName, guildID string) 
 	value, removed := ds.byPathRoleGuild.Remove(key)
 	if removed {
 		claim := value.(*Claim)
-		key := fmtGuildRoleKey(claim.discordGuildID, claim.discordRoleID)
-		ds.byPathRoleGuild.Remove(key)
+		ds.removeByGuildRole(claim.discordGuildID, claim.discordRoleID)
 		ds.removeRoleFromPathGuild(claim.roleName, claim.realmPath, claim.discordGuildID)
 	}
 }

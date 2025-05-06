@@ -24,7 +24,7 @@ func init() {
 // only be linked to a single gno address.
 func Link(encodedClaim string) {
 	crossing()
-	claim, err := validateEncodedClaim(encodedClaim)
+	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +47,7 @@ func UnlinkByCaller() {
 // access to your old gno address.
 func UnlinkByClaim(encodedClaim string) {
 	crossing()
-	claim, err := validateEncodedClaim(encodedClaim)
+	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)
 	}

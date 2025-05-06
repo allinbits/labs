@@ -105,10 +105,11 @@ func HasRole(role string, addr std.Address) bool {
 	}
 }
 
+
 // Render takes no arguments and displays a simple page showing up to 100
 // addresses per role group.
 func Render(_ string) string {
-	return ufmt.Sprintf(`# Mock Event
+	return ufmt.Sprintf(`# Mock Event v1
 
 This represents an Event organizer and attendee list.
 This realm can check membership by Querying HasRole(role, addr), where

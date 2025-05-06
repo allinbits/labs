@@ -1,0 +1,40 @@
+// Event 1: btf VIRTUAL EVENT
+atone1g7mg2efvd9ntv2tvveezuqga8h0pcjudqyug04:   8 PHOTON    proposal.Create("min_bid_amount:2", "min_capacity:5", "dates:2025-10-03...2025-10-03", "org:btf", "location:virtual")
+// bid id generated: "0xFFFFFFFF"
+
+// Bidder 1 -- Bidder updates to a different location that isn't approved so nothing happens
+atone1rmsh0c96dgljmqfd3u7trl84m62chv6sqyxguv:   2 PHOTON    bid.Create("org:btf", "location:virtual", "dates:2025-10-01...2025-10-10")
+// bid id generated: "0x00000001"
+atone1rmsh0c96dgljmqfd3u7trl84m62chv6sqyxguv:   2 PHOTON    bid.Update("0x00000001", "location:San Francisco")
+
+// Bidder 2 -- Bidder realized the min bid is 2 and has to increase bid
+atone1zm72nrc8a0at7tp4lqmlq4sp7tjece0zyj7kxa:   1 PHOTON    bid.Create("dates:2025-10-01...2025-10-10", "org:btf", "location:virtual")
+// bid id generated: "0x00000002"
+atone1zm72nrc8a0at7tp4lqmlq4sp7tjece0zyj7kxa:   1 PHOTON    bid.Update("0x00000002")
+
+// Bidder 3 -- Bidder is adding secret tag "JaeGnone" for a mystery hidden reward dispersed at the envent 
+atone173mnrshczjmx8atcgk3vr5kl3wunnvspprn60c:   4 PHOTON    bid.Create("org:btf", "location:virtual", "dates:2025-10-01...2025-10-10")
+// bid id generated: "0x00000003"
+atone173mnrshczjmx8atcgk3vr5kl3wunnvspprn60c:   0 PHOTON    bid.Update("0x00000003", "JaeGnone:JaeGnone")
+
+// Bidder 4 -- Bidder filled out a web form or clicked on a invite link so the command was perfect
+atone145rqxmartsedtp7s6rw7ju0xnph7290x7wa056:   5 PHOTON    bid.Create("org:btf", "location:virtual", "dates:2025-10-03...2025-10-03")
+// bid id generated: "0x00000004"
+
+// Bidder 5 -- Bidder was trying to troll and tried to rapidly update their intentions but got bored and revoked their bid
+atone1r5qel2gvxvc4t72zpu7tnj9ycdsgxaml9rtvac:   6 PHOTON    bid.Create("org:btf", "location:virtual", "dates:2025-10-01...2025-10-10")
+// bid id generated: "0x00000005"
+atone1r5qel2gvxvc4t72zpu7tnj9ycdsgxaml9rtvac:   0 PHOTON    bid.Update("0x00000005", "org:wtf", "location:virtual")
+atone1r5qel2gvxvc4t72zpu7tnj9ycdsgxaml9rtvac:   2 PHOTON    bid.Update("0x00000005")
+atone1r5qel2gvxvc4t72zpu7tnj9ycdsgxaml9rtvac:   2 PHOTON    bid.Update("dates:wtfffff")
+atone1r5qel2gvxvc4t72zpu7tnj9ycdsgxaml9rtvac:   2 PHOTON    bid.Revoke("0x00000005")
+
+// Bidder 6 -- Bidder read about the event on Boards and heard about "JaeGnome" secret online 
+atone1m7ms4ylm99j492ey3lxhngpyknsw3d5zs0q302:   7 PHOTON    bid.Create("org:btf", "location:virtual", "dates:2025-10-01...2025-10-10", "JaeGnone:JaeGnone")
+// bid id generated: "0x00000006"
+
+// Event 1 -- Trying to Match
+// FAILED MATCH: 0x00000005 was REVOKED
+// atone1g7mg2efvd9ntv2tvveezuqga8h0pcjudqyug04:   0 PHOTON    event.Match("0xFFFFFFFF", ("0x00000001", "0x00000002", "0x00000003", "0x00000004", "0x00000005")) 
+// APPROVED
+// atone1g7mg2efvd9ntv2tvveezuqga8h0pcjudqyug04:   0 PHOTON    event.Match("0xFFFFFFFF", ("0x00000001", "0x00000002", "0x00000003", "0x00000004", , "0x00000006")) 

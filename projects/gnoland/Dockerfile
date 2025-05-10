@@ -20,7 +20,10 @@ RUN git clone --depth 1 https://github.com/gnolang/gno.git . && \
 RUN go mod download -x
 
 # Build the application
-RUN make install
+RUN make install && \
+    make -C gno.land install.gnoland && \
+    make -C gno.land install.gnoweb && \
+    make -C contribs/gnogenesis install
 
 # runtime image
 FROM alpine:3.21
@@ -31,9 +34,7 @@ ENV GNO_HOME="/gnoroot"
 RUN apk add --no-cache ca-certificates bash
 
 # Copy binaries from builder
-COPY --from=builder /go/bin/gno /usr/local/bin/
-COPY --from=builder /go/bin/gnokey /usr/local/bin/
-COPY --from=builder /go/bin/gnodev /usr/local/bin/
+COPY --from=builder /go/bin /usr/local/bin/
 
 COPY --from=builder /gnoroot /gnoroot
 
@@ -44,8 +45,6 @@ COPY genesis/appended_genesis_balances.txt /gnoroot/gno.land/genesis/appended_ge
 RUN cat /gnoroot/gno.land/genesis/appended_genesis_balances.txt >> /gnoroot/gno.land/genesis/genesis_balances.txt
 
 COPY gno.land /gnoroot/examples/gno.land
-
-RUN ls -alh /gnoroot/examples/gno.land/r/linker000
 
 EXPOSE 8888 26656 26657
 

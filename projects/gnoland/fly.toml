@@ -18,7 +18,7 @@ max_machines_running = 1
 processes = ['app']
 
 [processes]
-app = "-v -chain-id labs01 -web-listener 0.0.0.0:8888 -node-rpc-listener 0.0.0.0:26657 -balance-file /gnoroot/gno.land/genesis/genesis_balances.txt"
+app = "-v -web-listener 0.0.0.0:8888 -node-rpc-listener 0.0.0.0:26657 -balance-file /gnoroot/gno.land/genesis/genesis_balances.txt"
 
 [[services]]
 processes = ["app"]
@@ -28,7 +28,7 @@ protocol = "tcp"
 script_checks = []
 
 [[services.ports]]
-port = 26657
+port = 8443
 handlers = ["tls"]
 
 [[vm]]

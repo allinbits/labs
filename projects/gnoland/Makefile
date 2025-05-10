@@ -15,13 +15,17 @@ staging: down build
 		-node-rpc-listener 0.0.0.0:26657 \
 		-balance-file /gnoroot/gno.land/genesis/genesis_balances.txt
 
+gnoland: down build
+	 docker compose run --rm --service-ports --entrypoint="gnoland" gnodev-labs \
+	 	start -lazy \
+		-genesis-balances-file /gnoroot/gno.land/genesis/genesis_balances.txt
 
 # Pass test path to docker compose using bash as entrypoint
 test:
 	@if [ -z "$(path)" ]; then \
 		echo "Usage: make test path=gno.land/r/linker000/mockevent/v1"; \
 	else \
-		docker compose run --rm --entrypoint="/bin/bash" gnodev-labs -c "gno test -v /gnoroot/examples/$(path)"; \
+		docker compose run --rm --entrypoint="/bin/bash -c" gnodev-labs -c "gno test -v /gnoroot/examples/$(path)"; \
 	fi
 
 # Add paths that you want tested here

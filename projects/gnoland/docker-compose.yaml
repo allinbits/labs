@@ -7,7 +7,7 @@ services:
         # Set your desired commit hash here or use the default from Dockerfile
         COMMIT_HASH: ${GNO_COMMIT_HASH:-52bed78d803a98e70e6596b568990cc285233327}
     ports:
-      - "8888:8888" # Main API port
+      # - "8888:8888" # Main API port
       - "26656:26656" # P2P communication
       - "26657:26657" # RPC interface
     volumes:

@@ -27,6 +27,7 @@ FROM alpine:3.21
 
 WORKDIR /gnoroot
 ENV GNOROOT="/gnoroot"
+ENV GNO_HOME="/gnoroot"
 RUN apk add --no-cache ca-certificates bash
 
 # Copy binaries from builder

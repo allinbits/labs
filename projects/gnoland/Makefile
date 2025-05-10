@@ -10,10 +10,11 @@ dev: down build
 	docker compose up
 
 staging: down build
-	 docker compose run --rm gnodev-labs -v \
+	 docker compose run --rm --service-ports gnodev-labs -v \
 	 	-web-listener 0.0.0.0:8888 \
 		-node-rpc-listener 0.0.0.0:26657 \
-		-balance-file /gnoroot/gno.land/genesis/genesis_balances.txt \
+		-balance-file /gnoroot/gno.land/genesis/genesis_balances.txt
+
 
 # Pass test path to docker compose using bash as entrypoint
 test:

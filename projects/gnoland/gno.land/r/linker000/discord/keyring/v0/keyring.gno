@@ -8,6 +8,12 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
+const (
+	invalidKeyLength string = "rotation error: invalid key length"
+	invalidHexEncoding string = "rotation error: invalid hex encoding"
+	notAuthorizedMsg string = "rotation error: not authorized"
+)
+
 var (
 	current  []byte
 	previous []byte
@@ -40,13 +46,14 @@ func PreviousPubKey() []byte {
 // address specified in the contract. The hexKey must be exactly 64 characters long, and
 // the hexKey must be valid hex encoding, otherwise, rotate panics.
 func Rotate(hexKey string) {
+	crossing()
 	assertIsAuthorized()
 	if len(hexKey) != 64 {
-		panic("rotation error: invalid key length")
+		panic(invalidKeyLength)
 	}
 	key, err := hex.DecodeString(hexKey)
 	if err != nil {
-		panic("rotation error: invalid hex encoding")
+		panic(invalidHexEncoding)
 	}
 	previous = current
 	current = key
@@ -56,7 +63,7 @@ func Rotate(hexKey string) {
 func assertIsAuthorized() {
 	caller := std.PreviousRealm().Address()
 	if !(caller == owner.Owner() || caller == backup.Owner()) {
-		panic("rotation error: not authorized")
+		panic(notAuthorizedMsg)
 	}
 }
 

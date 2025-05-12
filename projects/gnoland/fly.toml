@@ -9,16 +9,13 @@ primary_region = 'dfw'
 [build]
 
 [http_service]
-internal_port = 8888
+internal_port = 8889
 force_https = true
 auto_stop_machines = 'off'
 auto_start_machines = true
 min_machines_running = 1
 max_machines_running = 1
 processes = ['app']
-
-[processes]
-app = "-v -web-listener 0.0.0.0:8888 -node-rpc-listener 0.0.0.0:26657 -balance-file /gnoroot/gno.land/genesis/genesis_balances.txt"
 
 [[services]]
 processes = ["app"]

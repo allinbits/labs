@@ -25,6 +25,19 @@ RUN make install && \
     make -C gno.land install.gnoweb && \
     make -C contribs/gnogenesis install
 
+
+# Build caddy with replace-response module
+FROM golang:1.24-alpine AS caddy-builder
+RUN apk add --no-cache git
+# Install xcaddy first
+RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+# Build caddy with the replace-response module and specify output path explicitly
+WORKDIR /build
+RUN xcaddy build \
+    --with github.com/caddyserver/replace-response@latest \
+    --output /usr/local/bin/caddy
+
+
 # runtime image
 FROM alpine:3.21
 
@@ -33,10 +46,12 @@ ENV GNOROOT="/gnoroot"
 ENV GNO_HOME="/gnoroot"
 RUN apk add --no-cache ca-certificates bash
 
+
 # Copy binaries from builder
 COPY --from=builder /go/bin /usr/local/bin/
-
 COPY --from=builder /gnoroot /gnoroot
+# Copy the caddy binary from caddy-builder to the final image
+COPY --from=caddy-builder /usr/local/bin/caddy /usr/local/bin/caddy
 
 # labs specific modifications
 
@@ -46,7 +61,11 @@ RUN cat /gnoroot/gno.land/genesis/appended_genesis_balances.txt >> /gnoroot/gno.
 
 COPY gno.land /gnoroot/examples/gno.land
 
-EXPOSE 8888 26656 26657
+# Create directory for Caddy configuration
+RUN mkdir -p /etc/caddy
+COPY Caddyfile /etc/caddy/Caddyfile
 
-ENTRYPOINT ["gnodev"]
-CMD ["-v"]
+COPY scripts/entrypoint.sh /entrypoint.sh
+
+EXPOSE 8888 8889 26656 26657 80 443
+ENTRYPOINT ["/entrypoint.sh"]

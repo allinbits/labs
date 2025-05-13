@@ -17,6 +17,9 @@ min_machines_running = 1
 max_machines_running = 1
 processes = ['app']
 
+[processes]
+app = "staging"
+
 [[services]]
 processes = ["app"]
 http_checks = []
@@ -29,6 +32,6 @@ port = 8443
 handlers = ["tls"]
 
 [[vm]]
-memory = '1gb'
+memory = '4gb'
 cpu_kind = 'shared'
-cpus = 1
+cpus = 2

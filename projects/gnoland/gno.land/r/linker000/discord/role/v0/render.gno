@@ -21,21 +21,9 @@ func Render(path string) string {
 	return router.Render(path)
 }
 
-func NukeDB() {
-	crossing()
-	ds = newDatastore()
-}
-
-
 func renderHome(w *mux.ResponseWriter, r *mux.Request) {
 	w.Write("# Discord Role Realm Linker v0\n\n")
 	w.Write("Welcome. This realm is used for registering linked roles between Discord and a Realm.\n\n")
-
-
-	w.Write("## Nuke the DB\n\n")
-	w.Write("[Nuke the DB]("+ txlink.NewLink("NukeDB").URL() +")\n\n")
-
-	
 
 	w.Write("## byPathRoleGuild keys\n\n")
 	ds.byPathRoleGuild.IterateByOffset(0,100, func(key string, value any) bool {

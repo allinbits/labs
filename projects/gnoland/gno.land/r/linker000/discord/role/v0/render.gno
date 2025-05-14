@@ -96,7 +96,7 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 
 - [Claim Linked Discord Role](%v)
 - [Remove Linked Discord Role](%v)
-- [Confirm link](http://localhost:8888/r/linker000/discord/role/v0:link/d/%v/%v)
+- [Confirm link](/r/linker000/discord/role/v0:link/d/%v/%v)
 
 `, 
 txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),

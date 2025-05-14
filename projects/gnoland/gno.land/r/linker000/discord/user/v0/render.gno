@@ -77,7 +77,7 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 
 - [Claim Linked Accounts](%v)
 - [Remove Link by Claim](%v)
-- [Confirm link](http://localhost:8888/r/linker000/discord/user/v0:link/g/%v)
+- [Confirm link](/r/linker000/discord/user/v0:link/g/%v)
 
 `, 
 txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),

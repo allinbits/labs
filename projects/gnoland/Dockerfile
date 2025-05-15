@@ -33,7 +33,6 @@ RUN xcaddy build \
     --with github.com/caddyserver/replace-response@latest \
     --output /usr/local/bin/caddy
 
-
 # runtime image
 FROM alpine:3.21
 
@@ -42,14 +41,11 @@ ENV GNOROOT="/gnoroot"
 ENV GNO_HOME="/gnoroot"
 RUN apk add --no-cache ca-certificates bash
 
-
 # Copy binaries from builder
 COPY --from=builder /go/bin /usr/local/bin/
 COPY --from=builder /gnoroot /gnoroot
 # Copy the caddy binary from caddy-builder to the final image
 COPY --from=caddy-builder /usr/local/bin/caddy /usr/local/bin/caddy
-
-# labs specific modifications
 
 # import seeded balances
 COPY genesis/balances_overlay.txt /gnoroot/gno.land/genesis/balances_overlay.txt

@@ -20,11 +20,7 @@ RUN git clone --depth 1 https://github.com/gnolang/gno.git . && \
 RUN go mod download -x
 
 # Build the application
-RUN make install && \
-    make -C gno.land install.gnoland && \
-    make -C gno.land install.gnoweb && \
-    make -C contribs/gnogenesis install
-
+RUN make install
 
 # Build caddy with replace-response module
 FROM golang:1.24-alpine AS caddy-builder
@@ -37,7 +33,6 @@ RUN xcaddy build \
     --with github.com/caddyserver/replace-response@latest \
     --output /usr/local/bin/caddy
 
-
 # runtime image
 FROM alpine:3.21
 
@@ -45,7 +40,6 @@ WORKDIR /gnoroot
 ENV GNOROOT="/gnoroot"
 ENV GNO_HOME="/gnoroot"
 RUN apk add --no-cache ca-certificates bash
-
 
 # Copy binaries from builder
 COPY --from=builder /go/bin /usr/local/bin/
@@ -56,8 +50,7 @@ COPY --from=caddy-builder /usr/local/bin/caddy /usr/local/bin/caddy
 # labs specific modifications
 
 # copy labs balances and append to the genesis_balances
-COPY genesis/appended_genesis_balances.txt /gnoroot/gno.land/genesis/appended_genesis_balances.txt
-RUN cat /gnoroot/gno.land/genesis/appended_genesis_balances.txt >> /gnoroot/gno.land/genesis/genesis_balances.txt
+COPY genesis/appended_genesis_balances.txt /balance_overlay.txt
 
 COPY gno.land /gnoroot/examples/gno.land
 

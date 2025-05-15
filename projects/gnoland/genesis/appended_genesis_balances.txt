@@ -1,5 +1,0 @@
-# appended labs accounts
-g1aa5umzchlwqxtdfh58exmydmzsgpzcg3u9egcp=10000000000000ugnot # linker000
-g1j39fhg29uehm7twwnhvnpz3ggrm6tprhq65t0t=10000000000000ugnot # n2p5 (Nathan Toups)
-g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz=10000000000000ugnot # Matthew York
-g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt=10000000000000ugnot # Mason

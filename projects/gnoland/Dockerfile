@@ -47,10 +47,8 @@ COPY --from=builder /gnoroot /gnoroot
 # Copy the caddy binary from caddy-builder to the final image
 COPY --from=caddy-builder /usr/local/bin/caddy /usr/local/bin/caddy
 
-# labs specific modifications
-
-# copy labs balances and append to the genesis_balances
-COPY genesis/appended_genesis_balances.txt /balance_overlay.txt
+# import seeded balances
+COPY genesis/balances_overlay.txt /gnoroot/gno.land/genesis/balances_overlay.txt
 
 COPY gno.land /gnoroot/examples/gno.land
 

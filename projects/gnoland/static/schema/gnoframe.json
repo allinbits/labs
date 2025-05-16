@@ -1,0 +1,39 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "GnoFrame",
+  "applicationCategory": "WebApplication",
+  "operatingSystem": "All",
+  "version": "0.1.0",
+  "image": "https://cdn.jsdelivr.net/gh/allinbits/gnoserve@0.1.0/static/android-chrome-512x512.png",
+  "url": "https://gno.land",
+  "softwareHelp": "https://gno.land",
+  "icon": "https://cdn.jsdelivr.net/gh/allinbits/gnoserve@0.1.0/static/favicon.ico",
+  "additionalProperty": [
+    {
+      "@type": "PropertyValue",
+      "name": "frame",
+      "value": "gno-frame"
+    },
+    {
+      "@type": "PropertyValue",
+      "name": "buttonTitle",
+      "value": "GnoFrame"
+    },
+    {
+      "@type": "PropertyValue",
+      "name": "splashImageUrl",
+      "value": ""
+    },
+    {
+      "@type": "PropertyValue",
+      "name": "splashBackgroundColor",
+      "value": "#ffffff"
+    },
+    {
+      "@type": "PropertyValue",
+      "name": "webhookUrl",
+      "value": "https://gno.land/webhook"
+    }
+  ]
+}

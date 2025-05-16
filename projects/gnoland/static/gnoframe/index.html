@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>GnoFrame</title>
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+
+<!--
+gnoFrame: "gno-frame" // identity declaration
+
+Users may extend this gno-frame to support your own logic by setting another value here
+the included gno-frame.js will only inject data into 'gno-frame' elements.
+
+So for example, if you want to use a different name, you can set it to "my-custom-frame" and then
+you would need to create a file named my-custom-frame.js and include it in this HTML file like so:
+<script src="my-custom-frame.js"/>
+
+and also set gnoFrame: "my-custom-frame" in the JSON object below
+-->
+<gno-frame>
+
+{
+    "version": "0.1.0",
+    "name": "GnoFrame",
+    "iconUrl": "favicon-32x32.png",
+    "frame": "gno-frame",
+    "homeUrl": "https://gno.land",
+    "imageUrl": "android-chrome-512x512.png",
+    "buttonTitle": "GnoFrame",
+    "splashImageUrl": "",
+    "splashBackgroundColor": "#ffffff",
+    "webhookUrl": "https://gno.land/webhook",
+    "functions": [
+        {
+            "name": "BuyTicket",
+            "description": "Buy a ticket for an event",
+            "parameters": [
+                { "name": "event_id", "type": "string" },
+                { "name": "quantity", "type": "integer" }
+            ],
+            "endpoint": "/buy_ticket"
+        },
+        {
+            "name": "CheckIn",
+            "description": "Check into an event",
+            "parameters": [
+                { "name": "event_id", "type": "string" },
+                { "name": "user_address", "type": "string" }
+            ],
+            "endpoint": "/check_in"
+        }
+    ]
+}
+
+</gno-frame>
+<!-- Add your custom js in a file matching the tag-name example: <script src="my-custom-frame.js"/> -->
+<script src="gno-frame.js"/>
+</body>
+</html>

@@ -10,8 +10,15 @@
     # Proxy to gnodev web
     reverse_proxy localhost:8888
 
+    # FIXME: host ./static files (fake CDN)
+
     replace {
         "tcp://0.0.0.0:26657" "https://labsnet.fly.dev:8443"
         "ws://0.0.0.0:8888" "wss://labsnet.fly.dev"
+    }
+
+    handle_path /static/* {
+        root * ./static
+        file_server
     }
 }

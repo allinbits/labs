@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Event Element</title>
+</head>
+<body>
+  <!-- Custom Element -->
+  <eve-event></eve-event>
+
+  <script>
+    class EveEvent extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' }); // Attach a shadow DOM
+      }
+
+      async connectedCallback() {
+        try {
+          const response = await fetch('/event.json');
+          if (!response.ok) {
+            throw new Error(`Failed to fetch event data: ${response.statusText}`);
+          }
+
+          const event = await response.json();
+          this.render(event);
+        } catch (error) {
+          console.error(error);
+          this.renderError("Failed to load event data.");
+        }
+      }
+
+      render(event) {
+        const { name, startDate, endDate, location, description } = event;
+
+        // Template for the custom element
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              padding: 20px;
+              border: 1px solid #ccc;
+              border-radius: 8px;
+              background-color: #f9f9f9;
+            }
+            h2 {
+              color: #333;
+            }
+            .event-meta {
+              color: #666;
+              font-size: 0.9em;
+            }
+            .event-description {
+              margin-top: 10px;
+            }
+          </style>
+          <div>
+            <h2>${name}</h2>
+            <div class="event-meta">
+              <p><strong>Start:</strong> ${new Date(startDate).toLocaleString()}</p>
+              <p><strong>End:</strong> ${new Date(endDate).toLocaleString()}</p>
+              <p><strong>Location:</strong> ${location.name}</p>
+            </div>
+            <div class="event-description">
+              <p>${description}</p>
+            </div>
+          </div>
+        `;
+      }
+
+      renderError(message) {
+        // Render an error message
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              padding: 20px;
+              border: 1px solid #e63946;
+              border-radius: 8px;
+              background-color: #ffe5e5;
+              color: #e63946;
+            }
+          </style>
+          <div>
+            <p>${message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Define the custom element
+    customElements.define('eve-event', EveEvent);
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON Editor Event Example</title>
+  <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+</head>
+<body>
+  <div id="editor_holder"></div>
+  <script>
+    const schema = {
+      title: "Event",
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        startDate: { type: "string", format: "date-time" },
+        location: { type: "string" }
+      }
+    };
+
+    const editor = new JSONEditor(document.getElementById("editor_holder"), {
+      schema: schema
+    });
+  </script>
+</body>
+</html>

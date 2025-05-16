@@ -56,6 +56,9 @@ COPY gno.land /gnoroot/examples/gno.land
 RUN mkdir -p /etc/caddy
 COPY Caddyfile /etc/caddy/Caddyfile
 
+# copy static files
+COPY static /etc/caddy/static
+
 COPY scripts/entrypoint.sh /entrypoint.sh
 
 EXPOSE 8888 8889 26656 26657 80 443

@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Eve",
+  "description": "A portable metadata schema for /p/eve/event",
+  "type": "object",
+  "required": ["@type", "name", "version"],
+  "properties": {
+    "@context": {
+      "type": "string",
+      "default": "https://schema.org"
+    },
+    "@type": {
+      "type": "string",
+      "enum": [
+        "GnoFrame",
+        "Event",
+        "SoftwareApplication",
+        "CreativeWork"
+      ]
+    },
+    "version": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "image": {
+      "type": "string",
+      "format": "uri"
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "eventAttendanceMode": {
+      "type": "string",
+      "enum": [
+        "https://schema.org/OfflineEventAttendanceMode",
+        "https://schema.org/OnlineEventAttendanceMode",
+        "https://schema.org/MixedEventAttendanceMode"
+      ]
+    },
+    "location": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "VirtualLocation" },
+            "url": { "type": "string", "format": "uri" }
+          },
+          "required": ["@type", "url"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "@type": { "const": "Place" },
+            "name": { "type": "string" },
+            "address": { "type": "string" }
+          },
+          "required": ["@type", "name"]
+        }
+      ]
+    },
+    "organizer": {
+      "type": "object",
+      "properties": {
+        "@type": { "enum": ["Person", "Organization"] },
+        "name": { "type": "string" }
+      },
+      "required": ["@type", "name"]
+    },
+    "attendee": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "@type": { "enum": ["Person", "Organization", "Wallet"] },
+          "name": { "type": "string" },
+          "wallet": { "type": "string" }
+        },
+        "required": ["@type"]
+      }
+    },
+    "gnoAccessControl": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "WalletAuth" },
+        "realm": { "type": "string" },
+        "required": { "type": "boolean" }
+      },
+      "required": ["type", "realm"]
+    },
+    "homeUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "webhookUrl": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

@@ -8,7 +8,9 @@ case "$1" in
     gnodev -v \
       -web-listener 0.0.0.0:8888 \
       -node-rpc-listener 0.0.0.0:26657 \
-      -balance-file /gnoroot/gno.land/genesis/balances_overlay.txt
+      -balance-file /gnoroot/gno.land/genesis/balances_overlay.txt &
+
+    caddy run --config /etc/caddy/Caddyfile
     ;;
   
   staging)

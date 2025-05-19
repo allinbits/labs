@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"gno.land/p/eve/event/component"
-	"gno.land/p/eve/event/location"
-	"gno.land/p/eve/event/speaker"
+	"gno.land/p/eve000/event/component"
+	"gno.land/p/eve000/event/location"
+	"gno.land/p/eve000/event/speaker"
 )
 
 func sampleSession() *Session {

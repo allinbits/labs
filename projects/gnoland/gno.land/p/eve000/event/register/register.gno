@@ -3,11 +3,11 @@ package register
 import (
 	"gno.land/p/demo/avl"
 
-	"gno.land/p/eve/event"
-	"gno.land/p/eve/event/component"
-	"gno.land/p/eve/event/location"
-	"gno.land/p/eve/event/session"
-	"gno.land/p/eve/event/speaker"
+	"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event/component"
+	"gno.land/p/eve000/event/location"
+	"gno.land/p/eve000/event/session"
+	"gno.land/p/eve000/event/speaker"
 )
 
 type Registry struct {

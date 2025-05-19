@@ -3,10 +3,10 @@ package event
 import (
 	"time"
 
-	"gno.land/p/eve/event"
-	"gno.land/p/eve/event/location"
-	"gno.land/p/eve/event/session"
-	"gno.land/p/eve/event/speaker"
+	"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event/location"
+	"gno.land/p/eve000/event/session"
+	"gno.land/p/eve000/event/speaker"
 )
 
 var locations = map[string]*location.Location{

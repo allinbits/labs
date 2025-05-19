@@ -1,14 +1,14 @@
-// ln -s ~/w/aib/eve/projects/gnoland/gno.land/p/eve eve
+// ln -s ~/w/aib/eve/projects/gnoland/gno.land/p/eve000 eve
 // gno test (maek sure you are eve-symlink branch)
 package register
 
 import (
 	"testing"
 
-	"gno.land/p/eve/event"
-	"gno.land/p/eve/event/location"
-	"gno.land/p/eve/event/session"
-	"gno.land/p/eve/event/speaker"
+	"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event/location"
+	"gno.land/p/eve000/event/session"
+	"gno.land/p/eve000/event/speaker"
 )
 
 func TestRegistry(t *testing.T) {

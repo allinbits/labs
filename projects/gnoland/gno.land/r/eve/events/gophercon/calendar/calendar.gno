@@ -3,8 +3,8 @@ package calendar
 import (
 	"time"
 
-	"gno.land/p/eve/event/calendar"
-	"gno.land/p/eve/event/location"
+	"gno.land/p/eve000/event/calendar"
+	"gno.land/p/eve000/event/location"
 )
 
 var calendarEvents []calendar.CalendarEvent

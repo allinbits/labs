@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve/event/component"
-	"gno.land/p/eve/event/location"
-	"gno.land/p/eve/event/session"
+	"gno.land/p/eve000/event/component"
+	"gno.land/p/eve000/event/location"
+	"gno.land/p/eve000/event/session"
 )
 
 type Agenda struct {

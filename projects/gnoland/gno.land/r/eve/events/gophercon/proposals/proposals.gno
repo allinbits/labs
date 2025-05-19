@@ -3,8 +3,8 @@ package proposals
 import (
 	"strings"
 
-	"gno.land/p/eve/event/component"
-	"gno.land/p/eve/event/proposal"
+	"gno.land/p/eve000/event/component"
+	"gno.land/p/eve000/event/proposal"
 )
 
 // Header for your Call for Proposals Realm

@@ -4,7 +4,7 @@ import (
 	"net/url"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve/event/component"
+	"gno.land/p/eve000/event/component"
 )
 
 type Speaker struct {

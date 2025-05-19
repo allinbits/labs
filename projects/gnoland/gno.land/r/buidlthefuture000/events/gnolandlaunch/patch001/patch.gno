@@ -1,7 +1,7 @@
 package patch
 
 import (
-	event "gno.land/r/eve/events/gophercon"
+	event "gno.land/r/buidlthefuture000/events/gnolandlaunch"
 )
 
 const releaseNotes = `

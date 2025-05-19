@@ -18,9 +18,14 @@ const (
 
 type Proposal interface {
 	GetTitle() string
+	SetTitle(title string)
 	GetAbstract() string
+	SetAbstract(abstract string)
 	GetFormat() Format
+	SetFormat(format Format)
 	GetSpeaker() string
+	SetSpeaker(speaker string)
+	GetOwner() string
 	GetState() State
 	SetRenderOpts(*component.RenderOpts)
 	ToAnchor() string
@@ -36,6 +41,7 @@ type SubmittedProposal struct {
 	Abstract   string
 	Format     Format
 	Speaker    string
+	Owner      string
 	renderOpts *component.RenderOpts
 }
 
@@ -85,14 +91,23 @@ func RenderProposals(path string, proposals []Proposal) string {
 
 // ========== Component Methods ==========
 
-func (sp SubmittedProposal) GetTitle() string     { return sp.Title }
-func (sp SubmittedProposal) GetAbstract() string  { return sp.Abstract }
-func (sp SubmittedProposal) GetFormat() Format    { return sp.Format }
-func (sp SubmittedProposal) GetSpeaker() string   { return sp.Speaker }
-func (rp ReviewedProposal) GetComments() string   { return rp.Comments }
-func (rp ReviewedProposal) GetScore() int         { return rp.Score }
-func (rp ReviewedProposal) GetReviewer() string   { return rp.Reviewer }
-func (ap ApprovedProposal) GetApprovedBy() string { return ap.ApprovedBy }
+func (sp *SubmittedProposal) GetTitle() string               { return sp.Title }
+func (sp *SubmittedProposal) SetTitle(title string)          { sp.Title = title }
+func (sp *SubmittedProposal) GetAbstract() string            { return sp.Abstract }
+func (sp *SubmittedProposal) SetAbstract(abstract string)    { sp.Abstract = abstract }
+func (sp *SubmittedProposal) GetFormat() Format              { return sp.Format }
+func (sp *SubmittedProposal) SetFormat(format Format)        { sp.Format = format }
+func (sp *SubmittedProposal) GetSpeaker() string             { return sp.Speaker }
+func (sp *SubmittedProposal) SetSpeaker(speaker string)      { sp.Speaker = speaker }
+func (sp *SubmittedProposal) GetOwner() string               { return sp.Owner }
+func (rp *ReviewedProposal) GetComments() string             { return rp.Comments }
+func (rp *ReviewedProposal) SetComments(comments string)     { rp.Comments = comments }
+func (rp *ReviewedProposal) GetScore() int                   { return rp.Score }
+func (rp *ReviewedProposal) SetScore(score int)              { rp.Score = score }
+func (rp *ReviewedProposal) GetReviewer() string             { return rp.Reviewer }
+func (rp *ReviewedProposal) SetReviewer(reviewer string)     { rp.Reviewer = reviewer }
+func (ap *ApprovedProposal) GetApprovedBy() string           { return ap.ApprovedBy }
+func (ap *ApprovedProposal) SetApprovedBy(approvedBy string) { ap.ApprovedBy = approvedBy }
 
 func (sp *SubmittedProposal) SetRenderOpts(opts *component.RenderOpts) { sp.renderOpts = opts }
 

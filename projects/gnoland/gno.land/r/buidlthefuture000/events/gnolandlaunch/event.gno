@@ -41,8 +41,8 @@ var gnoLandLaunchEvent = &event.Event{
 	Location: &location.Location{
 		Name: "Welcome to the Logoverse",
 	},
-	StartDate: time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC),
-	EndDate:   time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC),
+	StartDate:   time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC),
+	EndDate:     time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC),
 	Description: "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
 	Sessions: []*session.Session{
 		sessions["keynote"],

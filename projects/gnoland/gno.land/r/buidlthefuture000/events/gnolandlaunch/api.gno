@@ -69,7 +69,7 @@ func Render(path string) (out string) {
 	id := getIdFromPath(path)
 	switch {
 	case strings.HasPrefix(path, "access-control"):
-        return RenderAcl(path)
+		return RenderAcl(path)
 	case strings.HasPrefix(path, "location:"):
 		return component.RenderComponent(path, registry.GetLocation(id))
 	case strings.HasPrefix(path, "speaker:"):

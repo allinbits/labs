@@ -26,7 +26,7 @@ func renderHome(w *mux.ResponseWriter, r *mux.Request) {
 	w.Write("Welcome. This realm is used for registering linked roles between Discord and a Realm.\n\n")
 
 	w.Write("## byPathRoleGuild keys\n\n")
-	ds.byPathRoleGuild.IterateByOffset(0,100, func(key string, value any) bool {
+	ds.byPathRoleGuild.IterateByOffset(0, 100, func(key string, value any) bool {
 		if key == "" {
 			return true
 		}
@@ -35,7 +35,7 @@ func renderHome(w *mux.ResponseWriter, r *mux.Request) {
 	})
 
 	w.Write("## byGuildRole keys\n\n")
-	ds.byGuildRole.IterateByOffset(0,100, func(key string, value any) bool {
+	ds.byGuildRole.IterateByOffset(0, 100, func(key string, value any) bool {
 		if key == "" {
 			return true
 		}
@@ -44,15 +44,13 @@ func renderHome(w *mux.ResponseWriter, r *mux.Request) {
 	})
 
 	w.Write("## byPathGuild keys\n\n")
-	ds.byPathGuild.IterateByOffset(0,100, func(key string, value any) bool {
+	ds.byPathGuild.IterateByOffset(0, 100, func(key string, value any) bool {
 		if key == "" {
 			return true
 		}
 		w.Write(key + "\n")
 		return false
 	})
-
-
 
 }
 
@@ -77,7 +75,6 @@ func renderListLinkedRoles(w *mux.ResponseWriter, r *mux.Request) {
 
 }
 
-
 func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 	encodedClaim := r.GetVar("encodedClaim")
 
@@ -98,12 +95,12 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 - [Remove Linked Discord Role](%v)
 - [Confirm link](/r/linker000/discord/role/v0:link/d/%v/%v)
 
-`, 
-txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
-txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
-claim.discordGuildID,
-claim.discordRoleID,
-))
+`,
+		txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
+		txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
+		claim.discordGuildID,
+		claim.discordRoleID,
+	))
 
 	w.Write(ufmt.Sprintf(`
 ## Raw Encoded Claim
@@ -128,9 +125,10 @@ claim.discordRoleID,
 
 %v
 
-`, encodedClaim, 
-claim.discordGuildID,
-claim.discordRoleID,
-claim.realmPath,
-claim.roleName,
-))}
+`, encodedClaim,
+		claim.discordGuildID,
+		claim.discordRoleID,
+		claim.realmPath,
+		claim.roleName,
+	))
+}

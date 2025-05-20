@@ -11,7 +11,10 @@ import (
 )
 
 var (
-	Organizers = map[std.Address]struct{}{"g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt": {}}
+	Organizers = map[std.Address]struct{}{
+        "g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt": {}, // mason
+        "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz": {}, // matt
+    }
 	proposers  = map[std.Address]struct{}{}
 	reviewers  = map[std.Address]struct{}{}
 )

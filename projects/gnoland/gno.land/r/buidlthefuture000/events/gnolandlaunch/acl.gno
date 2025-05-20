@@ -1,4 +1,4 @@
-package mockevent
+package event
 
 import (
 	"std"
@@ -12,6 +12,8 @@ var (
 	organizers *avl.Tree
 	speakers   *avl.Tree
 	attendees  *avl.Tree
+	proposers  *avl.Tree
+	reviewers  *avl.Tree
 )
 
 const (
@@ -20,16 +22,34 @@ const (
 )
 
 func init() {
+	reviewers = avl.NewTree()
+	reviewers.Set("g1j39fhg29uehm7twwnhvnpz3ggrm6tprhq65t0t", struct{}{})
+	reviewers.Set("g1aa5umzchlwqxtdfh58exmydmzsgpzcg3u9egcp", struct{}{})
+	reviewers.Set("g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt", struct{}{})
+	reviewers.Set("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", struct{}{})
+
+	proposers = avl.NewTree()
+	proposers.Set("g1j39fhg29uehm7twwnhvnpz3ggrm6tprhq65t0t", struct{}{})
+	proposers.Set("g1aa5umzchlwqxtdfh58exmydmzsgpzcg3u9egcp", struct{}{})
+	proposers.Set("g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt", struct{}{})
+	proposers.Set("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", struct{}{})
+
 	organizers = avl.NewTree()
 	organizers.Set("g1j39fhg29uehm7twwnhvnpz3ggrm6tprhq65t0t", struct{}{})
 	organizers.Set("g1aa5umzchlwqxtdfh58exmydmzsgpzcg3u9egcp", struct{}{})
+	organizers.Set("g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt", struct{}{})
+	organizers.Set("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", struct{}{})
 
 	speakers = avl.NewTree()
 	speakers.Set("g12m4ecssg9j0pvnhxct3sfky70dy9fk7xrvfwx2", struct{}{})
+	speakers.Set("g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt", struct{}{})
+	speakers.Set("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", struct{}{})
 
 	attendees = avl.NewTree()
 	attendees.Set("g12m4ecssg9j0pvnhxct3sfky70dy9fk7xrvfwx2", struct{}{})
 	attendees.Set("g1yfts8fy9jyfeca4p42em6mcttfwcypkpkfx0rv", struct{}{})
+	attendees.Set("g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt", struct{}{})
+	attendees.Set("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", struct{}{})
 }
 
 // JoinAsAttendee sets the address of the previous realm as an attendee
@@ -85,12 +105,37 @@ func assertIsOrganizer() {
 	}
 }
 
+// Public API for organizers to manage proposers and reviewers
+func AddProposer(addr, sender std.Address) {
+	AssertAtLeastRole("organizer", sender)
+	proposers.Set(string(addr), struct{}{})
+}
+
+func RemoveProposer(addr, sender std.Address) {
+	AssertAtLeastRole("organizer", sender)
+	proposers.Remove(string(addr))
+}
+
+func AddReviewer(addr, sender std.Address) {
+	AssertAtLeastRole("organizer", sender)
+	reviewers.Set(string(addr), struct{}{})
+}
+
+func RemoveReviewer(addr, sender std.Address) {
+	AssertAtLeastRole("organizer", sender)
+	reviewers.Remove(string(addr))
+}
+
 // HasRole takes a role and an address and returns a boolean value that indicates whether or not
 // that address is a member of one of three supported roles, `attendee`, `speaker`, and `organizer`.
 // It returns false if any other role type is requested.
 func HasRole(role string, addr std.Address) bool {
 	crossing()
 	switch role {
+	case "proposer":
+		return proposers.Has(string(addr))
+	case "reviewer":
+		return reviewers.Has(string(addr))
 	case "attendee":
 		return attendees.Has(string(addr))
 	case "speaker":
@@ -102,13 +147,27 @@ func HasRole(role string, addr std.Address) bool {
 	}
 }
 
+func AssertAtLeastRole(role string, sender std.Address) {
+	crossing()
+	if !HasRole(role, sender) {
+		panic(ufmt.Sprintf("address %s must have %s role or higher", sender, role))
+	}
+}
+
 // Render takes no arguments and displays a simple page showing up to 100
 // addresses per role group.
-func Render(_ string) string {
-	return ufmt.Sprintf(`# Mock Event v1
+func RenderAcl(path string) string {
+	id := getIdFromPath(path)
+	evt := registry.GetEvent(id)
+	if evt.Name == "" {
+		panic(ufmt.Sprintf("error: event with id %d not found", id))
+	}
 
-This represents an Event organizer and attendee list.
-This realm can check membership by Querying HasRole(role, addr), where
+	return ufmt.Sprintf(`# `+evt.Name+`
+
+Event organizer and attendee list.
+
+This realm can check membership by Querying [HasRole(role, addr)](gnolandlaunch:access-control$help#func-HasRole), where
 a role can be attendee, speaker, or organizer.
 
 Note: This renderer will only display up to 100 addresses per group.

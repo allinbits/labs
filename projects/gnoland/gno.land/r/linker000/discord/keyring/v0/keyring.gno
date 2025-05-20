@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	invalidKeyLength string = "rotation error: invalid key length"
+	invalidKeyLength   string = "rotation error: invalid key length"
 	invalidHexEncoding string = "rotation error: invalid hex encoding"
-	notAuthorizedMsg string = "rotation error: not authorized"
+	notAuthorizedMsg   string = "rotation error: not authorized"
 )
 
 var (

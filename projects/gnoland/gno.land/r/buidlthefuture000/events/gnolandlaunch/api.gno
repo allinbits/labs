@@ -30,7 +30,7 @@ var (
 		Markdown:  `#### Keynote\n\n TODO: update with patch001`,
 	}
 	renderOpts = &component.RenderOpts{
-		Location: true,
+		Location: false,
 		Svg:      true,
 		Schedule: true,
 		Speaker:  false,
@@ -57,7 +57,7 @@ func init() {
 	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/patch")
 	registry = register.NewRegistry(renderOpts)
 	eventRegistry = &EventRegistry{
-		LiveEventId: registry.RegisterEvent(gopherCon2025),
+		LiveEventId: registry.RegisterEvent(gnoLandLaunchEvent),
 		PatchLevel:  0,
 	}
 }
@@ -68,6 +68,8 @@ func Render(path string) (out string) {
 	}
 	id := getIdFromPath(path)
 	switch {
+	case strings.HasPrefix(path, "access-control"):
+		return RenderAcl(path)
 	case strings.HasPrefix(path, "location:"):
 		return component.RenderComponent(path, registry.GetLocation(id))
 	case strings.HasPrefix(path, "speaker:"):
@@ -235,7 +237,7 @@ func AssertAdminAccess() {
 }
 
 /* Speaker API */
-func AddSpeaker() int {
+func AddSpeakerRecord() int {
 	AssertAdminAccess()
 	return registry.AddSpeaker(&speaker.Speaker{
 		Name:        "New Speaker",

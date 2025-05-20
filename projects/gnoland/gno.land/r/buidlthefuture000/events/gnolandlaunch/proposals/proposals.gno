@@ -5,44 +5,12 @@ import (
 	"strconv"
 	"strings"
 
+	event "gno.land/r/buidlthefuture000/events/gnolandlaunch"
+
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/proposal"
 )
-
-var (
-	Organizers = map[std.Address]struct{}{"g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt": {}}
-	proposers  = map[std.Address]struct{}{}
-	reviewers  = map[std.Address]struct{}{}
-)
-
-func HasRole(role string, addr std.Address) bool {
-	switch role {
-	case "organizer":
-		_, ok := Organizers[addr]
-		return ok
-	case "reviewer":
-		if _, ok := reviewers[addr]; ok {
-			return true
-		}
-		_, ok := Organizers[addr]
-		return ok
-	case "proposer":
-		if _, ok := proposers[addr]; ok {
-			return true
-		}
-		_, ok := Organizers[addr]
-		return ok
-	default:
-		return false
-	}
-}
-
-func assertAtLeastRole(role string, sender std.Address) {
-	if !HasRole(role, sender) {
-		panic(ufmt.Sprintf("address %s must have %s role or higher", sender, role))
-	}
-}
 
 // Header for your Call for Proposals Realm
 var ProposalsRealmHeader = "# BTF 2025 Call for Proposals\n\n"
@@ -88,27 +56,6 @@ func init() {
 	}
 }
 
-// Public API for organizers to manage proposers and reviewers
-func AddProposer(addr, sender std.Address) {
-	assertAtLeastRole("organizer", sender)
-	proposers[addr] = struct{}{}
-}
-
-func RemoveProposer(addr, sender std.Address) {
-	assertAtLeastRole("organizer", sender)
-	delete(proposers, addr)
-}
-
-func AddReviewer(addr, sender std.Address) {
-	assertAtLeastRole("organizer", sender)
-	reviewers[addr] = struct{}{}
-}
-
-func RemoveReviewer(addr, sender std.Address) {
-	assertAtLeastRole("organizer", sender)
-	delete(reviewers, addr)
-}
-
 // Render generates the full text output for the event
 func Render(path string) string {
 	var out strings.Builder
@@ -131,7 +78,7 @@ func Render(path string) string {
 // --- API-Like Endpoints ---
 
 func SubmitProposal(title, abstract, formatName, speaker string) {
-	assertAtLeastRole("proposer", std.OriginCaller())
+	event.AssertAtLeastRole("proposer", std.OriginCaller())
 	if format, ok := ValidFormats[formatName]; ok {
 		sp := &proposal.SubmittedProposal{
 			Title:    title,
@@ -146,7 +93,7 @@ func SubmitProposal(title, abstract, formatName, speaker string) {
 }
 
 func ReviewProposal(title, comments, reviewer string, score int) {
-	assertAtLeastRole("reviewer", std.OriginCaller())
+	event.AssertAtLeastRole("reviewer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if sp, ok := p.(*proposal.SubmittedProposal); ok {
@@ -164,7 +111,7 @@ func ReviewProposal(title, comments, reviewer string, score int) {
 
 func ApproveProposal(title, approver string) {
 	crossing()
-	assertAtLeastRole("organizer", std.OriginCaller())
+	event.AssertAtLeastRole("organizer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if rp, ok := p.(*proposal.ReviewedProposal); ok {
@@ -179,7 +126,7 @@ func ApproveProposal(title, approver string) {
 }
 
 func ApproveProposals(titles []string, approver string) {
-	assertAtLeastRole("organizer", std.OriginCaller())
+	event.AssertAtLeastRole("organizer", std.OriginCaller())
 	for _, title := range titles {
 		ApproveProposal(title, approver)
 	}
@@ -192,7 +139,7 @@ func EditProposal(title, key, value string) error {
 			continue
 		}
 
-		if !(HasRole("proposer", std.OriginCaller()) && std.OriginCaller().String() == p.GetOwner()) {
+		if !(event.HasRole("proposer", std.OriginCaller()) && std.OriginCaller().String() == p.GetOwner()) {
 			return ufmt.Errorf("unauthorized: %q may not edit %q", std.OriginCaller(), p.GetTitle())
 		}
 

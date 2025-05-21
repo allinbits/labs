@@ -6,6 +6,7 @@ import (
 
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
+	"gno.land/p/moul/txlink"
 )
 
 type State int
@@ -70,21 +71,44 @@ func RenderProposals(path string, proposals []Proposal) string {
 			approvedRender.WriteString(component.RenderComponent(path, p))
 		case Reviewed:
 			reviewedRender.WriteString(component.RenderComponent(path, p))
+			reviewedRender.WriteString(ufmt.Sprintf("[Approve Proposal](%v)\n\n",
+				txlink.NewLink("ApproveProposal").AddArgs("title", p.GetTitle()).URL()))
 		case Submitted:
 			submittedRender.WriteString(component.RenderComponent(path, p))
+			submittedRender.WriteString(ufmt.Sprintf("[Review Proposal](%v)\n\n",
+				txlink.NewLink("ReviewProposal").AddArgs("title", p.GetTitle()).URL()))
 		}
 	}
 
 	var render strings.Builder
 
-	render.WriteString("## Approved Proposals:\n\n")
+	render.WriteString("## Approved Proposals\n\n")
 	render.WriteString(approvedRender.String())
+	render.WriteString("### Actions:\n\n")
+	render.WriteString(ufmt.Sprintf("[Export Approved Proposals](%v)\n\n",
+		txlink.NewLink("ExportApprovedProposals").URL()))
 
-	render.WriteString("## Reviewed Proposals:\n\n")
+	render.WriteString("## Reviewed Proposals\n\n")
 	render.WriteString(reviewedRender.String())
 
-	render.WriteString("## Submitted Proposals:\n\n")
+	render.WriteString("## Submitted Proposals\n\n")
 	render.WriteString(submittedRender.String())
+
+	topics := []string{
+		"Privacy, Security & Identity",
+		"Information, Media & Social Infrastructure",
+		"Governance & Regulation",
+		"Infrastructure, Tools & Developer UX",
+		"Gno.land & The Logoverse",
+		"The Intersection of AI & Web3",
+		"Secure Home Computing",
+	}
+	render.WriteString("### Actions:\n\n")
+	for _, topic := range topics {
+		render.WriteString(ufmt.Sprintf("[Submit a *%s* Proposal](%v)\n\n",
+			topic,
+			txlink.NewLink("SubmitProposal").AddArgs("topic", topic).URL()))
+	}
 
 	return render.String()
 }
@@ -128,7 +152,7 @@ func (sp *SubmittedProposal) ToMarkdown() string {
 
 func (rp *ReviewedProposal) ToMarkdown() string {
 	md := rp.SubmittedProposal.ToMarkdown()
-	md += ufmt.Sprintf("**Comments:** %s\n\n**Score:** %d\n\n**Reviewer:** %s\n",
+	md += ufmt.Sprintf("**Comments:** %s\n\n**Score:** %d\n\n**Reviewer:** %s\n\n",
 		rp.Comments, rp.Score, rp.Reviewer)
 	return md
 }

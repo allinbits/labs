@@ -93,7 +93,8 @@ func SubmitProposal(title, abstract, formatName, speaker string) {
 }
 
 func ReviewProposal(title, comments, reviewer string, score int) {
-	event.AssertAtLeastRole("reviewer", std.OriginCaller())
+	crossing()
+	cross(event.AssertAtLeastRole)("reviewer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if sp, ok := p.(*proposal.SubmittedProposal); ok {
@@ -111,7 +112,7 @@ func ReviewProposal(title, comments, reviewer string, score int) {
 
 func ApproveProposal(title, approver string) {
 	crossing()
-	event.AssertAtLeastRole("organizer", std.OriginCaller())
+	cross(event.AssertAtLeastRole)("organizer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if rp, ok := p.(*proposal.ReviewedProposal); ok {

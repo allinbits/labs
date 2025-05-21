@@ -15,7 +15,7 @@ type Agenda struct {
 	Location       *location.Location
 	StartDate      time.Time
 	EndDate        time.Time
-	KeynoteHeading *component.Content
+	Banner *component.Content
 	Description    string
 	Sessions       []*session.Session
 	renderOpts     *component.RenderOpts
@@ -23,8 +23,8 @@ type Agenda struct {
 
 var _ component.Component = (*Agenda)(nil)
 
-func (a *Agenda) SetKeynoteHeading(heading *component.Content) {
-	a.KeynoteHeading = heading
+func (a *Agenda) SetBanner(heading *component.Content) {
+	a.Banner = heading
 }
 
 func (a *Agenda) ToAnchor() string {
@@ -44,8 +44,8 @@ func (a *Agenda) ToMarkdown() string {
 	}
 	markdown += a.Description + "\n\n"
 
-	if a.KeynoteHeading != nil && a.KeynoteHeading.Published {
-		markdown += a.KeynoteHeading.Markdown + "\n\n"
+	if a.Banner != nil && a.Banner.Published {
+		markdown += a.Banner.Markdown + "\n\n"
 	}
 
 	markdown += "## Agenda \n\n"

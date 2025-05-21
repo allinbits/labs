@@ -2,6 +2,7 @@ package event
 
 import (
 	"std"
+	"strings"
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
@@ -16,6 +17,7 @@ var (
 	proposers    *avl.Tree
 	reviewers    *avl.Tree
 	accessChecks map[string]func(string) bool
+	aclOverride  map[string]bool
 )
 
 const (
@@ -24,6 +26,7 @@ const (
 )
 
 func init() {
+    aclOverride = make(map[string]bool)
 	waitlist = avl.NewTree()
 
 	reviewers = avl.NewTree()
@@ -55,6 +58,67 @@ func init() {
 	attendees.Set("g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt", struct{}{})
 	attendees.Set("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", struct{}{})
 
+	accessChecks = map[string]func(string) bool{
+		"waitlist":  waitlist.Has,
+		"proposer":  proposers.Has,
+		"reviewer":  reviewers.Has,
+		"attendee":  attendees.Has,
+		"speaker":   speakers.Has,
+		"organizer": organizers.Has,
+	}
+}
+
+// Use Admin access to set the role of an address.
+func AdminSetRole(role string, addr std.Address) {
+	AssertAdminAccess()
+	switch role {
+	case "waitlist":
+		waitlist.Set(string(addr), struct{}{})
+	case "attendee":
+		attendees.Set(string(addr), struct{}{})
+	case "speaker":
+		speakers.Set(string(addr), struct{}{})
+	case "organizer":
+		organizers.Set(string(addr), struct{}{})
+	case "proposer":
+		proposers.Set(string(addr), struct{}{})
+	case "reviewer":
+		reviewers.Set(string(addr), struct{}{})
+	default:
+		panic(ufmt.Sprintf("error: role %s not supported", role))
+	}
+}
+
+// AdminRemoveRole removes the address from the specified role.
+func AdminRemoveRole(role string, addr std.Address) {
+	AssertAdminAccess()
+	switch role {
+	case "waitlist":
+		waitlist.Remove(string(addr))
+	case "attendee":
+		attendees.Remove(string(addr))
+	case "speaker":
+		speakers.Remove(string(addr))
+	case "organizer":
+		organizers.Remove(string(addr))
+	case "proposer":
+		proposers.Remove(string(addr))
+	case "reviewer":
+		reviewers.Remove(string(addr))
+	default:
+		panic(ufmt.Sprintf("error: role %s not supported", role))
+	}
+}
+
+// ResetRoles resets all roles to empty trees and re-initializes the accessChecks map.
+func ResetRoles() {
+	AssertAdminAccess()
+	waitlist = avl.NewTree()
+	organizers = avl.NewTree()
+	speakers = avl.NewTree()
+	attendees = avl.NewTree()
+	proposers = avl.NewTree()
+	reviewers = avl.NewTree()
 	accessChecks = map[string]func(string) bool{
 		"waitlist":  waitlist.Has,
 		"proposer":  proposers.Has,
@@ -186,6 +250,7 @@ func ListRoles() []string {
 
 // SetRoleHandler takes a role and a function that takes an address and returns a boolean value.
 func SetRoleHandler(role string, fn func(string) bool) {
+    aclOverride[role] = true
 	AssertAdminAccess()
 	accessChecks[role] = fn
 }
@@ -211,58 +276,69 @@ func RenderAcl(path string) string {
 	if evt.Name == "" {
 		panic(ufmt.Sprintf("error: event with id %d not found", id))
 	}
+	var sb strings.Builder
+	sb.WriteString(ufmt.Sprintf(`# `+evt.Name+`
 
-	return ufmt.Sprintf(`# `+evt.Name+`
-
-Event access control lists.
+## Event access control
 
 This realm can check membership by Querying [HasRole(role, addr)](./gnolandlaunch$help#func-HasRole), where
 a role can be proposer, reviewer, attendee, speaker, or organizer.
 
 Note: This renderer will only display up to 100 addresses per group.
 
-## Easy Actions:
+### Easy Actions
 
 - [Join Waitlist](%v)
 - [Remove yourself from Waitlist](%v)
 
 - [Join as an Attendee](%v)
 - [Remove yourself as an Attendee](%v)
-
-## Waitlist
-
-%v
-
-## Proposers
-
-%v
-
-## Reviewers
-
-%v
-
-## Organizers
-
-%v
-
-## Speakers
-
-%v
-
-## Attendees
-
-%v
 `,
 		txlink.NewLink("JoinWaitlist").URL(),
 		txlink.NewLink("RemoveSelfFromWaitlist").URL(),
 		txlink.NewLink("JoinAsAttendee").URL(),
-		txlink.NewLink("RemoveSelfAsAttendee").URL(),
-		toMDList(treeToSlice(waitlist)),
-		toMDList(treeToSlice(proposers)),
-		toMDList(treeToSlice(reviewers)),
-		toMDList(treeToSlice(organizers)),
-		toMDList(treeToSlice(speakers)),
-		toMDList(treeToSlice(attendees)))
+		txlink.NewLink("RemoveSelfAsAttendee").URL()))
+
+    sb.WriteString("## Roles")
+	for role, _ := range accessChecks {
+		list := renderList(role)
+		if list != "" {
+			sb.WriteString(ufmt.Sprintf("\n%s\n", renderList(role)))
+		}
+	}
+
+	return sb.String()
+}
+
+func renderList(role string) string {
+	var sb strings.Builder
+	sb.WriteString(ufmt.Sprintf("\n### %s \n", role))
+	var addrs []std.Address
+	if aclOverride[role] {
+        sb.WriteString(ufmt.Sprintf("This role has a custom ACL handler.\n"))
+        return sb.String()
+    }
+	switch role {
+	case "waitlist":
+		addrs = treeToSlice(waitlist)
+	case "attendee":
+		addrs = treeToSlice(attendees)
+	case "speaker":
+		addrs = treeToSlice(speakers)
+	case "organizer":
+		addrs = treeToSlice(organizers)
+	case "proposer":
+		addrs = treeToSlice(proposers)
+	case "reviewer":
+		addrs = treeToSlice(reviewers)
+	default:
+		return ""
+	}
+	if len(addrs) == 0 {
+		return ""
+	}
+	sb.WriteString(toMDList(addrs))
+	return sb.String()
 }
 
 // treeToSlice takes an AVL tree and returns up to 100 items in order of index.

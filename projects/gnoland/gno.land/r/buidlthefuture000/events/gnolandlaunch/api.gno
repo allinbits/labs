@@ -4,7 +4,9 @@ import (
 	"std"
 	"strconv"
 	"strings"
+	"net/url"
 
+	"gno.land/p/moul/txlink"
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
@@ -25,9 +27,11 @@ var (
 		Published: false,
 		Markdown:  "This page has been disabled",
 	}
-	keynoteHeading = &component.Content{
-		Published: false,
-		Markdown:  `#### Keynote\n\n TODO: update with patch001`,
+	banner = &component.Content{
+		Published: true,
+		Markdown:  "\n\n#### Status: Accepting Session Proposals\n\n" +
+		"Join us on [discord](https://discord.gg/YFtMjWwUN7) to get access to submit a proposal.\n\n" +
+		"or\n\n" + txlinkButton("Register To Attend", "JoinWaitlist"),
 	}
 	renderOpts = &component.RenderOpts{
 		Location: false,
@@ -91,7 +95,7 @@ func Render(path string) (out string) {
 			panic(ufmt.Sprintf("error: event with id %d not found", id))
 		} else {
 			agenda := evt.Agenda()
-			agenda.SetKeynoteHeading(keynoteHeading) // TODO: refactor to pass into agenda constructor
+			agenda.SetBanner(banner) // inject banner
 			return component.RenderComponent(path, agenda)
 		}
 	default:
@@ -154,8 +158,8 @@ func Unpublish(key string) {
 		eventMap.Published = false
 	case "published":
 		staticContent.Published = false
-	case "keynote":
-		keynoteHeading.Published = false
+	case "banner":
+		banner.Published = false
 	default:
 		panic("invalid key: " + key)
 	}
@@ -170,9 +174,9 @@ func SetContent(key, markdown string) {
 	case "published":
 		staticContent.SetPublished(true)
 		staticContent.SetMarkdown(markdown)
-	case "keynote":
-		keynoteHeading.SetPublished(true)
-		keynoteHeading.SetMarkdown(markdown)
+	case "banner":
+		banner.SetPublished(true)
+		banner.SetMarkdown(markdown)
 	default:
 		panic("invalid key: " + key)
 	}
@@ -230,6 +234,7 @@ func HasAllowedPrefix() bool {
 }
 
 // AssertAdminAccess panics if the caller's realm does not match the allowed prefix.
+// This is used to restrict access to certain functions intended to be used by patch-realm admins.
 func AssertAdminAccess() {
 	if !HasAllowedPrefix() {
 		panic("access denied: " + std.CurrentRealm().PkgPath() +
@@ -468,4 +473,29 @@ func AddSessionTags(eventId, sessionId int, tags ...string) {
 func SetEventMapContent(markdown string) {
 	AssertAdminAccess()
 	eventMap.Markdown = markdown
+}
+
+func txlinkButton(label, method string) string {
+    return button(label, txlink.NewLink(method).URL())
+}
+
+// render svg button in markdown
+func button(label, path string) string {
+    w := len(label)*9
+
+    svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="32" viewBox="0 0 ` + strconv.Itoa(w) + ` 34">
+<defs>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+    <feOffset result="offOut" in="SourceAlpha" dx="2" dy="2" />
+    <feGaussianBlur result="blurOut" in="offOut" stdDeviation="2" />
+    <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+  </filter>
+</defs>
+<rect x="-4" y="0" width="` + strconv.Itoa(w+4) + `" height="30" fill="#f0f0f0" stroke="#cccccc" stroke-width="1" rx="4" ry="4" filter="url(#shadow)"/>
+<text x="23" y="22" font-family="Arial, sans-serif" font-size="16" fill="#000000">` + label + `</text>
+</svg>`
+
+    dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
+
+    return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }

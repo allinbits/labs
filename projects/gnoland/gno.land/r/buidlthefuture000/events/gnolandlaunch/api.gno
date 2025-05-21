@@ -229,6 +229,7 @@ func HasAllowedPrefix() bool {
 	return false
 }
 
+// AssertAdminAccess panics if the caller's realm does not match the allowed prefix.
 func AssertAdminAccess() {
 	if !HasAllowedPrefix() {
 		panic("access denied: " + std.CurrentRealm().PkgPath() +

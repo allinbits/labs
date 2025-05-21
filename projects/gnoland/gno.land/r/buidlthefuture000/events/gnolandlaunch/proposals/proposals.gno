@@ -16,10 +16,70 @@ import (
 var ProposalsRealmHeader = "# BTF 2025 Call for Proposals\n\n"
 
 // BTF 2025 FORMAT TYPES
-var ValidFormats = map[string]proposal.Format{
-	"Panel":         {"Panel", "A group discussion moderated by a facilitator.", 90, 2, 5},
-	"Lecture":       {"Lecture", "An educational talk to an audience, typically by an expert.", 60, 1, 1},
-	"Fireside Chat": {"Fireside Chat", "An informal yet structured interview or conversation.", 45, 1, 2},
+var EventTopics = map[string]proposal.Topic{
+	"Privacy, Security & Identity": {
+		Name:        "Privacy, Security & Identity",
+		Description: "Exploring how we communicate, authenticate, and secure ourselves in decentralized systems.",
+		Subtopics: []string{
+			"Private Communication: Tools and protocols enabling encrypted, censorship-resistant messaging.",
+			"Decentralized Identity and Authentication: Self-sovereign identity (DID) and wallet-based login.",
+			"Digital and Real Identity: Bridging online personas with real-world identity; implications for governance, finance, and social systems.",
+			"Usability and Security: Tradeoffs and innovations in designing secure yet user-friendly tools, especially for new users.",
+			"The Deepfake Era: AI Scams, Identity Theft & Misinformation: The rise of AI threatens identity, truth and trust.",
+		},
+	},
+	"Information, Media & Social Infrastructure": {
+		Name:        "Information, Media & Social Infrastructure",
+		Description: "Creating new platforms and discovery systems that support censorship-proof coordination and communication.",
+		Subtopics: []string{
+			"New Wikipedia / New Twitter / New Facebook / New Reddit: Building decentralized knowledge, social, and discourse platforms without central control. Finding the balance between moderation and censorship.",
+			"Information Discovery: Rethinking accessibility, content surfacing, and truth discovery in open networks.",
+			"Creating a Streaming Platform Without Relying on Anyone: Decentralized infrastructure for video and content creation, as alternatives to Big Tech.",
+		},
+	},
+	"Governance & Regulation": {
+		Name:        "Governance & Regulation",
+		Description: "Examining governance at every level: local, global, digital, and how builders engage with regulators.",
+		Subtopics: []string{
+			"Local Governance / DAO Governance: Innovations in collective decision-making, from local to on-chain communities.",
+			"Builders Talking to Regulators: Regulatory clarity, builder concerns, and how to build responsibly in Web3.",
+		},
+	},
+	"Infrastructure, Tools & Developer UX": {
+		Name:        "Infrastructure, Tools & Developer UX",
+		Description: "Core building blocks of the decentralized stack: from wallets to protocols.",
+		Subtopics: []string{
+			"Hardware Wallets / Software Wallets / Browser Extensions: Comparison and future of key management and interaction in Web3.",
+			"Web2 to Web3: Helping users and developers transition; patterns, pain points, and onboarding strategies.",
+			"Cosmos ecosystem: Highlighting innovations from the Cosmos ecosystem: ecosystem-specific use cases.",
+		},
+	},
+	"Gno.land & The Logoverse": {
+		Name:        "Gno.land & The Logoverse",
+		Description: "Exploring the unique vision of Gno.land as the first Logoverse.",
+		Subtopics: []string{
+			"Introducing Gno.land: Gno.land: the world's first viable language-based multi-user operating system.",
+			"Gno.land, the Logoverse and What it Means: The hub for human and machine coordination, built to host the knowledge base of the new millennium.",
+			"From Ideas to dApps: Gno.land as a Platform for Builders: How Gno.land’s architecture enables novel decentralized applications: persistent contracts, multi-user logic, and composability beyond traditional smart contracts.",
+		},
+	},
+	"The Intersection of AI & Web3": {
+		Name:        "The Intersection of AI & Web3",
+		Description: "Where artificial intelligence meets decentralization.",
+		Subtopics: []string{
+			"AI and Blockchain: AI in the Gno.land’s Logoverse: How Gno.land can enable decentralized, transparent and auditable AI. Use cases, boundaries, and governance.",
+			"Collective Intelligence in the Logoverse: Gno.land and the future of human-AI collaboration: programmable ideas, community-curated knowledge, and tools that scale collective intelligence.",
+			"AI and Coding: Accelerating dApp Development: Using AI to write, test, and audit code.",
+		},
+	},
+	"Secure Home Computing": {
+		Name:        "Secure Home Computing",
+		Description: "Reimagining the personal computer as a sovereign, secure, and programmable node in a decentralized network.",
+		Subtopics: []string{
+			"Secure-by-Design Personal Computing: Exploring the infrastructure that gives users control over their own machines and data.",
+			"Your Personal Node connected to the Logoverse: Connect your local computer to the broader Logoverse: contribute, coordinate and own your data.",
+		},
+	},
 }
 
 var opts = &component.RenderOpts{
@@ -34,14 +94,14 @@ var proposals = []proposal.Proposal{
 	&proposal.SubmittedProposal{
 		Title:    "Open Community Proposal Spot #1",
 		Abstract: "This is spot 1 of 2 open for community presentations for the Build The Future Launch Event.",
-		Format:   ValidFormats["Fireside Chat"],
+		Topic:    EventTopics["Secure Home Computing"],
 		Speaker:  "Community Proposal Spot #1 Speaker(s)",
 	},
 	&proposal.ReviewedProposal{
 		SubmittedProposal: proposal.SubmittedProposal{
 			Title:    "Open Community Proposal Spot #2",
 			Abstract: "This is 2 of 2 spots open for community presentations for the Build The Future Launch Event.",
-			Format:   ValidFormats["Panel"],
+			Topic:    EventTopics["Gno.land & The Logoverse"],
 			Speaker:  "Community Proposal Spot #2 Speaker(s)",
 		},
 		Comments: "For the purposes of the demo, this proposal has been \"reviewed\". And this is a review comment.",
@@ -61,7 +121,7 @@ func Render(path string) string {
 	var out strings.Builder
 	out.WriteString(ProposalsRealmHeader)
 	out.WriteString(proposal.RenderProposals(path, proposals))
-	// out.WriteString(proposal.RenderFormats(path, ValidFormats))
+	out.WriteString(proposal.RenderTopics(path, EventTopics))
 	return out.String()
 }
 
@@ -77,13 +137,13 @@ func Render(path string) string {
 
 // --- API-Like Endpoints ---
 
-func SubmitProposal(title, abstract, formatName, speaker string) {
+func SubmitProposal(title, abstract, topic, speaker string) {
 	event.AssertAtLeastRole("proposer", std.OriginCaller())
-	if format, ok := ValidFormats[formatName]; ok {
+	if topic, ok := EventTopics[topic]; ok {
 		sp := &proposal.SubmittedProposal{
 			Title:    title,
 			Abstract: abstract,
-			Format:   format,
+			Topic:    topic,
 			Speaker:  speaker,
 		}
 		sp.SetRenderOpts(opts) // <-- Explicitly set after creation
@@ -133,7 +193,7 @@ func ApproveProposals(titles []string, approver string) {
 	}
 }
 
-func EditProposal(title, key, value string) error {
+func EditProposal(title, key, edit string) error {
 	crossing()
 	for _, p := range proposals {
 		if p.GetTitle() != title {
@@ -146,33 +206,33 @@ func EditProposal(title, key, value string) error {
 
 		switch strings.ToLower(key) {
 		case "title":
-			p.SetTitle(value)
+			p.SetTitle(edit)
 
 		case "abstract":
-			p.SetAbstract(value)
+			p.SetAbstract(edit)
 
 		case "speaker":
-			p.SetSpeaker(value)
+			p.SetSpeaker(edit)
 
-		case "format":
-			if fmtVal, ok := ValidFormats[value]; ok {
-				p.SetFormat(fmtVal)
+		case "topic":
+			if topic, ok := EventTopics[edit]; ok {
+				p.SetTopic(topic)
 			} else {
-				return ufmt.Errorf("unknown format %q", value)
+				return ufmt.Errorf("unknown topic %q", topic)
 			}
 
 		case "comments":
 			if rp, ok := p.(*proposal.ReviewedProposal); ok {
-				rp.SetComments(value)
+				rp.SetComments(edit)
 			} else {
 				return ufmt.Errorf("proposal %q is not in Reviewed state", title)
 			}
 
 		case "score":
 			if rp, ok := p.(*proposal.ReviewedProposal); ok {
-				i, err := strconv.Atoi(value)
+				i, err := strconv.Atoi(edit)
 				if err != nil {
-					return ufmt.Errorf("invalid score %q: %w", value, err)
+					return ufmt.Errorf("invalid score %q: %w", edit, err)
 				}
 				rp.SetScore(i)
 			} else {
@@ -181,14 +241,14 @@ func EditProposal(title, key, value string) error {
 
 		case "reviewer":
 			if rp, ok := p.(*proposal.ReviewedProposal); ok {
-				rp.SetReviewer(value)
+				rp.SetReviewer(edit)
 			} else {
 				return ufmt.Errorf("proposal %q is not in Reviewed state", title)
 			}
 
 		case "approvedby":
 			if ap, ok := p.(*proposal.ApprovedProposal); ok {
-				ap.SetApprovedBy(value)
+				ap.SetApprovedBy(edit)
 			} else {
 				return ufmt.Errorf("proposal %q is not in Approved state", title)
 			}
@@ -211,7 +271,7 @@ func ExportApprovedProposals() []proposal.Proposal {
 			base := &proposal.SubmittedProposal{
 				Title:    p.GetTitle(),
 				Abstract: p.GetAbstract(),
-				Format:   p.GetFormat(),
+				Topic:    p.GetTopic(),
 				Speaker:  p.GetSpeaker(),
 				Owner:    p.GetOwner(),
 			}

@@ -22,8 +22,8 @@ type Proposal interface {
 	SetTitle(title string)
 	GetAbstract() string
 	SetAbstract(abstract string)
-	GetFormat() Format
-	SetFormat(format Format)
+	GetTopic() Topic
+	SetTopic(topic Topic)
 	GetSpeaker() string
 	SetSpeaker(speaker string)
 	GetOwner() string
@@ -40,7 +40,7 @@ type Proposal interface {
 type SubmittedProposal struct {
 	Title      string
 	Abstract   string
-	Format     Format
+	Topic      Topic
 	Speaker    string
 	Owner      string
 	renderOpts *component.RenderOpts
@@ -84,7 +84,6 @@ func RenderProposals(path string, proposals []Proposal) string {
 
 	render.WriteString("## Approved Proposals\n\n")
 	render.WriteString(approvedRender.String())
-	render.WriteString("### Actions:\n\n")
 	render.WriteString(ufmt.Sprintf("[Export Approved Proposals](%v)\n\n",
 		txlink.NewLink("ExportApprovedProposals").URL()))
 
@@ -93,22 +92,6 @@ func RenderProposals(path string, proposals []Proposal) string {
 
 	render.WriteString("## Submitted Proposals\n\n")
 	render.WriteString(submittedRender.String())
-
-	topics := []string{
-		"Privacy, Security & Identity",
-		"Information, Media & Social Infrastructure",
-		"Governance & Regulation",
-		"Infrastructure, Tools & Developer UX",
-		"Gno.land & The Logoverse",
-		"The Intersection of AI & Web3",
-		"Secure Home Computing",
-	}
-	render.WriteString("### Actions:\n\n")
-	for _, topic := range topics {
-		render.WriteString(ufmt.Sprintf("[Submit a *%s* Proposal](%v)\n\n",
-			topic,
-			txlink.NewLink("SubmitProposal").AddArgs("topic", topic).URL()))
-	}
 
 	return render.String()
 }
@@ -119,8 +102,8 @@ func (sp *SubmittedProposal) GetTitle() string               { return sp.Title }
 func (sp *SubmittedProposal) SetTitle(title string)          { sp.Title = title }
 func (sp *SubmittedProposal) GetAbstract() string            { return sp.Abstract }
 func (sp *SubmittedProposal) SetAbstract(abstract string)    { sp.Abstract = abstract }
-func (sp *SubmittedProposal) GetFormat() Format              { return sp.Format }
-func (sp *SubmittedProposal) SetFormat(format Format)        { sp.Format = format }
+func (sp *SubmittedProposal) GetTopic() Topic                { return sp.Topic }
+func (sp *SubmittedProposal) SetTopic(topic Topic)           { sp.Topic = topic }
 func (sp *SubmittedProposal) GetSpeaker() string             { return sp.Speaker }
 func (sp *SubmittedProposal) SetSpeaker(speaker string)      { sp.Speaker = speaker }
 func (sp *SubmittedProposal) GetOwner() string               { return sp.Owner }
@@ -145,8 +128,8 @@ func (ap *ApprovedProposal) ToAnchor() string  { return ap.ReviewedProposal.ToAn
 
 func (sp *SubmittedProposal) ToMarkdown() string {
 	return ufmt.Sprintf(
-		"### %s\n\n **Speaker:** %s\n\n **Format:** %s\n\n **Abstract:** %s\n\n",
-		sp.Title, sp.Speaker, sp.Format.ToMarkdown(), sp.Abstract,
+		"### %s\n\n **Speaker:** %s\n\n **Topic:** %s\n\n **Abstract:** %s\n\n",
+		sp.Title, sp.Speaker, sp.GetTopic().Name, sp.Abstract,
 	)
 }
 
@@ -165,7 +148,7 @@ func (sp *SubmittedProposal) ToJson() string {
 	json := "{\n"
 	json += "  \"Title\": \"" + sp.Title + "\""
 	json += ",\n  \"Speaker\": \"" + sp.Speaker + "\""
-	json += ",\n  \"Format\": \"" + sp.Format.ToJson() + "\""
+	json += ",\n  \"Topic\": \"" + sp.Topic.ToJson() + "\""
 	json += ",\n  \"Description\": \"" + sp.Abstract + "\""
 	json += "\n}"
 	return json
@@ -226,8 +209,8 @@ func (sp *SubmittedProposal) ToSVGFragment(y *int) string {
 	svg += component.RenderSVGLine(y, "title", "", sp.Title)
 	svg += component.RenderSVGLine(y, "text", "Speaker:", sp.Speaker)
 
-	formatText := ufmt.Sprintf("%s | %d min | %d-%d speakers", sp.Format.Name, sp.Format.Duration, sp.Format.MinSpeakers, sp.Format.MaxSpeakers)
-	svg += component.RenderSVGLine(y, "text", "Format:", formatText)
+	topicText := ufmt.Sprintf("%s | %s", sp.Topic.Name, sp.Topic.Description)
+	svg += component.RenderSVGLine(y, "text", "Topic:", topicText)
 	svg += component.RenderSVGLine(y, "text", "Abstract:", sp.Abstract)
 
 	return svg

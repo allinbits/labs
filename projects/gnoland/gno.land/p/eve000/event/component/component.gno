@@ -202,11 +202,27 @@ func IdFromPath(path string) int {
 	}
 	return id
 }
+func escapeHtml(s string) string {
+    s = strings.ReplaceAll(s, "&", "&amp;")
+    s = strings.ReplaceAll(s, "<", "&lt;")
+    s = strings.ReplaceAll(s, ">", "&gt;")
+    s = strings.ReplaceAll(s, "\"", "&quot;")
+    s = strings.ReplaceAll(s, "'", "&#39;")
+    return s
+}
 
 func Button(label, path string) string {
-	w := len(label) * 9
+    // Ensure a minimum width for the button
+    minWidth := 100
+    fontSize := 16
+    charWidth := int(0.58 * float64(fontSize)) // Approximate width of each character
+    padding := 20                            // Total padding (left + right)
+    w := len(label)*charWidth + padding
+    if w < minWidth {
+        w = minWidth
+    }
 
-	svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="32" viewBox="0 0 ` + strconv.Itoa(w) + ` 34">
+    svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="28" viewBox="0 0 ` + strconv.Itoa(w) + ` 30">
 <defs>
   <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
     <feOffset result="offOut" in="SourceAlpha" dx="2" dy="2" />
@@ -214,11 +230,11 @@ func Button(label, path string) string {
     <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
   </filter>
 </defs>
-<rect x="-4" y="0" width="` + strconv.Itoa(w+4) + `" height="30" fill="#f0f0f0" stroke="#cccccc" stroke-width="1" rx="4" ry="4" filter="url(#shadow)"/>
-<text x="23" y="22" font-family="Arial, sans-serif" font-size="16" fill="#000000">` + label + `</text>
+<rect x="0" y="2" width="` + strconv.Itoa(w) + `" height="24" fill="#f0f0f0" stroke="#cccccc" stroke-width="1" rx="4" ry="4" filter="url(#shadow)"/>
+<text x="24" y="21" font-family="Arial, sans-serif" font-size="` + strconv.Itoa(fontSize) + `" fill="#000000">` + escapeHtml(label) + `</text>
 </svg>`
 
-	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
+    dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
 
-	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
+    return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }

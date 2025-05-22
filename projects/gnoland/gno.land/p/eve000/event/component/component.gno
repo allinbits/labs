@@ -1,6 +1,7 @@
 package component
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -200,4 +201,24 @@ func IdFromPath(path string) int {
 		panic("invalid id")
 	}
 	return id
+}
+
+func Button(label, path string) string {
+	w := len(label) * 9
+
+	svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="32" viewBox="0 0 ` + strconv.Itoa(w) + ` 34">
+<defs>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+    <feOffset result="offOut" in="SourceAlpha" dx="2" dy="2" />
+    <feGaussianBlur result="blurOut" in="offOut" stdDeviation="2" />
+    <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+  </filter>
+</defs>
+<rect x="-4" y="0" width="` + strconv.Itoa(w+4) + `" height="30" fill="#f0f0f0" stroke="#cccccc" stroke-width="1" rx="4" ry="4" filter="url(#shadow)"/>
+<text x="23" y="22" font-family="Arial, sans-serif" font-size="16" fill="#000000">` + label + `</text>
+</svg>`
+
+	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
+
+	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }

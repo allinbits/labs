@@ -20,8 +20,8 @@ func RenderTopics(path string, topics map[string]Topic) string {
 	b.WriteString("## Proposal Topics\n\n")
 	for _, t := range topics {
 		b.WriteString(t.ToMarkdown())
-		b.WriteString(ufmt.Sprintf("[Submit a *%s* Proposal](%v)\n\n",
-			t.Name, txlink.NewLink("SubmitProposal").AddArgs("topic", t.Name).URL()))
+		b.WriteString(component.Button(ufmt.Sprintf("Submit a %s Proposal", t.Name),
+			txlink.NewLink("SubmitProposal").AddArgs("topic", t.Name).URL()) + "\n\n")
 	}
 
 	return b.String()

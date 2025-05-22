@@ -4,15 +4,14 @@ import (
 	"std"
 	"strconv"
 	"strings"
-	"net/url"
 
-	"gno.land/p/moul/txlink"
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/register"
 	"gno.land/p/eve000/event/speaker"
+	"gno.land/p/moul/txlink"
 )
 
 var (
@@ -29,9 +28,9 @@ var (
 	}
 	banner = &component.Content{
 		Published: true,
-		Markdown:  "\n\n#### Status: Accepting Session Proposals\n\n" +
-		"Join us on [discord](https://discord.gg/YFtMjWwUN7) to get access to submit a proposal.\n\n" +
-		"or\n\n" + txlinkButton("Register To Attend", "JoinWaitlist"),
+		Markdown: "\n\n#### Status: Accepting Session Proposals\n\n" +
+			"Join us on [discord](https://discord.gg/YFtMjWwUN7) to get access to submit a proposal.\n\n" +
+			"or\n\n" + txlinkButton("Register To Attend", "JoinWaitlist"),
 	}
 	renderOpts = &component.RenderOpts{
 		Location: false,
@@ -476,26 +475,5 @@ func SetEventMapContent(markdown string) {
 }
 
 func txlinkButton(label, method string) string {
-    return button(label, txlink.NewLink(method).URL())
-}
-
-// render svg button in markdown
-func button(label, path string) string {
-    w := len(label)*9
-
-    svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="32" viewBox="0 0 ` + strconv.Itoa(w) + ` 34">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-    <feOffset result="offOut" in="SourceAlpha" dx="2" dy="2" />
-    <feGaussianBlur result="blurOut" in="offOut" stdDeviation="2" />
-    <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
-  </filter>
-</defs>
-<rect x="-4" y="0" width="` + strconv.Itoa(w+4) + `" height="30" fill="#f0f0f0" stroke="#cccccc" stroke-width="1" rx="4" ry="4" filter="url(#shadow)"/>
-<text x="23" y="22" font-family="Arial, sans-serif" font-size="16" fill="#000000">` + label + `</text>
-</svg>`
-
-    dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
-
-    return "[![" + label + "](" + dataUrl + ")](" + path + ")"
+	return component.Button(label, txlink.NewLink(method).URL())
 }

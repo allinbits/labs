@@ -71,12 +71,12 @@ func RenderProposals(path string, proposals []Proposal) string {
 			approvedRender.WriteString(component.RenderComponent(path, p))
 		case Reviewed:
 			reviewedRender.WriteString(component.RenderComponent(path, p))
-			reviewedRender.WriteString(ufmt.Sprintf("[Approve Proposal](%v)\n\n",
-				txlink.NewLink("ApproveProposal").AddArgs("title", p.GetTitle()).URL()))
+			reviewedRender.WriteString(component.Button("Approve Proposal",
+				txlink.NewLink("ApproveProposal").AddArgs("title", p.GetTitle()).URL()) + "\n\n")
 		case Submitted:
 			submittedRender.WriteString(component.RenderComponent(path, p))
-			submittedRender.WriteString(ufmt.Sprintf("[Review Proposal](%v)\n\n",
-				txlink.NewLink("ReviewProposal").AddArgs("title", p.GetTitle()).URL()))
+			submittedRender.WriteString(component.Button("Review Proposal",
+				txlink.NewLink("ReviewProposal").AddArgs("title", p.GetTitle()).URL()) + "\n\n")
 		}
 	}
 
@@ -84,8 +84,8 @@ func RenderProposals(path string, proposals []Proposal) string {
 
 	render.WriteString("## Approved Proposals\n\n")
 	render.WriteString(approvedRender.String())
-	render.WriteString(ufmt.Sprintf("[Export Approved Proposals](%v)\n\n",
-		txlink.NewLink("ExportApprovedProposals").URL()))
+	render.WriteString(component.Button("Export Approved Proposals",
+		txlink.NewLink("ExportApprovedProposals").URL()) + "\n\n")
 
 	render.WriteString("## Reviewed Proposals\n\n")
 	render.WriteString(reviewedRender.String())

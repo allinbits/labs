@@ -138,7 +138,8 @@ func Render(path string) string {
 // --- API-Like Endpoints ---
 
 func SubmitProposal(title, abstract, topic, speaker string) {
-	event.AssertAtLeastRole("proposer", std.OriginCaller())
+	crossing()
+	cross(event.AssertAtLeastRole)("proposer", std.OriginCaller())
 	if topic, ok := EventTopics[topic]; ok {
 		sp := &proposal.SubmittedProposal{
 			Title:    title,

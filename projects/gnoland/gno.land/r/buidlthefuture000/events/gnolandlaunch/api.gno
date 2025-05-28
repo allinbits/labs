@@ -35,46 +35,6 @@ var (
 		Schedule: true,
 		Speaker:  false,
 	}
-	const gopherconICS = `BEGIN:VCALENDAR
-	VERSION:2.0
-	CALSCALE:GREGORIAN
-	PRODID:-//gno.land//GopherCon 2025//EN
-	X-WR-CALNAME:GopherCon 2025
-	X-WR-TIMEZONE:UTC
-	METHOD:PUBLISH
-
-	BEGIN:VEVENT
-	UID:Generics i-20250516T150000Z@gno.land/r/eve/events/gophercon
-	DTSTAMP:20250516T150000Z
-	SUMMARY:Generics in Action: Simplifying Go Code
-	DESCRIPTION:Learn practical use cases for Go generics to simplify and enhance your code.
-	DTSTART:20250517T100000Z
-	DTEND:20250517T113000Z
-	LOCATION:Room A1
-	END:VEVENT
-
-	BEGIN:VEVENT
-	UID:Concurrenc-20250516T150000Z@gno.land/r/eve/events/gophercon
-	DTSTAMP:20250516T150000Z
-	SUMMARY:Concurrency Patterns in Real-World Applications
-	DESCRIPTION:A deep dive into concurrency patterns to efficiently handle complex workflows.
-	DTSTART:20250517T130000Z
-	DTEND:20250517T143000Z
-	LOCATION:Room B2
-	END:VEVENT
-
-	BEGIN:VEVENT
-	UID:Building H-20250516T150000Z@gno.land/r/eve/events/gophercon
-	DTSTAMP:20250516T150000Z
-	SUMMARY:Building High-Performance APIs with Go
-	DESCRIPTION:Techniques and best practices for building scalable and performant APIs.
-	DTSTART:20250517T150000Z
-	DTEND:20250517T163000Z
-	LOCATION:Room C3
-	END:VEVENT
-
-	END:VCALENDAR
-	`
 )
 
 type EventRegistry struct {
@@ -100,77 +60,6 @@ func init() {
 		LiveEventId: registry.RegisterEvent(gopherCon2025),
 		PatchLevel:  0,
 	}
-}
-
-type VEvent struct {
-	UID         string
-	DtStamp     string
-	Summary     string
-	Description string
-	DtStart     string
-	DtEnd       string
-	Location    string
-}
-
-type VCalendar struct {
-	ProdID    string
-	CalName   string
-	TimeZone  string
-	Method    string
-	Events    []VEvent
-}
-
-func ToRFC5545(e *event.Event) string {
-	vc := VCalendar{
-		ProdID:   fmt.Sprintf("-//gno.land//%s//EN", e.Name),
-		CalName:  e.Name,
-		TimeZone: "UTC",
-		Method:   "PUBLISH",
-	}
-
-	now := time.Now().UTC().Format("20060102T150405Z")
-
-	for _, s := range e.Sessions {
-		prefix := s.Title
-		if len(prefix) > 10 {
-			prefix = prefix[:10]
-		}
-		uid := fmt.Sprintf("%s-%s@gno.land/r/eve/events/gophercon", prefix, now)
-
-		evt := VEvent{
-			UID:         uid,
-			DtStamp:     now,
-			Summary:     s.Title,
-			Description: s.Description,
-			DtStart:     s.StartTime.UTC().Format("20060102T150405Z"),
-			DtEnd:       s.EndTime.UTC().Format("20060102T150405Z"),
-			Location:    s.Location.Name,
-		}
-		vc.Events = append(vc.Events, evt)
-	}
-
-	var b strings.Builder
-	b.WriteString("BEGIN:VCALENDAR\n")
-	b.WriteString("VERSION:2.0\n")
-	b.WriteString("CALSCALE:GREGORIAN\n")
-	b.WriteString(fmt.Sprintf("PRODID:%s\n", vc.ProdID))
-	b.WriteString(fmt.Sprintf("X-WR-CALNAME:%s\n", vc.CalName))
-	b.WriteString(fmt.Sprintf("X-WR-TIMEZONE:%s\n", vc.TimeZone))
-	b.WriteString(fmt.Sprintf("METHOD:%s\n\n", vc.Method))
-
-	for _, ev := range vc.Events {
-		b.WriteString("BEGIN:VEVENT\n")
-		b.WriteString(fmt.Sprintf("UID:%s\n", ev.UID))
-		b.WriteString(fmt.Sprintf("DTSTAMP:%s\n", ev.DtStamp))
-		b.WriteString(fmt.Sprintf("SUMMARY:%s\n", ev.Summary))
-		b.WriteString(fmt.Sprintf("DESCRIPTION:%s\n", ev.Description))
-		b.WriteString(fmt.Sprintf("DTSTART:%s\n", ev.DtStart))
-		b.WriteString(fmt.Sprintf("DTEND:%s\n", ev.DtEnd))
-		b.WriteString(fmt.Sprintf("LOCATION:%s\n", ev.Location))
-		b.WriteString("END:VEVENT\n\n")
-	}
-	b.WriteString("END:VCALENDAR")
-	return b.String()
 }
 
 func Render(path string) (out string) {

@@ -11,6 +11,7 @@ import (
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/register"
 	"gno.land/p/eve000/event/speaker"
+	"gno.land/p/moul/txlink"
 )
 
 var (
@@ -25,12 +26,14 @@ var (
 		Published: false,
 		Markdown:  "This page has been disabled",
 	}
-	keynoteHeading = &component.Content{
-		Published: false,
-		Markdown:  `#### Keynote\n\n TODO: update with patch001`,
+	banner = &component.Content{
+		Published: true,
+		Markdown: "\n\n#### Status: Accepting Session Proposals\n\n" +
+			"Join us on [discord](https://discord.gg/YFtMjWwUN7) to get access to submit a proposal.\n\n" +
+			"or\n\n" + txlinkButton("Register To Attend", "JoinWaitlist"),
 	}
 	renderOpts = &component.RenderOpts{
-		Location: true,
+		Location: false,
 		Svg:      true,
 		Schedule: true,
 		Speaker:  false,
@@ -57,7 +60,7 @@ func init() {
 	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/patch")
 	registry = register.NewRegistry(renderOpts)
 	eventRegistry = &EventRegistry{
-		LiveEventId: registry.RegisterEvent(gopherCon2025),
+		LiveEventId: registry.RegisterEvent(gnoLandLaunchEvent),
 		PatchLevel:  0,
 	}
 }
@@ -68,6 +71,8 @@ func Render(path string) (out string) {
 	}
 	id := getIdFromPath(path)
 	switch {
+	case strings.HasPrefix(path, "access-control"):
+		return RenderAcl(path)
 	case strings.HasPrefix(path, "location:"):
 		return component.RenderComponent(path, registry.GetLocation(id))
 	case strings.HasPrefix(path, "speaker:"):
@@ -80,12 +85,18 @@ func Render(path string) (out string) {
 			panic(ufmt.Sprintf("error: event with id %d not found", id))
 		}
 		return component.RenderComponent(path, evt)
-	case path == "":
-		var LandingPage strings.Builder
-		LandingPage.WriteString(keynoteHeading.Markdown + "\n\n")
-		LandingPage.WriteString(component.RenderComponent(path, registry.GetEvent(id).Agenda()))
-		LandingPage.WriteString(ufmt.Sprintf("[➕ Add GopherCon to your calendar](%s)\n\n", url.QueryEscape(gopherconICS)))
-		return LandingPage.String()
+	// case strings.HasPrefix(path, "?tag="):
+	//	tag := strings.TrimPrefix(path, "?tag=")
+	//	return AgendaMarkdown(id, tag)
+	case strings.HasPrefix(path, "event:") || path == "" || path == "json":
+		evt := registry.GetEvent(id)
+		if evt.Name == "" {
+			panic(ufmt.Sprintf("error: event with id %d not found", id))
+		} else {
+			agenda := evt.Agenda()
+			agenda.SetBanner(banner) // inject banner
+			return component.RenderComponent(path, agenda)
+		}
 	default:
 		panic("invalid path")
 	}
@@ -146,8 +157,8 @@ func Unpublish(key string) {
 		eventMap.Published = false
 	case "published":
 		staticContent.Published = false
-	case "keynote":
-		keynoteHeading.Published = false
+	case "banner":
+		banner.Published = false
 	default:
 		panic("invalid key: " + key)
 	}
@@ -162,9 +173,9 @@ func SetContent(key, markdown string) {
 	case "published":
 		staticContent.SetPublished(true)
 		staticContent.SetMarkdown(markdown)
-	case "keynote":
-		keynoteHeading.SetPublished(true)
-		keynoteHeading.SetMarkdown(markdown)
+	case "banner":
+		banner.SetPublished(true)
+		banner.SetMarkdown(markdown)
 	default:
 		panic("invalid key: " + key)
 	}
@@ -221,6 +232,8 @@ func HasAllowedPrefix() bool {
 	return false
 }
 
+// AssertAdminAccess panics if the caller's realm does not match the allowed prefix.
+// This is used to restrict access to certain functions intended to be used by patch-realm admins.
 func AssertAdminAccess() {
 	if !HasAllowedPrefix() {
 		panic("access denied: " + std.CurrentRealm().PkgPath() +
@@ -229,7 +242,7 @@ func AssertAdminAccess() {
 }
 
 /* Speaker API */
-func AddSpeaker() int {
+func AddSpeakerRecord() int {
 	AssertAdminAccess()
 	return registry.AddSpeaker(&speaker.Speaker{
 		Name:        "New Speaker",
@@ -459,4 +472,8 @@ func AddSessionTags(eventId, sessionId int, tags ...string) {
 func SetEventMapContent(markdown string) {
 	AssertAdminAccess()
 	eventMap.Markdown = markdown
+}
+
+func txlinkButton(label, method string) string {
+	return component.Button(label, txlink.NewLink(method).URL())
 }

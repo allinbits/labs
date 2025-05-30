@@ -17,7 +17,8 @@ const releaseNotes = `
 - New location added to new session
 `
 
-func init() {
+// REVIEW: leaving patch 001 in the codebase for now as a reference
+func _init() {
 	newDescription := "GopherCon is a conference dedicated to the Go programming language, promoting its use," +
 		" fostering an inclusive community, and providing education to developers."
 

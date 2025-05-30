@@ -6,6 +6,7 @@ import (
 
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
+	"gno.land/p/moul/txlink"
 )
 
 type State int
@@ -18,9 +19,14 @@ const (
 
 type Proposal interface {
 	GetTitle() string
+	SetTitle(title string)
 	GetAbstract() string
-	GetFormat() Format
+	SetAbstract(abstract string)
+	GetTopic() Topic
+	SetTopic(topic Topic)
 	GetSpeaker() string
+	SetSpeaker(speaker string)
+	GetOwner() string
 	GetState() State
 	SetRenderOpts(*component.RenderOpts)
 	ToAnchor() string
@@ -34,8 +40,9 @@ type Proposal interface {
 type SubmittedProposal struct {
 	Title      string
 	Abstract   string
-	Format     Format
+	Topic      Topic
 	Speaker    string
+	Owner      string
 	renderOpts *component.RenderOpts
 }
 
@@ -64,20 +71,26 @@ func RenderProposals(path string, proposals []Proposal) string {
 			approvedRender.WriteString(component.RenderComponent(path, p))
 		case Reviewed:
 			reviewedRender.WriteString(component.RenderComponent(path, p))
+			reviewedRender.WriteString(component.Button("Approve Proposal",
+				txlink.NewLink("ApproveProposal").AddArgs("title", p.GetTitle()).URL()) + "\n\n")
 		case Submitted:
 			submittedRender.WriteString(component.RenderComponent(path, p))
+			submittedRender.WriteString(component.Button("Review Proposal",
+				txlink.NewLink("ReviewProposal").AddArgs("title", p.GetTitle()).URL()) + "\n\n")
 		}
 	}
 
 	var render strings.Builder
 
-	render.WriteString("## Approved Proposals:\n\n")
+	render.WriteString("## Approved Proposals\n\n")
 	render.WriteString(approvedRender.String())
+	render.WriteString(component.Button("Export Approved Proposals",
+		txlink.NewLink("ExportApprovedProposals").URL()) + "\n\n")
 
-	render.WriteString("## Reviewed Proposals:\n\n")
+	render.WriteString("## Reviewed Proposals\n\n")
 	render.WriteString(reviewedRender.String())
 
-	render.WriteString("## Submitted Proposals:\n\n")
+	render.WriteString("## Submitted Proposals\n\n")
 	render.WriteString(submittedRender.String())
 
 	return render.String()
@@ -85,14 +98,23 @@ func RenderProposals(path string, proposals []Proposal) string {
 
 // ========== Component Methods ==========
 
-func (sp SubmittedProposal) GetTitle() string     { return sp.Title }
-func (sp SubmittedProposal) GetAbstract() string  { return sp.Abstract }
-func (sp SubmittedProposal) GetFormat() Format    { return sp.Format }
-func (sp SubmittedProposal) GetSpeaker() string   { return sp.Speaker }
-func (rp ReviewedProposal) GetComments() string   { return rp.Comments }
-func (rp ReviewedProposal) GetScore() int         { return rp.Score }
-func (rp ReviewedProposal) GetReviewer() string   { return rp.Reviewer }
-func (ap ApprovedProposal) GetApprovedBy() string { return ap.ApprovedBy }
+func (sp *SubmittedProposal) GetTitle() string               { return sp.Title }
+func (sp *SubmittedProposal) SetTitle(title string)          { sp.Title = title }
+func (sp *SubmittedProposal) GetAbstract() string            { return sp.Abstract }
+func (sp *SubmittedProposal) SetAbstract(abstract string)    { sp.Abstract = abstract }
+func (sp *SubmittedProposal) GetTopic() Topic                { return sp.Topic }
+func (sp *SubmittedProposal) SetTopic(topic Topic)           { sp.Topic = topic }
+func (sp *SubmittedProposal) GetSpeaker() string             { return sp.Speaker }
+func (sp *SubmittedProposal) SetSpeaker(speaker string)      { sp.Speaker = speaker }
+func (sp *SubmittedProposal) GetOwner() string               { return sp.Owner }
+func (rp *ReviewedProposal) GetComments() string             { return rp.Comments }
+func (rp *ReviewedProposal) SetComments(comments string)     { rp.Comments = comments }
+func (rp *ReviewedProposal) GetScore() int                   { return rp.Score }
+func (rp *ReviewedProposal) SetScore(score int)              { rp.Score = score }
+func (rp *ReviewedProposal) GetReviewer() string             { return rp.Reviewer }
+func (rp *ReviewedProposal) SetReviewer(reviewer string)     { rp.Reviewer = reviewer }
+func (ap *ApprovedProposal) GetApprovedBy() string           { return ap.ApprovedBy }
+func (ap *ApprovedProposal) SetApprovedBy(approvedBy string) { ap.ApprovedBy = approvedBy }
 
 func (sp *SubmittedProposal) SetRenderOpts(opts *component.RenderOpts) { sp.renderOpts = opts }
 
@@ -106,14 +128,14 @@ func (ap *ApprovedProposal) ToAnchor() string  { return ap.ReviewedProposal.ToAn
 
 func (sp *SubmittedProposal) ToMarkdown() string {
 	return ufmt.Sprintf(
-		"### %s\n\n **Speaker:** %s\n\n **Format:** %s\n\n **Abstract:** %s\n\n",
-		sp.Title, sp.Speaker, sp.Format.ToMarkdown(), sp.Abstract,
+		"### %s\n\n **Speaker:** %s\n\n **Topic:** %s\n\n **Abstract:** %s\n\n",
+		sp.Title, sp.Speaker, sp.GetTopic().Name, sp.Abstract,
 	)
 }
 
 func (rp *ReviewedProposal) ToMarkdown() string {
 	md := rp.SubmittedProposal.ToMarkdown()
-	md += ufmt.Sprintf("**Comments:** %s\n\n**Score:** %d\n\n**Reviewer:** %s\n",
+	md += ufmt.Sprintf("**Comments:** %s\n\n**Score:** %d\n\n**Reviewer:** %s\n\n",
 		rp.Comments, rp.Score, rp.Reviewer)
 	return md
 }
@@ -126,7 +148,7 @@ func (sp *SubmittedProposal) ToJson() string {
 	json := "{\n"
 	json += "  \"Title\": \"" + sp.Title + "\""
 	json += ",\n  \"Speaker\": \"" + sp.Speaker + "\""
-	json += ",\n  \"Format\": \"" + sp.Format.ToJson() + "\""
+	json += ",\n  \"Topic\": \"" + sp.Topic.ToJson() + "\""
 	json += ",\n  \"Description\": \"" + sp.Abstract + "\""
 	json += "\n}"
 	return json
@@ -187,8 +209,8 @@ func (sp *SubmittedProposal) ToSVGFragment(y *int) string {
 	svg += component.RenderSVGLine(y, "title", "", sp.Title)
 	svg += component.RenderSVGLine(y, "text", "Speaker:", sp.Speaker)
 
-	formatText := ufmt.Sprintf("%s | %d min | %d-%d speakers", sp.Format.Name, sp.Format.Duration, sp.Format.MinSpeakers, sp.Format.MaxSpeakers)
-	svg += component.RenderSVGLine(y, "text", "Format:", formatText)
+	topicText := ufmt.Sprintf("%s | %s", sp.Topic.Name, sp.Topic.Description)
+	svg += component.RenderSVGLine(y, "text", "Topic:", topicText)
 	svg += component.RenderSVGLine(y, "text", "Abstract:", sp.Abstract)
 
 	return svg

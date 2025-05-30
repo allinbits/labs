@@ -3,19 +3,19 @@ package mockevent
 import (
 	"std"
 
-	"gno.land/p/demo/ufmt"
 	"gno.land/p/demo/avl"
+	"gno.land/p/demo/ufmt"
 	"gno.land/p/moul/txlink"
 )
 
 var (
 	organizers *avl.Tree
 	speakers   *avl.Tree
-	attendees *avl.Tree
+	attendees  *avl.Tree
 )
 
 const (
-	AssertIsOrganizerMsg string = "error: The PreviousRealm Address must be in the organizer's group execute this function."
+	AssertIsOrganizerMsg            string = "error: The PreviousRealm Address must be in the organizer's group execute this function."
 	AssertOrganizerNotRemoveSelfMsg string = "error: an organizer cannot remove itself."
 )
 
@@ -32,12 +32,11 @@ func init() {
 	attendees.Set("g1yfts8fy9jyfeca4p42em6mcttfwcypkpkfx0rv", struct{}{})
 }
 
-
 // JoinAsAttendee sets the address of the previous realm as an attendee
 // for the event.
 func JoinAsAttendee() {
 	crossing()
-	attendees.Set(string(std.PreviousRealm().Address()), struct{}{})	
+	attendees.Set(string(std.PreviousRealm().Address()), struct{}{})
 }
 
 // RemoveSelfAsAttendee removes the address of the previous realm as an attendee
@@ -54,7 +53,7 @@ func AddSpeaker(addr std.Address) {
 	speakers.Set(string(addr), struct{}{})
 }
 
-// RemoveSpeaker takes an std.Address and removes it from the speaker tree if the call is an organizer. 
+// RemoveSpeaker takes an std.Address and removes it from the speaker tree if the call is an organizer.
 func RemoveSpeaker(addr std.Address) {
 	crossing()
 	assertIsOrganizer()
@@ -69,7 +68,7 @@ func AddOrganizer(addr std.Address) {
 }
 
 // RemoveOrganizer takes an std.Address and removes it from the speaker tree if the call is an organizer and
-// the caller isn't trying to remove itself. 
+// the caller isn't trying to remove itself.
 func RemoveOrganizer(addr std.Address) {
 	crossing()
 	assertIsOrganizer()
@@ -78,8 +77,6 @@ func RemoveOrganizer(addr std.Address) {
 	}
 	organizers.Remove(string(addr))
 }
-
-
 
 // assertIsOrganizer panics if the PreviousRealm address is not in the organizers tree.
 func assertIsOrganizer() {
@@ -104,7 +101,6 @@ func HasRole(role string, addr std.Address) bool {
 		return false
 	}
 }
-
 
 // Render takes no arguments and displays a simple page showing up to 100
 // addresses per role group.
@@ -135,27 +131,26 @@ Note: This renderer will only display up to 100 addresses per group.
 
 %v
 
-`, 
-	txlink.NewLink("JoinAsAttendee").URL(),
-	txlink.NewLink("RemoveSelfAsAttendee").URL(),
-	toMDList(treeToSlice(organizers)), 
-	toMDList(treeToSlice(speakers)), 
-	toMDList(treeToSlice(attendees)))
+`,
+		txlink.NewLink("JoinAsAttendee").URL(),
+		txlink.NewLink("RemoveSelfAsAttendee").URL(),
+		toMDList(treeToSlice(organizers)),
+		toMDList(treeToSlice(speakers)),
+		toMDList(treeToSlice(attendees)))
 }
 
 // treeToSlice takes an AVL tree and returns up to 100 items in order of index.
 func treeToSlice(tree *avl.Tree) []std.Address {
-	result := make([]std.Address,0)
+	result := make([]std.Address, 0)
 	tree.IterateByOffset(0, 100, func(k string, _ any) bool {
 		if k == "" {
 			return true
 		}
 		result = append(result, std.Address(k))
 		return false
-	}) 
+	})
 	return result
 }
-
 
 // toMDList takes a slice of addresses and returns a Markdown encoded list as a string.
 func toMDList(addrs []std.Address) string {

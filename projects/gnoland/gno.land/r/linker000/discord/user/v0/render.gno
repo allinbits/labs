@@ -79,11 +79,11 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 - [Remove Link by Claim](%v)
 - [Confirm link](/r/linker000/discord/user/v0:link/g/%v)
 
-`, 
-txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
-txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
-string(claim.addr),
-))
+`,
+		txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
+		txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
+		string(claim.addr),
+	))
 
 	w.Write(ufmt.Sprintf(`
 ## Raw Encoded Claim

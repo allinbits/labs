@@ -3,12 +3,10 @@ package mockevent
 import (
 	"std"
 	"testing"
-	
+
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/testutils"
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/demo/uassert"
-
 )
 
 func TestJoinAsAttendee(t *testing.T) {
@@ -146,13 +144,13 @@ func TestTreeToSlice(t *testing.T) {
 		for _, addr := range addrs {
 			tree.Set(string(addr), struct{}{})
 		}
-	
+
 		treeAddrs := treeToSlice(tree)
-	
+
 		if len(treeAddrs) != 20 {
 			t.Error("length mismatch, expected 20 results")
 		}
-	
+
 		for _, addr := range treeAddrs {
 			if !tree.Has(string(addr)) {
 				t.Error("tree is missing addr: " + string(addr))
@@ -176,7 +174,6 @@ func TestTreeToSlice(t *testing.T) {
 		}
 	}
 }
-
 
 func TestToMDList(t *testing.T) {
 	addrs := []std.Address{

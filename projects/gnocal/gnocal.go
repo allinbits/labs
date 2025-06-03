@@ -49,15 +49,18 @@ func (s *Server) RenderRelay(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case strings.HasSuffix(fullPath, "/calendar.ics"):
 		realmBase := strings.TrimSuffix(fullPath, "/calendar.ics") + "/calendar"
-		raw, _, err := s.gnoClient.QEval(realmBase, `ToICS()`)
+		rawICS, _, err := s.gnoClient.QEval(realmBase, `ToICS()`)
 		if err != nil {
 			http.Error(w, "ToICS failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		payload := extractString(raw)
 
-		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
-		w.Write([]byte(payload))
+		payload := extractString(rawICS)
+
+		decodedICS := strings.ReplaceAll(payload, `\n`, "\n")
+
+		//	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+		w.Write([]byte(decodedICS))
 		return
 
 	case strings.HasSuffix(fullPath, "/calendar.json"):

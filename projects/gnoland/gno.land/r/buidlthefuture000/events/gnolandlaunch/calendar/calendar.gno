@@ -17,9 +17,9 @@ func ToICS() string {
 		"CALSCALE:GREGORIAN",
 		"PRODID:-//gno.land//Launch Calendar//EN", // customize this maybe? what is PRODID
 		"METHOD:PUBLISH",
-	}, "\n") + "\n\n\n"
+	}, "\n") + "\n\n"
 
-	footer := "\nEND:VCALENDAR"
+	footer := "END:VCALENDAR"
 
 	var veventsBuilder strings.Builder
 	for _, s := range event.Sessions {
@@ -27,6 +27,10 @@ func ToICS() string {
 	}
 
 	return header + veventsBuilder.String() + footer
+}
+
+func ToICSDataUrl() string {
+	return "data:text/calendar;charset=utf-8," + url.PathEscape(ToICS())
 }
 
 func Render(path string) string {

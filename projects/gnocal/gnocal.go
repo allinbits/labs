@@ -18,24 +18,24 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	r := chi.NewRouter()
 	gnoClient, err := newGnoClient()
 	if err != nil {
 		panic("Failed to create Gno client: " + err.Error())
 	}
+
 	s := &Server{
-		router:    r,
+		router:    chi.NewRouter(),
 		gnoClient: gnoClient,
 	}
 
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	s.router.Use(middleware.Logger)
+	s.router.Use(middleware.Recoverer)
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	s.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome to Gnocal!"))
 	})
 
-	r.Get("/realm/*", s.RenderRelay)
+	s.router.Get("/realm/*", s.RenderRelay)
 
 	return s
 }
@@ -45,23 +45,57 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) RenderRelay(w http.ResponseWriter, r *http.Request) {
-	realmPath := chi.URLParam(r, "*")
-	result, _, err := s.gnoClient.QEval(realmPath, `Render("")`)
-	if err != nil {
-		http.Error(w, "Failed to render relay: "+err.Error(), http.StatusInternalServerError)
+	fullPath := chi.URLParam(r, "*")
+	switch {
+	case strings.HasSuffix(fullPath, "/calendar.ics"):
+		realmBase := strings.TrimSuffix(fullPath, "/calendar.ics") + "/calendar"
+		raw, _, err := s.gnoClient.QEval(realmBase, `ToICS()`)
+		if err != nil {
+			http.Error(w, "ToICS failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		payload := extractString(raw)
+
+		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+		w.Write([]byte(payload))
+		return
+
+	case strings.HasSuffix(fullPath, "/calendar.json"):
+		realmBase := strings.TrimSuffix(fullPath, "/calendar.json") + "/calendar"
+		raw, _, err := s.gnoClient.QEval(realmBase, `ToJSON()`)
+		if err != nil {
+			http.Error(w, "ToJSON failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		payload := extractString(raw)
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Write([]byte(payload))
+		return
+
+	case strings.HasSuffix(fullPath, "/calendar"):
+		realmBase := fullPath
+		raw, _, err := s.gnoClient.QEval(realmBase, `Render("")`)
+		if err != nil {
+			http.Error(w, "Render failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		payload := extractString(raw)
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(payload))
+		return
+
+	default:
+		http.NotFound(w, r)
 		return
 	}
-
-	result = extractString(result)
-
-	// This is a placeholder for the actual implementation
-	// that would render a relay based on the request.
-	w.Write([]byte(result))
 }
 
 func newGnoClient() (*gnoclient.Client, error) {
-	gnoRPC := "https://labsnet.fly.dev:8443" // Replace with your Gno RPC URL
-	rpcClient, err := rpcclient.NewHTTPClient(gnoRPC)
+	gnodevRPC := "http://127.0.0.1:26657"
+	//labsnetRPC := "https://labsnet.fly.dev:8443" // Replace with your Gno RPC URL
+	rpcClient, err := rpcclient.NewHTTPClient(gnodevRPC)
 	if err != nil {
 		return nil, err
 	}

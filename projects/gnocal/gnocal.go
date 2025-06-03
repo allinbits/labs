@@ -59,7 +59,7 @@ func (s *Server) RenderRelay(w http.ResponseWriter, r *http.Request) {
 
 		decodedICS := strings.ReplaceAll(payload, `\n`, "\n")
 
-		//	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+		//w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 		w.Write([]byte(decodedICS))
 		return
 

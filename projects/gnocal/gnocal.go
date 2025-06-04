@@ -45,27 +45,25 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) RenderRelay(w http.ResponseWriter, r *http.Request) {
-	fullPath := chi.URLParam(r, "*")
+	path := chi.URLParam(r, "*")
 	switch {
-	case strings.HasSuffix(fullPath, "/calendar.ics"):
-		realmBase := strings.TrimSuffix(fullPath, "/calendar.ics") + "/calendar"
-		rawICS, _, err := s.gnoClient.QEval(realmBase, `ToICS()`)
+	case strings.HasSuffix(path, ".ics"):
+		realmPath := strings.TrimSuffix(path, ".ics")
+		rawICS, _, err := s.gnoClient.QEval(realmPath, `ToICS()`)
 		if err != nil {
-			http.Error(w, "ToICS failed: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "ToICS failed:%s"+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		payload := extractString(rawICS)
 
-		decodedICS := strings.ReplaceAll(payload, `\n`, "\n")
-
 		//w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
-		w.Write([]byte(decodedICS))
+		w.Write([]byte(strings.ReplaceAll(payload, `\n`, "\n")))
 		return
 
-	case strings.HasSuffix(fullPath, "/calendar.json"):
-		realmBase := strings.TrimSuffix(fullPath, "/calendar.json") + "/calendar"
-		raw, _, err := s.gnoClient.QEval(realmBase, `ToJSON()`)
+	case strings.HasSuffix(path, ".json"):
+		realmPath := strings.TrimSuffix(path, ".json")
+		raw, _, err := s.gnoClient.QEval(realmPath, `ToJSON()`)
 		if err != nil {
 			http.Error(w, "ToJSON failed: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -73,12 +71,12 @@ func (s *Server) RenderRelay(w http.ResponseWriter, r *http.Request) {
 		payload := extractString(raw)
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Write([]byte(payload))
+		w.Write([]byte(strings.ReplaceAll(payload, `\n`, "\n")))
 		return
 
-	case strings.HasSuffix(fullPath, "/calendar"):
-		realmBase := fullPath
-		raw, _, err := s.gnoClient.QEval(realmBase, `Render("")`)
+	case strings.HasSuffix(path, "/calendar"):
+		realmPath := path
+		raw, _, err := s.gnoClient.QEval(realmPath, `Render("")`)
 		if err != nil {
 			http.Error(w, "Render failed: "+err.Error(), http.StatusInternalServerError)
 			return

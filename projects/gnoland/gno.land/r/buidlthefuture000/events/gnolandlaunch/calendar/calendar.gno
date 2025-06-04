@@ -11,26 +11,45 @@ import (
 var f = ufmt.Sprintf
 
 func ToICS() string {
-	header := strings.Join([]string{
-		"BEGIN:VCALENDAR",
-		"VERSION:2.0",
-		"CALSCALE:GREGORIAN",
-		"PRODID:-//gno.land//Launch Calendar//EN", // customize this maybe? what is PRODID
-		"METHOD:PUBLISH",
-	}, "\n") + "\n\n"
+	var calendar strings.Builder
 
-	footer := "END:VCALENDAR"
+	w := func(line string) { calendar.WriteString(line + "\n") }
+	w("BEGIN:VCALENDAR")
+	w("VERSION:2.0")
+	w("CALSCALE:GREGORIAN")
+	w("PRODID:-//gno.land//Launch Calendar//EN")
+	w("METHOD:PUBLISH\n\n")
 
-	var veventsBuilder strings.Builder
 	for _, s := range event.Sessions {
-		veventsBuilder.WriteString(s.ToICSFragment())
+		calendar.WriteString(s.ToICSFragment())
 	}
 
-	return header + veventsBuilder.String() + footer
+	w("END:VCALENDAR")
+
+	return calendar.String()
 }
 
 func ToICSDataUrl() string {
 	return "data:text/calendar;charset=utf-8," + url.PathEscape(ToICS())
+}
+
+func ToJSON() string {
+	var sb strings.Builder
+	sb.WriteString("[\n")
+
+	total := len(event.Sessions)
+	count := 0
+
+	for _, sess := range event.Sessions {
+		sb.WriteString(sess.ToJson())
+
+		count++
+		if count < total {
+			sb.WriteString(",\n")
+		}
+	}
+	sb.WriteString("]")
+	return sb.String()
 }
 
 func Render(path string) string {

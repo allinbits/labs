@@ -179,42 +179,44 @@ func (s *Session) ToSvgDataUrl() string {
 }
 
 func (s *Session) ToICS() string {
-	header := strings.Join([]string{
-		"BEGIN:VCALENDAR",
-		"VERSION:2.0",
-		"CALSCALE:GREGORIAN",
-		"PRODID:-//gno.land//Session Calendar//EN",
-		"METHOD:PUBLISH",
-	}, "\n") + "\n\n"
+	var vcalendar strings.Builder
+	w := func(line string) { vcalendar.WriteString(line + "\n") }
+	w("BEGIN:VCALENDAR")
+	w("VERSION:2.0")
+	w("CALSCALE:GREGORIAN")
+	w("PRODID:-//gno.land//Session Calendar//EN")
+	w("METHOD:PUBLISH\n")
+	vcalendar.WriteString(s.ToICSFragment())
+	w("END:VCALDENDAR")
 
-	footer := "END:VCALENDAR"
-
-	vevent := s.ToICSFragment()
-	return header + vevent + footer
+	return vcalendar.String()
 }
 
 func (s *Session) ToICSFragment() string {
-	lines := []string{
-		"BEGIN:VEVENT",
-		f("UID:%s-%d@%s",
-			slugify(s.Title)[:5],
-			s.StartTime.Unix(),
-			"gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar",
-		),
+	var vevent strings.Builder
+	w := func(line string) { vevent.WriteString(line + "\n") }
 
-		f("SEQUENCE:%d", s.Sequence),
-		f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")),
-		f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")),
-		f("DTEND:%s", s.EndTime.UTC().Format("20060102T150000Z")),
-		"SUMMARY:" + s.Title,
-		"DESCRIPTION:" + s.Description,
-		"LOCATION:" + s.Location.Name,
-		"END:VEVENT",
-	}
+	w("BEGIN:VEVENT")
+	w(f("UID:%s-%d@%s",
+		slugify(s.Title)[:5],
+		s.StartTime.Unix(),
+		"gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar",
+	))
+
+	w(f("SEQUENCE:%d", s.Sequence))
+	w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
+	w(f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")))
+	w(f("DTEND:%s", s.EndTime.UTC().Format("20060102T150000Z")))
+	w(f("SUMMARY:%s", s.Title))
+	w(f("DESCRIPTION:%s", s.Description))
+	w(f("LOCATION:%s", s.Location.Name))
 	if s.Cancelled {
-		lines = append(lines, "STATUS:CANCELLED")
+		w("STATUS:CANCELLED")
 	}
-	return strings.Join(lines, "\n") + "\n\n"
+
+	w("END:VEVENT\n\n")
+
+	return vevent.String()
 }
 
 func (s *Session) ToICSDataUrl() string {

@@ -2,6 +2,8 @@ package session
 
 import (
 	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
 	"gno.land/p/demo/ufmt"
@@ -19,9 +21,14 @@ type Session struct {
 	Location    *location.Location
 	Tags        []string
 	renderOpts  *component.RenderOpts
+	Sequence    int
+	Cancelled   bool
 }
 
-var _ component.Component = (*Session)(nil)
+var (
+	_ component.Component = (*Session)(nil)
+	f                     = ufmt.Sprintf
+)
 
 func (s *Session) SetTitle(title string) {
 	s.Title = title
@@ -29,22 +36,32 @@ func (s *Session) SetTitle(title string) {
 
 func (s *Session) SetDescription(description string) {
 	s.Description = description
+	s.Sequence++
 }
 
 func (s *Session) SetSpeaker(speaker *speaker.Speaker) {
 	s.Speaker = speaker
+	s.Sequence++
 }
 
 func (s *Session) SetStartTime(startTime time.Time) {
 	s.StartTime = startTime
+	s.Sequence++
 }
 
 func (s *Session) SetEndTime(endTime time.Time) {
 	s.EndTime = endTime
+	s.Sequence++
 }
 
 func (s *Session) SetLocation(location *location.Location) {
 	s.Location = location
+	s.Sequence++
+}
+
+func (s *Session) SetCancelled(cancelled bool) {
+	s.Cancelled = cancelled
+	s.Sequence++
 }
 
 func (s *Session) SetTags(tags []string) {
@@ -147,20 +164,70 @@ func (s *Session) ToSVGFragment(y *int) string {
 		rightY += 20
 	}
 
-	*y = max(leftY, rightY)
+	*y = func(a, b int) int {
+		if a > b {
+			return a
+		}
+		return b
+	}(leftY, rightY)
 	svg += "</g>"
 	return svg
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func (s *Session) ToSvgDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(s.ToSVG())
+}
+
+func (s *Session) ToICS() string {
+	var vcalendar strings.Builder
+	w := func(line string) { vcalendar.WriteString(line + "\n") }
+	w("BEGIN:VCALENDAR")
+	w("VERSION:2.0")
+	w("CALSCALE:GREGORIAN")
+	w("PRODID:-//gno.land//Session Calendar//EN")
+	w("METHOD:PUBLISH\n")
+	vcalendar.WriteString(s.ToICSFragment())
+	w("END:VCALDENDAR")
+
+	return vcalendar.String()
+}
+
+func (s *Session) ToICSFragment() string {
+	var vevent strings.Builder
+	w := func(line string) { vevent.WriteString(line + "\n") }
+
+	w("BEGIN:VEVENT")
+	w(f("UID:%s-%d@%s",
+		slugify(s.Title)[:5],
+		s.StartTime.Unix(),
+		"gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar",
+	))
+
+	w(f("SEQUENCE:%d", s.Sequence))
+	w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
+	w(f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")))
+	w(f("DTEND:%s", s.EndTime.UTC().Format("20060102T150000Z")))
+	w(f("SUMMARY:%s", s.Title))
+	w(f("DESCRIPTION:%s", s.Description))
+	w(f("LOCATION:%s", s.Location.Name))
+	if s.Cancelled {
+		w("STATUS:CANCELLED")
+	}
+
+	w("END:VEVENT\n")
+
+	return vevent.String()
+}
+
+func (s *Session) ToICSDataUrl() string {
+	return "data:text/calendar;charset=utf-8," + url.PathEscape(s.ToICS())
+}
+
+func slugify(s string) string {
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	lower := strings.ToLower(s)
+	slug := re.ReplaceAllString(lower, "-")
+	return strings.Trim(slug, "-")
 }
 
 func (s *Session) HasTag(tag string) bool {

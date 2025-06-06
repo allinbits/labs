@@ -10,6 +10,7 @@ import (
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/register"
+	"gno.land/p/eve000/event/session"
 	"gno.land/p/eve000/event/speaker"
 	"gno.land/p/moul/txlink"
 )
@@ -476,4 +477,8 @@ func SetEventMapContent(markdown string) {
 
 func txlinkButton(label, method string) string {
 	return component.Button(label, txlink.NewLink(method).URL())
+}
+
+func GetSession(idx int) *session.Session {
+	return registry.GetSession(idx)
 }

@@ -2,6 +2,8 @@ package calendar
 
 import (
 	"net/url"
+	"std"
+	"strconv"
 	"strings"
 
 	"gno.land/p/demo/ufmt"
@@ -33,53 +35,94 @@ func ToICSDataUrl() string {
 	return "data:text/calendar;charset=utf-8," + url.PathEscape(ToICS())
 }
 
-func ToJSON() string {
-	var sb strings.Builder
-	sb.WriteString("[\n")
-
-	total := len(event.Sessions)
-	count := 0
-
+func ToMarkdown() string {
+	var calendar strings.Builder
 	for _, sess := range event.Sessions {
-		sb.WriteString(sess.ToJson())
+		calendar.WriteString(sess.ToMarkdown())
+	}
+	return calendar.String()
+}
 
-		count++
-		if count < total {
-			sb.WriteString(",\n")
+func RenderCal(path string) string {
+	var out strings.Builder
+
+	var sessionIDs []string
+	var format string
+	if len(path) > 0 && path[0] == '?' {
+		fullURL := std.CurrentRealm().PkgPath() + path
+		if u, err := url.Parse(fullURL); err == nil {
+			q := u.Query()
+			sessionIDs = q["session"]
+			format = q.Get("format")
 		}
 	}
-	sb.WriteString("]")
-	return sb.String()
+
+	N := len(event.Sessions)
+	var validIDs []int
+	for _, idStr := range sessionIDs {
+		idx, err := strconv.Atoi(idStr)
+		if err != nil || idx < 0 || idx >= N {
+			continue
+		}
+		validIDs = append(validIDs, idx)
+	}
+	if len(validIDs) == 0 {
+		validIDs = make([]int, N)
+		for i := 0; i < N; i++ {
+			validIDs[i] = i
+		}
+	}
+
+	switch strings.ToLower(format) {
+
+	case "json":
+		out.WriteString("[")
+		first := true
+		for _, idx := range validIDs {
+			if !first {
+				out.WriteString(",")
+			}
+			out.WriteString(event.GetSession(idx).ToJson())
+			first = false
+		}
+		out.WriteString("]")
+		return out.String()
+
+	case "csv":
+		out.WriteString("Title,Speaker,Start,End,Location\n")
+		for _, idx := range validIDs {
+			sess := event.GetSession(idx)
+			title := `"` + strings.ReplaceAll(sess.Title, `"`, `""`) + `"`
+			speaker := `"` + strings.ReplaceAll(sess.Speaker.ToMarkdown(), `"`, `""`) + `"`
+			start := sess.StartTime.Format("20060102T150000Z")
+			end := sess.EndTime.Format("20060102T150000Z")
+			location := `"` + strings.ReplaceAll(sess.Location.ToMarkdown(), `"`, `""`) + `"`
+
+			out.WriteString(title + "," + speaker + "," + start + "," + end + "," + location + "\n")
+		}
+		return out.String()
+
+	case "ics":
+		out.WriteString("BEGIN:VCALENDAR\n")
+		out.WriteString("VERSION:2.0\n")
+		out.WriteString("CALSCALE:GREGORIAN\n")
+		out.WriteString("PRODID:-//gno.land//Launch Calendar//EN\n")
+		out.WriteString("METHOD:PUBLISH\n\n")
+		for _, idx := range validIDs {
+			out.WriteString(event.GetSession(idx).ToICSFragment())
+		}
+		out.WriteString("END:VCALENDAR")
+		return out.String()
+
+	default: // "markdown"
+		for _, idx := range validIDs {
+			out.WriteString(event.GetSession(idx).ToMarkdown())
+			out.WriteString("\n")
+		}
+		return out.String()
+	}
 }
 
 func Render(path string) string {
-	// Render is a 3 Part Demo of the Calendar System
-
-	// I.
-	v1 := ToICS()
-	url1 := "data:text/calendar;charset=utf-8," + url.PathEscape(v1)
-	link1 := f("[Download v1 ICS](%s)", url1)
-
-	// II.
-	event.Sessions["generics"].SetDescription("Updated description!")
-
-	v2 := ToICS()
-	url2 := "data:text/calendar;charset=utf-8," + url.PathEscape(v2)
-	link2 := f("[Download v2 ICS](%s)", url2)
-
-	// III.
-	event.Sessions["apis"].SetCancelled(true)
-	v3 := ToICS()
-	url3 := "data:text/calendar;charset=utf-8," + url.PathEscape(v3)
-	link3 := f("[Download v3 ICS](%s)", url3)
-
-	out := f(
-		"## Calendar v1\n```ics\n%s\n```\n%s\n\n"+
-			"## Calendar v2\n```ics\n%s\n```\n%s\n\n"+
-			"## Calendar v3\n```ics\n%s\n```\n%s",
-		v1, link1,
-		v2, link2,
-		v3, link3,
-	)
-	return out
+	return RenderCal(path)
 }

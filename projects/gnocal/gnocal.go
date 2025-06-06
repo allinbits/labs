@@ -19,17 +19,30 @@ var f = fmt.Sprintf
 type Server struct {
 	router    *chi.Mux
 	gnoClient *gnoclient.Client
+	addr      string
 }
 
-func NewServer() *Server {
-	gnoClient, err := newGnoClient()
+// ServerOptions holds the configuration options for the GnoCal server.
+// It can be used to set the GnoLand RPC URL or other options in the future.
+// The GnoLand RPC URL is used to connect to the GnoLand blockchain.
+type ServerOptions struct {
+	GnoLandRpcUrl string
+	Addr          string
+}
+
+func NewServer(opts ServerOptions) *Server {
+	gnoClient, err := newGnoClient(opts.GnoLandRpcUrl)
 	if err != nil {
 		panic("Failed to create Gno client: " + err.Error())
 	}
 
+	if opts.Addr == "" {
+		opts.Addr = ":8080"
+	}
 	s := &Server{
 		router:    chi.NewRouter(),
 		gnoClient: gnoClient,
+		addr:      opts.Addr,
 	}
 
 	s.router.Use(middleware.Logger)
@@ -45,7 +58,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) Run() error {
-	return http.ListenAndServe(":8080", s.router)
+	return http.ListenAndServe(s.addr, s.router)
 }
 
 func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
@@ -70,10 +83,8 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(strings.ReplaceAll(extractString(stringToken), `\n`, "\n")))
 }
 
-func newGnoClient() (*gnoclient.Client, error) {
-	gnodevRPC := "http://127.0.0.1:26657"
-	//labsnetRPC := "https://labsnet.fly.dev:8443" // Replace with your Gno RPC URL
-	rpcClient, err := rpcclient.NewHTTPClient(gnodevRPC)
+func newGnoClient(gnoLandRpcUrl string) (*gnoclient.Client, error) {
+	rpcClient, err := rpcclient.NewHTTPClient(gnoLandRpcUrl)
 	if err != nil {
 		return nil, err
 	}

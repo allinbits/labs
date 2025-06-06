@@ -6,6 +6,9 @@
 app = 'labsnet'
 primary_region = 'dfw'
 
+[env]
+GNO_HOME = '/gnoroot'
+
 [build]
 
 [http_service]

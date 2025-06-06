@@ -3,6 +3,9 @@
 build:
 	docker compose build
 
+build-no-cache:
+	docker compose build --no-cache
+
 down:
 	docker compose down --remove-orphans -v
 

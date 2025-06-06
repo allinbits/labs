@@ -214,7 +214,7 @@ func (s *Session) ToICSFragment() string {
 		w("STATUS:CANCELLED")
 	}
 
-	w("END:VEVENT\n\n")
+	w("END:VEVENT\n")
 
 	return vevent.String()
 }

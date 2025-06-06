@@ -44,7 +44,8 @@ func ToMarkdown() string {
 }
 
 func RenderCal(path string) string {
-	var out strings.Builder
+	var calendar strings.Builder
+	w := func(line string) { calendar.WriteString(line + "\n") }
 
 	var sessionIDs []string
 	var format string
@@ -76,20 +77,20 @@ func RenderCal(path string) string {
 	switch strings.ToLower(format) {
 
 	case "json":
-		out.WriteString("[")
+		calendar.WriteString("[")
 		first := true
 		for _, idx := range validIDs {
 			if !first {
-				out.WriteString(",")
+				calendar.WriteString(",")
 			}
-			out.WriteString(event.GetSession(idx).ToJson())
+			calendar.WriteString(event.GetSession(idx).ToJson())
 			first = false
 		}
-		out.WriteString("]")
-		return out.String()
+		calendar.WriteString("]")
+		return calendar.String()
 
 	case "csv":
-		out.WriteString("Title,Speaker,Start,End,Location\n")
+		w("Title,Speaker,Start,End,Location\n")
 		for _, idx := range validIDs {
 			sess := event.GetSession(idx)
 			title := `"` + strings.ReplaceAll(sess.Title, `"`, `""`) + `"`
@@ -98,28 +99,27 @@ func RenderCal(path string) string {
 			end := sess.EndTime.Format("20060102T150000Z")
 			location := `"` + strings.ReplaceAll(sess.Location.ToMarkdown(), `"`, `""`) + `"`
 
-			out.WriteString(title + "," + speaker + "," + start + "," + end + "," + location + "\n")
+			w(f("%s,%s,%s,%s,%s", title, speaker, start, end, location))
 		}
-		return out.String()
+		return calendar.String()
 
 	case "ics":
-		out.WriteString("BEGIN:VCALENDAR\n")
-		out.WriteString("VERSION:2.0\n")
-		out.WriteString("CALSCALE:GREGORIAN\n")
-		out.WriteString("PRODID:-//gno.land//Launch Calendar//EN\n")
-		out.WriteString("METHOD:PUBLISH\n\n")
+		w("BEGIN:VCALENDAR")
+		w("VERSION:2.0")
+		w("CALSCALE:GREGORIAN")
+		w("PRODID:-//gno.land//Launch Calendar//EN")
+		w("METHOD:PUBLISH\n\n")
 		for _, idx := range validIDs {
-			out.WriteString(event.GetSession(idx).ToICSFragment())
+			calendar.WriteString(event.GetSession(idx).ToICSFragment())
 		}
-		out.WriteString("END:VCALENDAR")
-		return out.String()
+		w("\nEND:VCALENDAR")
+		return calendar.String()
 
 	default: // "markdown"
 		for _, idx := range validIDs {
-			out.WriteString(event.GetSession(idx).ToMarkdown())
-			out.WriteString("\n")
+			w(event.GetSession(idx).ToMarkdown())
 		}
-		return out.String()
+		return calendar.String()
 	}
 }
 

@@ -1,1 +1,1 @@
-module gno.land/r/eve/events
+module gno.land/r/buidlthefuture000/events

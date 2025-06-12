@@ -19,46 +19,40 @@ var f = fmt.Sprintf
 type Server struct {
 	router    *chi.Mux
 	gnoClient *gnoclient.Client
-	addr      string
+	config    *ServerOptions
 }
 
-// ServerOptions holds the configuration options for the GnoCal server.
-// It can be used to set the GnoLand RPC URL or other options in the future.
-// The GnoLand RPC URL is used to connect to the GnoLand blockchain.
 type ServerOptions struct {
-	GnoLandRpcUrl string
-	Addr          string
+	GnolandRpcUrl string
+	GnocalAddress string
 }
 
-func NewServer(opts ServerOptions) *Server {
-	gnoClient, err := newGnoClient(opts.GnoLandRpcUrl)
+func NewGnocalServer(config *ServerOptions) *Server {
+	gnolandRpcClient, err := rpcclient.NewHTTPClient(config.GnolandRpcUrl)
 	if err != nil {
-		panic("Failed to create Gno client: " + err.Error())
+		panic(f("Failed to create Gno client: %s", err.Error()))
 	}
 
-	if opts.Addr == "" {
-		opts.Addr = ":8080"
-	}
 	s := &Server{
 		router:    chi.NewRouter(),
-		gnoClient: gnoClient,
-		addr:      opts.Addr,
+		gnoClient: &gnoclient.Client{RPCClient: gnolandRpcClient},
+		config:    config,
 	}
 
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.Recoverer)
 
 	s.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("navigate to /realm/{YOUR GNO.LAND REALM}:{OPTS} to get your calendar"))
+		w.Write([]byte("navigate to /{GNO.LAND REALM PATH}?{QUERY PARAMETERS} to get your calendar"))
 	})
 
-	s.router.Get("/realm/*", s.RenderCalFromRealm)
+	s.router.Get("/*", s.RenderCalFromRealm)
 
 	return s
 }
 
 func (s *Server) Run() error {
-	return http.ListenAndServe(s.addr, s.router)
+	return http.ListenAndServe(s.config.GnocalAddress, s.router)
 }
 
 func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
@@ -70,31 +64,19 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rawQuery := r.URL.RawQuery // e.g. "apple=2&session=1&session=100&session=0&format=json"
-
-	path := strconv.Quote("?" + rawQuery)
-
+	path := strconv.Quote("?" + r.URL.RawQuery) // e.g. "?" + "apple=2&session=1&session=100&session=0&format=json"
 	stringToken, _, err := s.gnoClient.QEval(calendarPath, f(`RenderCal(%s)`, path))
 	if err != nil {
 		http.Error(w, "QEval error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Write([]byte(strings.ReplaceAll(extractString(stringToken), `\n`, "\n")))
-}
-
-func newGnoClient(gnoLandRpcUrl string) (*gnoclient.Client, error) {
-	rpcClient, err := rpcclient.NewHTTPClient(gnoLandRpcUrl)
-	if err != nil {
-		return nil, err
+	var out string // TODO: this is output post-processing, should be refactored out w/ better design
+	if removedLParen, cutPrefix := strings.CutPrefix(stringToken, `("`); cutPrefix {
+		out = removedLParen
 	}
-	return &gnoclient.Client{
-		RPCClient: rpcClient,
-	}, nil
-}
-
-func extractString(s string) string {
-	s, _ = strings.CutPrefix(s, `("`)
-	s, _ = strings.CutSuffix(s, `" string)`)
-	return s
+	if removedRParen, cutSuffix := strings.CutSuffix(out, `" string)`); cutSuffix {
+		out = removedRParen
+	}
+	w.Write([]byte(strings.ReplaceAll(out, `\n`, "\n")))
 }

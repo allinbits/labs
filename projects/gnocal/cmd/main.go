@@ -9,25 +9,34 @@ import (
 )
 
 func main() {
-	var rpcURL string
-	var addr string
-	flag.StringVar(&rpcURL, "gnoland-rpc", os.Getenv("GNOCAL__GNOLAND_RPC_URL"), "Set's the gno.land RPC URL for gnocal queries (or set GNOCAL__GNOLAND_RPC_URL env)")
-	flag.StringVar(&addr, "addr", os.Getenv("GNOCAL__SERVER_ADDRESS"), "Set's the address to listen on (default: :8080)")
+	var gnolandRpcUrl string
+	var gnocalAddress string
+
+	defaultRpc := os.Getenv("GNOCAL__GNOLAND_RPC_URL")
+	if defaultRpc == "" {
+		defaultRpc = "http://127.0.0.1:26657"
+	}
+	defaultAddr := os.Getenv("GNOCAL__SERVER_ADDRESS")
+	if defaultAddr == "" {
+		defaultAddr = ":8080"
+	}
+
+	flag.StringVar(&gnolandRpcUrl, "gnoland-rpc", defaultRpc,
+		"Gnoland RPC URL for calendar queries (or set GNOCAL__GNOLAND_RPC_URL)")
+	flag.StringVar(&gnocalAddress, "addr", defaultAddr,
+		"Gnocal HTTP listen address (or set GNOCAL__SERVER_ADDRESS)")
 
 	flag.Parse()
 
-	if rpcURL == "" {
-		rpcURL = "http://127.0.0.1:26657"
+	fmt.Println("Using GnoLand RPC URL:", gnolandRpcUrl)
+	fmt.Println("Using Server Adress:", gnocalAddress)
+
+	config := gnocal.ServerOptions{
+		GnolandRpcUrl: gnolandRpcUrl,
+		GnocalAddress: gnocalAddress,
 	}
 
-	fmt.Println("Using GnoLand RPC URL:", rpcURL)
-
-	opts := gnocal.ServerOptions{
-		GnoLandRpcUrl: rpcURL,
-		Addr:          addr,
-	}
-
-	server := gnocal.NewServer(opts)
+	server := gnocal.NewGnocalServer(&config)
 	if err := server.Run(); err != nil {
 		panic(err)
 	}

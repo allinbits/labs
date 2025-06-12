@@ -203,38 +203,48 @@ func IdFromPath(path string) int {
 	return id
 }
 func escapeHtml(s string) string {
-    s = strings.ReplaceAll(s, "&", "&amp;")
-    s = strings.ReplaceAll(s, "<", "&lt;")
-    s = strings.ReplaceAll(s, ">", "&gt;")
-    s = strings.ReplaceAll(s, "\"", "&quot;")
-    s = strings.ReplaceAll(s, "'", "&#39;")
-    return s
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&#39;")
+	return s
 }
 
 func Button(label, path string) string {
-    // Ensure a minimum width for the button
-    minWidth := 100
-    fontSize := 16
-    charWidth := int(0.58 * float64(fontSize)) // Approximate width of each character
-    padding := 20                            // Total padding (left + right)
-    w := len(label)*charWidth + padding
-    if w < minWidth {
-        w = minWidth
-    }
+	return SubmitButton(label, path, 16, 120) // Default font size and min width
+}
 
-    svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="28" viewBox="0 0 ` + strconv.Itoa(w) + ` 30">
+func SubmitButton(label, path string, fontSize, minWidth int) string {
+	charWidth := int(0.6 * float64(fontSize)) // Approximate width of each character
+	padding := 40                             // Total padding (left + right)
+	h := 2*fontSize // Height of the button, 2x font size for padding
+	w := len(label)*charWidth + padding
+	if w < minWidth {
+		w = minWidth
+	}
+
+	svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
 <defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-    <feOffset result="offOut" in="SourceAlpha" dx="2" dy="2" />
-    <feGaussianBlur result="blurOut" in="offOut" stdDeviation="2" />
-    <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+  <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+    <feOffset in="blur" dx="2" dy="2" result="offsetBlur"/>
+    <feMerge>
+      <feMergeNode in="offsetBlur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
   </filter>
 </defs>
-<rect x="0" y="2" width="` + strconv.Itoa(w) + `" height="24" fill="#f0f0f0" stroke="#cccccc" stroke-width="1" rx="4" ry="4" filter="url(#shadow)"/>
-<text x="24" y="21" font-family="Arial, sans-serif" font-size="` + strconv.Itoa(fontSize) + `" fill="#000000">` + escapeHtml(label) + `</text>
+<foreignObject x="16" y="-5" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `" filter="url(#dropShadow)">
+  <body xmlns="http://www.w3.org/1999/xhtml">
+    <button style="padding-left: 20px; font-size:` + strconv.Itoa(fontSize) + `px">
+      ` + escapeHtml(label) + `
+    </button>
+  </body>
+</foreignObject>
 </svg>`
 
-    dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
+	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
 
-    return "[![" + label + "](" + dataUrl + ")](" + path + ")"
+	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }

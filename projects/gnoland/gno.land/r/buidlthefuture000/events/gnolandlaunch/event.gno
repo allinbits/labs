@@ -60,8 +60,8 @@ var Sessions = map[string]*session.Session{
 		Title:       "The Road to Web7",
 		Description: "Join us for an inspiring keynote at the Build The Future Meeting featuring Jae Kwon, visionary blockchain pioneer and creator of Gno.land.",
 		Speaker:     speakerBios["jae"],
-		StartTime:   time.Date(2025, 8, 1, 10, 0, 0, 0, time.UTC),
-		EndTime:     time.Date(2025, 8, 1, 11, 30, 0, 0, time.UTC),
+		StartTime:   time.Date(2025, 6, 25, 10, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2025, 6, 25, 11, 30, 0, 0, time.UTC),
 		Location:    locations["gnowhere"],
 	},
 
@@ -69,8 +69,8 @@ var Sessions = map[string]*session.Session{
 		Title:       "Generics in Action: Simplifying Go Code",
 		Description: "Learn practical use cases for Go generics to simplify and enhance your code.",
 		Speaker:     speakerBios["alice"],
-		StartTime:   time.Date(2025, 5, 26, 10, 0, 0, 0, time.UTC),
-		EndTime:     time.Date(2025, 5, 26, 11, 30, 0, 0, time.UTC),
+		StartTime:   time.Date(2025, 6, 26, 10, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2025, 6, 26, 11, 30, 0, 0, time.UTC),
 		Location:    locations["room-a1"],
 	},
 
@@ -78,8 +78,8 @@ var Sessions = map[string]*session.Session{
 		Title:       "Concurrency Patterns in Real‐World Applications",
 		Description: "A deep dive into concurrency patterns to efficiently handle complex workflows.",
 		Speaker:     speakerBios["bob"],
-		StartTime:   time.Date(2025, 5, 27, 13, 0, 0, 0, time.UTC),
-		EndTime:     time.Date(2025, 5, 27, 14, 30, 0, 0, time.UTC),
+		StartTime:   time.Date(2025, 6, 27, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2025, 6, 27, 14, 30, 0, 0, time.UTC),
 		Location:    locations["room-b2"],
 	},
 
@@ -87,8 +87,8 @@ var Sessions = map[string]*session.Session{
 		Title:       "Building High‐Performance APIs with Go",
 		Description: "Techniques and best practices for building scalable and performant APIs.",
 		Speaker:     speakerBios["carol"],
-		StartTime:   time.Date(2025, 5, 28, 15, 0, 0, 0, time.UTC),
-		EndTime:     time.Date(2025, 5, 28, 16, 30, 0, 0, time.UTC),
+		StartTime:   time.Date(2025, 6, 28, 15, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2025, 6, 28, 16, 30, 0, 0, time.UTC),
 		Location:    locations["room-c3"],
 	},
 }
@@ -96,8 +96,8 @@ var Sessions = map[string]*session.Session{
 var gnoLandLaunchEvent = &event.Event{
 	Name:        "Gnoland Launch",
 	Location:    locations["gnowhere"],
-	StartDate:   time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC),
-	EndDate:     time.Date(2025, 8, 1, 23, 59, 59, 0, time.UTC),
+	StartDate:   time.Date(2025, 6, 25, 0, 0, 0, 0, time.UTC),
+	EndDate:     time.Date(2025, 6, 25, 23, 59, 59, 0, time.UTC),
 	Description: "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
 	Sessions: []*session.Session{
 		Sessions["keynote"],

@@ -1,1 +1,3 @@
 module gno.land/r/buidlthefuture000/events
+
+gno 0.9

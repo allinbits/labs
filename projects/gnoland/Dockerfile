@@ -1,14 +1,11 @@
-FROM ghcr.io/gnolang/gno/gnodev:0.0.1-5fa440aff-master-amd64
-RUN apk add --no-cache ca-certificates bash
+FROM ghcr.io/gnolang/gno/gnodev:0.0.1-cf1c8dc31-master-amd64
 
-# import gno code from this repository
-COPY gno.land /gnoroot/examples/gno.land
+RUN apk add --no-cache ca-certificates bash
 
 # import seeded balances
 COPY genesis/balances_overlay.txt /gnoroot/gno.land/genesis/balances_overlay.txt
-
-# import entrypoint script
+COPY gno.land /gnoroot/examples/gno.land
 COPY scripts/entrypoint.sh /entrypoint.sh
 
-EXPOSE 8888 8889 26656 26657 80 443
+EXPOSE 8888 26657
 ENTRYPOINT ["/entrypoint.sh"]

@@ -23,7 +23,6 @@ func init() {
 // A gno address may only be linked to a single discord ID and a single discord ID may
 // only be linked to a single gno address.
 func Link(encodedClaim string) {
-	crossing()
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)
@@ -36,7 +35,6 @@ func Link(encodedClaim string) {
 // UnlinkByCaller removes a discord link, based on the caller address
 // This does not require a claim because the caller is the link owner
 func UnlinkByCaller() {
-	crossing()
 	caller := std.PreviousRealm().Address()
 	ds.removeByAddress(caller)
 }
@@ -46,7 +44,6 @@ func UnlinkByCaller() {
 // still have access to your discord account, but you have lost
 // access to your old gno address.
 func UnlinkByClaim(encodedClaim string) {
-	crossing()
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)

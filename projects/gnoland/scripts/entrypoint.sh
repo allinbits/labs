@@ -19,8 +19,6 @@ case "$1" in
       -node-rpc-listener 0.0.0.0:26657 \
       -chain-id labsnet1 \
       -balance-file /gnoroot/gno.land/genesis/balances_overlay.txt &
-    
-    caddy run --config /etc/caddy/Caddyfile
     ;;
   
   *)

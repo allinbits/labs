@@ -35,34 +35,34 @@ func init() {
 // JoinAsAttendee sets the address of the previous realm as an attendee
 // for the event.
 func JoinAsAttendee() {
-	crossing()
+	// 
 	attendees.Set(string(std.PreviousRealm().Address()), struct{}{})
 }
 
 // RemoveSelfAsAttendee removes the address of the previous realm as an attendee
 // for the event.
 func RemoveSelfAsAttendee() {
-	crossing()
+	// 
 	attendees.Remove(string(std.PreviousRealm().Address()))
 }
 
 // AddSpeaker takes a std.Address and adds it to the speaker tree if the caller is an organizer.
 func AddSpeaker(addr std.Address) {
-	crossing()
+	// 
 	assertIsOrganizer()
 	speakers.Set(string(addr), struct{}{})
 }
 
 // RemoveSpeaker takes an std.Address and removes it from the speaker tree if the call is an organizer.
 func RemoveSpeaker(addr std.Address) {
-	crossing()
+	// 
 	assertIsOrganizer()
 	speakers.Remove(string(addr))
 }
 
 // AddOrganizer takes a std.Address and adds it to the speaker tree if the caller is an organizer.
 func AddOrganizer(addr std.Address) {
-	crossing()
+	// 
 	assertIsOrganizer()
 	organizers.Set(string(addr), struct{}{})
 }
@@ -70,7 +70,7 @@ func AddOrganizer(addr std.Address) {
 // RemoveOrganizer takes an std.Address and removes it from the speaker tree if the call is an organizer and
 // the caller isn't trying to remove itself.
 func RemoveOrganizer(addr std.Address) {
-	crossing()
+	// 
 	assertIsOrganizer()
 	if addr == std.PreviousRealm().Address() {
 		panic(AssertOrganizerNotRemoveSelfMsg)
@@ -89,7 +89,6 @@ func assertIsOrganizer() {
 // that address is a member of one of three supported roles, `attendee`, `speaker`, and `organizer`.
 // It returns false if any other role type is requested.
 func HasRole(role string, addr std.Address) bool {
-	crossing()
 	switch role {
 	case "attendee":
 		return attendees.Has(string(addr))

@@ -132,48 +132,48 @@ func ResetRoles() {
 // JoinWaitlist sets the address of the previous realm as an waitlist attendee
 // for the event.
 func JoinWaitlist() {
-	crossing()
+	
 	waitlist.Set(string(std.PreviousRealm().Address()), struct{}{})
 }
 
 // RemoveSelfFromWaitlist removes the address of the previous realm as a waitlist attendee
 // for the event.
 func RemoveSelfFromWaitlist() {
-	crossing()
+	
 	waitlist.Remove(string(std.PreviousRealm().Address()))
 }
 
 // JoinAsAttendee sets the address of the previous realm as an attendee
 // for the event.
 func JoinAsAttendee() {
-	crossing()
+	
 	attendees.Set(string(std.PreviousRealm().Address()), struct{}{})
 }
 
 // RemoveSelfAsAttendee removes the address of the previous realm as an attendee
 // for the event.
 func RemoveSelfAsAttendee() {
-	crossing()
+	
 	attendees.Remove(string(std.PreviousRealm().Address()))
 }
 
 // AddSpeaker takes a std.Address and adds it to the speaker tree if the caller is an organizer.
 func AddSpeaker(addr std.Address) {
-	crossing()
+	
 	assertIsOrganizer()
 	speakers.Set(string(addr), struct{}{})
 }
 
 // RemoveSpeaker takes an std.Address and removes it from the speaker tree if the call is an organizer.
 func RemoveSpeaker(addr std.Address) {
-	crossing()
+	
 	assertIsOrganizer()
 	speakers.Remove(string(addr))
 }
 
 // AddOrganizer takes a std.Address and adds it to the speaker tree if the caller is an organizer.
 func AddOrganizer(addr std.Address) {
-	crossing()
+	
 	assertIsOrganizer()
 	organizers.Set(string(addr), struct{}{})
 }
@@ -181,7 +181,7 @@ func AddOrganizer(addr std.Address) {
 // RemoveOrganizer takes an std.Address and removes it from the speaker tree if the call is an organizer and
 // the caller isn't trying to remove itself.
 func RemoveOrganizer(addr std.Address) {
-	crossing()
+	
 	assertIsOrganizer()
 	if addr == std.PreviousRealm().Address() {
 		panic(AssertOrganizerNotRemoveSelfMsg)
@@ -220,7 +220,7 @@ func RemoveReviewer(addr, sender std.Address) {
 // RoleExists takes a role and returns a boolean value that indicates whether or not
 // that role exists in the accessChecks map. It returns false if any other role type is requested.
 func RoleExists(role string) bool {
-	crossing()
+	
 	if _, ok := accessChecks[role]; ok {
 		return true
 	}
@@ -231,7 +231,7 @@ func RoleExists(role string) bool {
 // that address is a member of one of three supported roles, `attendee`, `speaker`, and `organizer`.
 // It returns false if any other role type is requested.
 func HasRole(role string, addr std.Address) bool {
-	crossing()
+	
 	if fn, ok := accessChecks[role]; ok {
 		return fn(string(addr))
 	}
@@ -240,7 +240,7 @@ func HasRole(role string, addr std.Address) bool {
 
 // ListRoles returns a slice of strings that contains all the roles in the accessChecks map.
 func ListRoles() []string {
-	crossing()
+	
 	roles := make([]string, 0)
 	for role := range accessChecks {
 		roles = append(roles, role)
@@ -262,7 +262,7 @@ func UnsetRoleHandler(role string) {
 }
 
 func AssertAtLeastRole(role string, sender std.Address) {
-	crossing()
+	
 	if !HasRole(role, sender) {
 		panic(ufmt.Sprintf("address %s must have %s role or higher", sender, role))
 	}

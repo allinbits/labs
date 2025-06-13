@@ -8,31 +8,12 @@ primary_region = 'dfw'
 
 [env]
 GNO_HOME = '/gnoroot'
+GNOROOT = '/gnoroot'
 
 [build]
 
-[http_service]
-internal_port = 8889
-force_https = true
-auto_stop_machines = 'off'
-auto_start_machines = true
-min_machines_running = 1
-max_machines_running = 1
-processes = ['app']
-
 [processes]
 app = "staging"
-
-[[services]]
-processes = ["app"]
-http_checks = []
-internal_port = 26657
-protocol = "tcp"
-script_checks = []
-
-[[services.ports]]
-port = 8443
-handlers = ["tls"]
 
 [[vm]]
 memory = '4gb'

@@ -1,20 +1,18 @@
 services:
   gnodev-labs:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        # Set your desired commit hash here or use the default from Dockerfile
-        COMMIT_HASH: ${GNO_COMMIT_HASH:-52bed78d803a98e70e6596b568990cc285233327}
     ports:
-      - "8889:8889" # Caddy
       - "8888:8888" # Main API port
-      - "26656:26656" # P2P communication
       - "26657:26657" # RPC interface
     volumes:
       # For local package development - map your local directories to container
       # If you want the ability to hot-reload inside of the container, add your labs based namespace here
+      - ./gno.land/p/eve000:/gnoroot/examples/gno.land/p/eve000
       - ./gno.land/r/linker000:/gnoroot/examples/gno.land/r/linker000
+      - ./gno.land/r/buidlthefuture000:/gnoroot/examples/gno.land/r/buidlthefuture000
     environment:
       - GNO_HOME=/gnoroot
     command: ["dev"]

@@ -12,7 +12,6 @@ func init() {
 
 // Link takes an encoded claim and saves it to the datastore, or it panics and rolls back the transaction
 func Link(encodedClaim string) {
-	crossing()
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)
@@ -26,7 +25,6 @@ func Link(encodedClaim string) {
 // UnlinkByClaim takes a base64 encoded string of a ed25519 signed claim, if if it passes
 // validation, it removes the linked role from registry.
 func UnlinkByClaim(encodedClaim string) {
-	crossing()
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)
@@ -38,7 +36,6 @@ func UnlinkByClaim(encodedClaim string) {
 // If no link exists, it returns an empty LinkedRealmRole. The combination of realm path + realm role
 // + discord server gives a globally unique namespace to associate with a discord role id
 func GetLinkedDiscordRole(realmPath, roleName, discordGuildID string) LinkedRealmRole {
-	crossing()
 	claim := ds.getByPathRoleGuild(realmPath, roleName, discordGuildID)
 	if claim == nil {
 		return LinkedRealmRole{}
@@ -48,7 +45,6 @@ func GetLinkedDiscordRole(realmPath, roleName, discordGuildID string) LinkedReal
 
 // GetLinkedDiscordRoleJSON returns a json encoded string for GetLinkedDiscordRole
 func GetLinkedDiscordRoleJSON(realmPath, roleName, discordGuildID string) string {
-	crossing()
 	lrr := GetLinkedDiscordRole(realmPath, roleName, discordGuildID)
 	return lrr.ToJSON()
 }
@@ -56,7 +52,6 @@ func GetLinkedDiscordRoleJSON(realmPath, roleName, discordGuildID string) string
 // GetLinkedRealmRole takes a discordGuildID and discordRoleID and returns a LinkedRealmRole.
 // The combination of discord server + role id gives a globally unique way to identify this link.
 func GetLinkedRealmRole(discordGuildID, discordRoleID string) LinkedRealmRole {
-	crossing()
 	claim := ds.getByGuildRole(discordGuildID, discordRoleID)
 	if claim == nil {
 		return LinkedRealmRole{}
@@ -66,7 +61,6 @@ func GetLinkedRealmRole(discordGuildID, discordRoleID string) LinkedRealmRole {
 
 // GetLinkedRealmRoleJSON provides a json encoded string for GetLinkedRealmRole
 func GetLinkedRealmRoleJSON(discordGuildID, discordRoleID string) string {
-	crossing()
 	lrr := GetLinkedRealmRole(discordGuildID, discordRoleID)
 	return lrr.ToJSON()
 }
@@ -74,7 +68,6 @@ func GetLinkedRealmRoleJSON(discordGuildID, discordRoleID string) string {
 // ListLinkedRoles takes a realmPath and discord guildID and returns a list of
 // all LinkedRealmRoles with based on role names.
 func ListLinkedRoles(realmPath, guildID string) []LinkedRealmRole {
-	crossing()
 	results := []LinkedRealmRole{}
 	roles := ds.listRolesByPathGuild(realmPath, guildID)
 	for _, roleName := range roles {
@@ -86,6 +79,5 @@ func ListLinkedRoles(realmPath, guildID string) []LinkedRealmRole {
 
 // ListLinkedRolesJSON returns a json encoded string for ListLinkedRoles.
 func ListLinkedRolesJSON(realmPath, guildID string) string {
-	crossing()
 	return linkedRealmRolesToJSON(ListLinkedRoles(realmPath, guildID))
 }

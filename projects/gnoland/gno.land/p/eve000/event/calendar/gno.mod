@@ -1,1 +1,3 @@
 module gno.land/p/eve000/events/calendar
+
+gno 0.9

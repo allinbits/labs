@@ -1,0 +1,22 @@
+{
+    # Global options
+    admin off
+    order replace after encode
+}
+
+
+
+:8888 {
+    # Proxy to gnodev web
+    reverse_proxy labsnet.internal:8888
+
+    replace {
+        "tcp://0.0.0.0:26657" "https://aiblabs.net:8443"
+        "ws://0.0.0.0:8888" "wss://aiblabs.net.dev"
+    }
+}
+
+:26657 {
+    # Proxy to gnodev web rpc
+    reverse_proxy labsnet.internal:26657
+}

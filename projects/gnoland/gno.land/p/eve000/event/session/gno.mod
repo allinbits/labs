@@ -1,1 +1,3 @@
 module gno.land/p/eve000/events/session
+
+gno 0.9

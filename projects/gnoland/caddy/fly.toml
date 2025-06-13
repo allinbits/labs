@@ -1,0 +1,33 @@
+# fly.toml app configuration file generated for labsnet-caddy-3342 on 2025-06-12T21:57:22-05:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'labsnet-caddy-3342'
+primary_region = 'dfw'
+
+[build]
+
+[http_service]
+internal_port = 8888
+force_https = true
+auto_stop_machines = 'stop'
+auto_start_machines = true
+min_machines_running = 0
+max_machines_running = 1
+processes = ['app']
+
+[[services]]
+processes = ["app"]
+http_checks = []
+internal_port = 26657
+protocol = "tcp"
+script_checks = []
+
+[[services.ports]]
+port = 8443
+handlers = ["tls"]
+
+[[vm]]
+memory = '256mb'
+siz = 'shared-cpu-1x'

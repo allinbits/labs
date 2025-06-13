@@ -138,7 +138,7 @@ func Render(path string) string {
 // --- API-Like Endpoints ---
 
 func SubmitProposal(title, abstract, topic, speaker string) {
-	crossing()
+	
 	cross(event.AssertAtLeastRole)("proposer", std.OriginCaller())
 	if topic, ok := EventTopics[topic]; ok {
 		sp := &proposal.SubmittedProposal{
@@ -154,7 +154,7 @@ func SubmitProposal(title, abstract, topic, speaker string) {
 }
 
 func ReviewProposal(title, comments, reviewer string, score int) {
-	crossing()
+	
 	cross(event.AssertAtLeastRole)("reviewer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
@@ -172,7 +172,7 @@ func ReviewProposal(title, comments, reviewer string, score int) {
 }
 
 func ApproveProposal(title, approver string) {
-	crossing()
+	
 	cross(event.AssertAtLeastRole)("organizer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
@@ -195,7 +195,7 @@ func ApproveProposals(titles []string, approver string) {
 }
 
 func EditProposal(title, key, edit string) error {
-	crossing()
+	
 	for _, p := range proposals {
 		if p.GetTitle() != title {
 			continue
@@ -265,7 +265,7 @@ func EditProposal(title, key, edit string) error {
 }
 
 func ExportApprovedProposals() []proposal.Proposal {
-	crossing()
+	
 	var approved []proposal.Proposal
 	for _, p := range proposals {
 		if p.GetState() == proposal.Approved {

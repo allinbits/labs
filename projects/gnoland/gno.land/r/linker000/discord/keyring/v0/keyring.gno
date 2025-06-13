@@ -46,7 +46,6 @@ func PreviousPubKey() []byte {
 // address specified in the contract. The hexKey must be exactly 64 characters long, and
 // the hexKey must be valid hex encoding, otherwise, rotate panics.
 func Rotate(hexKey string) {
-	crossing()
 	assertIsAuthorized()
 	if len(hexKey) != 64 {
 		panic(invalidKeyLength)

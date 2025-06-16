@@ -1,3 +1,0 @@
-module gno.land/r/linker000/mockevent/v1
-
-gno 0.9

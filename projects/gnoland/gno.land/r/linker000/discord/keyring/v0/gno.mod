@@ -1,3 +1,0 @@
-module gno.land/r/linker000/discord/keyring/v0
-
-gno 0.9

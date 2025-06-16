@@ -1,6 +1,5 @@
 services:
   gnodev-labs:
-    platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile

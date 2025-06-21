@@ -139,7 +139,7 @@ func Render(path string) string {
 
 func SubmitProposal(title, abstract, topic, speaker string) {
 	
-	cross(event.AssertAtLeastRole)("proposer", std.OriginCaller())
+	event.AssertAtLeastRole("proposer", std.OriginCaller())
 	if topic, ok := EventTopics[topic]; ok {
 		sp := &proposal.SubmittedProposal{
 			Title:    title,
@@ -155,7 +155,7 @@ func SubmitProposal(title, abstract, topic, speaker string) {
 
 func ReviewProposal(title, comments, reviewer string, score int) {
 	
-	cross(event.AssertAtLeastRole)("reviewer", std.OriginCaller())
+	event.AssertAtLeastRole("reviewer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if sp, ok := p.(*proposal.SubmittedProposal); ok {
@@ -173,7 +173,7 @@ func ReviewProposal(title, comments, reviewer string, score int) {
 
 func ApproveProposal(title, approver string) {
 	
-	cross(event.AssertAtLeastRole)("organizer", std.OriginCaller())
+	event.AssertAtLeastRole("organizer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if rp, ok := p.(*proposal.ReviewedProposal); ok {

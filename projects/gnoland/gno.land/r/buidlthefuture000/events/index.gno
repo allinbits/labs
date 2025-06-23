@@ -13,9 +13,14 @@ func addBlock(key, body string) {
 
 func init() {
     addBlock("Buidl the Future", intro)
+    addBlock("Upcoming", latestEvent)
     addBlock("Contribute", contact)
     addBlock("Topics", topics)
 }
+
+var latestEvent = `
+Next event: [gno.land Launch Event](/r/buidlthefuture000/events/gnolandlaunch).
+`
 
 var intro = `
 

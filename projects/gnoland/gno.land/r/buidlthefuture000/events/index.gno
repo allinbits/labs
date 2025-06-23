@@ -1,5 +1,9 @@
 package events
 
+import (
+	"gno.land/p/eve000/event/component"
+)
+
 func addBlock(key, body string) {
     register(key, func(_ string) string {
         return body
@@ -9,9 +13,9 @@ func addBlock(key, body string) {
 
 func init() {
     addBlock("Buidl the Future", intro)
+    addBlock("Contribute", contact)
     addBlock("Topics", topics)
 }
-
 
 var intro = `
 
@@ -20,13 +24,19 @@ focused on the original purpose of blockchain:
 
 #### **Censorship-resistance, Sovereignty, & Decentralized Coordination.**
 
-![All In Bits Profile](https://avatars.githubusercontent.com/u/57690767)
+![BTF events logo](https://cdn.jsdelivr.net/gh/BUIDLTHEFUTURE/events@main/static/img/logo.png)
 
 This event series tackles urgent, real-world challenges—privacy, security, identity, governance, information discovery, and AI—by applying decentralized technologies.
 
 Our goal is to expose how blockchain enables exit from legacy systems of control, while also charting practical paths toward autonomy and resilience.
 
-#### Let’s buidl the future—together.`
+#### Let’s build the future—together.`
+
+var contact = `
+Review the topics below to see what resonates with you. We welcome all builders, thinkers, and communities who share our vision.
+
+If you wish to get involved, have ideas, or want to help organize future events, please create a github issue.` + component.Button("Add GitHub Issue", "https://github.com/BUIDLTHEFUTURE/events/issues/new") + `
+`
 
 var topics = `
 

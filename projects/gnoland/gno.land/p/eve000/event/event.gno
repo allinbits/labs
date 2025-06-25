@@ -1,8 +1,10 @@
 package event
 
 import (
+	"strconv"
 	"time"
 
+	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/agenda"
 	"gno.land/p/eve000/event/component"
@@ -10,6 +12,14 @@ import (
 	"gno.land/p/eve000/event/session"
 	"gno.land/p/eve000/event/speaker"
 )
+
+var f = ufmt.Sprintf
+
+type Storage struct {
+	Sessions  *avl.Tree
+	Speakers  *avl.Tree
+	Locations *avl.Tree
+}
 
 type Event struct {
 	Name        string
@@ -19,32 +29,90 @@ type Event struct {
 	Description string
 	Sessions    []*session.Session
 	renderOpts  *component.RenderOpts
+	storage     *Storage
 }
 
 var _ component.Component = (*Event)(nil)
 
-func (evt *Event) SetName(name string) {
+func (evt *Event) SetEventName(name string) {
 	evt.Name = name
 }
 
-func (evt *Event) SetLocation(loc *location.Location) {
+func (evt *Event) SetEventLocation(loc *location.Location) {
 	evt.Location = loc
 }
 
-func (evt *Event) SetStartDate(startDate time.Time) {
+func (evt *Event) SetEventStartDate(startDate time.Time) {
 	evt.StartDate = startDate
 }
 
-func (evt *Event) SetEndDate(endDate time.Time) {
+func (evt *Event) SetEventEndDate(endDate time.Time) {
 	evt.EndDate = endDate
 }
 
-func (evt *Event) SetDescription(description string) {
+func (evt *Event) SetEventDescription(description string) {
 	evt.Description = description
 }
 
 func (evt *Event) SetSessions(sessions []*session.Session) {
 	evt.Sessions = sessions
+}
+
+func (evt *Event) AddSpeaker(s *speaker.Speaker) {
+	if evt.storage == nil {
+		evt.storage = &Storage{}
+	}
+	if evt.storage.Speakers == nil {
+		evt.storage.Speakers = &avl.Tree{}
+	}
+	id := Pad3(strconv.Itoa(evt.storage.Speakers.Size()))
+	evt.storage.Speakers.Set(AvlKey("speaker", id), s)
+}
+
+func (evt *Event) AddLocation(loc *location.Location) {
+	if evt.storage == nil {
+		evt.storage = &Storage{}
+	}
+	if evt.storage.Locations == nil {
+		evt.storage.Locations = &avl.Tree{}
+	}
+	id := Pad3(strconv.Itoa(evt.storage.Locations.Size()))
+	evt.storage.Locations.Set(AvlKey("location", id), loc)
+}
+
+func (evt *Event) AddSession(sess *session.Session) {
+	if evt.storage == nil {
+		evt.storage = &Storage{}
+	}
+	if evt.storage.Sessions == nil {
+		evt.storage.Sessions = &avl.Tree{}
+	}
+	id := Pad3(strconv.Itoa(evt.storage.Sessions.Size()))
+	evt.storage.Sessions.Set(AvlKey("session", id), sess)
+}
+
+func (event *Event) GetSpeaker(id string) *speaker.Speaker {
+	s, ok := event.storage.Speakers.Get(AvlKey("speaker", id))
+	if !ok {
+		panic("speaker not found: id=" + id)
+	}
+	return s.(*speaker.Speaker)
+}
+
+func (event *Event) GetLocation(id string) *location.Location {
+	l, ok := event.storage.Locations.Get(AvlKey("location", id))
+	if !ok {
+		panic("location not found: id=" + id)
+	}
+	return l.(*location.Location)
+}
+
+func (event *Event) GetSession(id string) *session.Session {
+	s, ok := event.storage.Sessions.Get(AvlKey("session", id))
+	if !ok {
+		panic("session not found: id=" + id)
+	}
+	return s.(*session.Session)
 }
 
 func (evt *Event) Agenda() *agenda.Agenda {
@@ -60,40 +128,16 @@ func (evt *Event) Agenda() *agenda.Agenda {
 	return a
 }
 
-// build a key for the AVL tree like "event:123" "speaker:456" or "location:789"
-func AvlKey(label string, seq int) string {
-	return ufmt.Sprintf("%s:%d", label, seq)
+func Pad3(s string) string {
+	for len(s) < 3 {
+		s = "0" + s
+	}
+	return s
 }
 
-func (evt *Event) AddSession(duration string, delay ...string) *session.Session {
-	startTime := evt.StartDate
-	endTime := startTime.Add(component.ParseDuration(duration))
-
-	if len(evt.Sessions) > 0 {
-		startTime = evt.Sessions[len(evt.Sessions)-1].EndTime
-	}
-
-	for _, d := range delay {
-		delayTime := component.ParseDuration(d)
-		startTime = startTime.Add(delayTime)
-		endTime = endTime.Add(delayTime)
-	}
-
-	s := &session.Session{
-		Title:       "TBD",
-		Description: "TBD",
-		StartTime:   startTime,
-		EndTime:     endTime,
-		Speaker: &speaker.Speaker{
-			Name: "TBD",
-		},
-		Location: &location.Location{
-			Name:        "TBD",
-			Description: "Gnowhere",
-		},
-	}
-	evt.Sessions = append(evt.Sessions, s)
-	return s
+// build a key for the AVL tree like "event:123" "speaker:456" or "location:789"
+func AvlKey(label string, id string) string {
+	return Pad3(id)
 }
 
 // Event may not be a component (yet!) but it is where the render opts are stored.
@@ -137,5 +181,5 @@ func (evt *Event) ToJson() string {
     },
     "image": [],
     "description": "` + ufmt.Sprintf("%s", evt.Description) + `"
-}`
+	}`
 }

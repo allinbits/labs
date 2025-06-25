@@ -28,7 +28,7 @@ var locations = map[string]*location.Location{
 	},
 }
 
-var speakerBios = map[string]*speaker.Speaker{
+var speakersNOTROLE = map[string]*speaker.Speaker{
 	"jae": {
 		Name:        "Jae Kwon",
 		Biography:   "Jae Kwon is the creator of Gno.land and co-founder of Cosmos, pioneering decentralized systems built on logic and sovereignty.",
@@ -59,7 +59,7 @@ var Sessions = map[string]*session.Session{
 	"keynote": {
 		Title:       "The Road to Web7",
 		Description: "Join us for an inspiring keynote at the Build The Future Meeting featuring Jae Kwon, visionary blockchain pioneer and creator of Gno.land.",
-		Speaker:     speakerBios["jae"],
+		Speaker:     speakersNOTROLE["jae"],
 		StartTime:   time.Date(2025, 6, 25, 10, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 25, 11, 30, 0, 0, time.UTC),
 		Location:    locations["gnowhere"],
@@ -68,7 +68,7 @@ var Sessions = map[string]*session.Session{
 	"generics": {
 		Title:       "Generics in Action: Simplifying Go Code",
 		Description: "Learn practical use cases for Go generics to simplify and enhance your code.",
-		Speaker:     speakerBios["alice"],
+		Speaker:     speakersNOTROLE["alice"],
 		StartTime:   time.Date(2025, 6, 26, 10, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 26, 11, 30, 0, 0, time.UTC),
 		Location:    locations["room-a1"],
@@ -77,7 +77,7 @@ var Sessions = map[string]*session.Session{
 	"concurrency": {
 		Title:       "Concurrency Patterns in Real‐World Applications",
 		Description: "A deep dive into concurrency patterns to efficiently handle complex workflows.",
-		Speaker:     speakerBios["bob"],
+		Speaker:     speakersNOTROLE["bob"],
 		StartTime:   time.Date(2025, 6, 27, 13, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 27, 14, 30, 0, 0, time.UTC),
 		Location:    locations["room-b2"],
@@ -86,14 +86,14 @@ var Sessions = map[string]*session.Session{
 	"apis": {
 		Title:       "Building High‐Performance APIs with Go",
 		Description: "Techniques and best practices for building scalable and performant APIs.",
-		Speaker:     speakerBios["carol"],
+		Speaker:     speakersNOTROLE["carol"],
 		StartTime:   time.Date(2025, 6, 28, 15, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 28, 16, 30, 0, 0, time.UTC),
 		Location:    locations["room-c3"],
 	},
 }
 
-var gnoLandLaunchEvent = &event.Event{
+var gnolandlaunch = &event.Event{
 	Name:        "Gnoland Launch",
 	Location:    locations["gnowhere"],
 	StartDate:   time.Date(2025, 6, 25, 0, 0, 0, 0, time.UTC),

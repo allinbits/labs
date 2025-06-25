@@ -32,26 +32,31 @@ type RenderOpts struct {
 
 func RenderComponent(path string, c Component) (out string) {
 	var sb strings.Builder
-	// TODO: update json output for each component to be valid frames
-	if strings.HasSuffix(path, "frame") {
-		sb.WriteString("``gnomark\n" + c.ToJson() + "\n```")
-		return sb.String()
+
+	if c == nil {
+		return ""
 	}
-	if strings.HasSuffix(path, "json") {
+
+	u, err := url.Parse(path)
+	if err != nil {
+		panic("invalid path in RenderComponent: " + path)
+	}
+
+	switch u.Query().Get("format") {
+	case "json":
 		sb.WriteString("```json\n" + c.ToJson() + "\n```")
-	} else {
-		if c == nil {
-			return ""
-		} else {
-			sb.WriteString(c.ToMarkdown())
-		}
+	case "frame":
+		sb.WriteString("```gnomark\n" + c.ToJson() + "\n```")
+	default:
+		sb.WriteString(c.ToMarkdown())
 	}
+
 	if c.RenderOpts().Svg {
 		dataURL := c.ToSvgDataUrl()
 		anchor := c.ToAnchor()
-
-		sb.WriteString("\n[![" + anchor + "](" + dataURL + ")]" + "(" + anchor + ")\n\n---\n\n")
+		sb.WriteString("\n[![" + anchor + "](" + dataURL + ")](" + anchor + ")\n\n---\n\n")
 	}
+
 	return sb.String()
 }
 
@@ -202,6 +207,7 @@ func IdFromPath(path string) int {
 	}
 	return id
 }
+
 func escapeHtml(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")
@@ -218,7 +224,7 @@ func Button(label, path string) string {
 func SubmitButton(label, path string, fontSize, minWidth int) string {
 	charWidth := int(0.6 * float64(fontSize)) // Approximate width of each character
 	padding := 40                             // Total padding (left + right)
-	h := 2*fontSize // Height of the button, 2x font size for padding
+	h := 2 * fontSize                         // Height of the button, 2x font size for padding
 	w := len(label)*charWidth + padding
 	if w < minWidth {
 		w = minWidth

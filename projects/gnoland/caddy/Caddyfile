@@ -37,11 +37,15 @@ Disallow: /`
     }
 }
 
+(add_noindex_header) {
+    header X-Robots-Tag noindex
+}
 
 :8888 {
     # block crawlers and declare robots.txt
     import robots_txt
     import block_crawlers
+    import add_noindex_header
 
     # Proxy to gnodev web
     reverse_proxy labsnet.internal:8888
@@ -56,6 +60,7 @@ Disallow: /`
     # block crawlers and declare robots.txt
     import robots_txt
     import block_crawlers
+    import add_noindex_header
 
     # Proxy to gnodev web rpc
     reverse_proxy labsnet.internal:26657

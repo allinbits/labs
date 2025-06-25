@@ -93,3 +93,7 @@ func (l *Location) ToSvgDataUrl() string {
 func (l *Location) RenderOpts() *component.RenderOpts {
 	return l.renderOpts
 }
+
+func (s *Location) SetRenderOpts(ro *component.RenderOpts) {
+	s.renderOpts = ro
+}

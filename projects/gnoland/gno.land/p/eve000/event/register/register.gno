@@ -47,7 +47,6 @@ func (r *Registry) RegisterEvent(e *event.Event, opts *component.RenderOpts) str
 	}
 
 	id := event.Pad3(strconv.Itoa(r.Events.Size()))
-	println("Registering gnolandlaunch with id=" + id)
 	r.Events.Set(id, e)
 	return id
 }

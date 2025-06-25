@@ -51,13 +51,6 @@ func register(key string, block ContentBlock) {
 	registry.Set(key, block)
 }
 
-func Content(key string, path string) string {
-	if block, ok := registry.Get(key); ok {
-		return block.(ContentBlock)(path)
-	}
-	panic("Key not found: " + key)
-}
-
 func Render(path string) string {
 	sb := strings.Builder{}
 	for _, key := range displayPaths {

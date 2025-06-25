@@ -4,9 +4,45 @@
     order replace after encode
 }
 
+(block_crawlers) {
+    @crawlers {
+        header User-Agent *Googlebot*
+        header User-Agent *Bingbot*
+        header User-Agent *Slurp*
+        header User-Agent *DuckDuckBot*
+        header User-Agent *Baiduspider*
+        header User-Agent *YandexBot*
+        header User-Agent *facebookexternalhit*
+        header User-Agent *Twitterbot*
+        header User-Agent *LinkedInBot*
+        header User-Agent *WhatsApp*
+        header User-Agent *Applebot*
+        header User-Agent *crawler*
+        header User-Agent *spider*
+        header User-Agent *scraper*
+        header User-Agent *bot*
+    }
+    
+    respond @crawlers 403 {
+        body "Access denied"
+        close
+    }
+}
+
+(robots_txt) {
+    handle /robots.txt {
+        header Content-Type text/plain
+        respond `User-agent: *
+Disallow: /`
+    }
+}
 
 
 :8888 {
+    # block crawlers and declare robots.txt
+    import robots_txt
+    import block_crawlers
+
     # Proxy to gnodev web
     reverse_proxy labsnet.internal:8888
 
@@ -17,6 +53,10 @@
 }
 
 :26657 {
+    # block crawlers and declare robots.txt
+    import robots_txt
+    import block_crawlers
+
     # Proxy to gnodev web rpc
     reverse_proxy labsnet.internal:26657
 }

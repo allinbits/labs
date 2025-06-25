@@ -5,7 +5,6 @@ import (
 	"std"
 	"strings"
 
-	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/register"
@@ -13,8 +12,7 @@ import (
 )
 
 var (
-	realmAllowPrefix = []string{} // realms prefixes that have access to update the registry
-	staticContent    = &component.Content{
+	staticContent = &component.Content{
 		Published: false,
 		Markdown:  "This page has been disabled",
 	}
@@ -22,7 +20,9 @@ var (
 		Published: false,
 		Markdown:  "This page has been disabled",
 	}
-	banner = &component.Content{
+
+	realmAllowPrefix = []string{} // realms prefixes that have access to update the registry
+	banner           = &component.Content{
 		Published: true,
 		Markdown: "\n\n#### Status: Accepting Session Proposals\n\n" +
 			"Join us on [discord](https://discord.gg/YFtMjWwUN7) to get access to submit a proposal.\n\n" +
@@ -40,19 +40,9 @@ var (
 func init() {
 	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/patch")
 
-	gnolandlaunch.SetRenderOpts(renderOpts)
-	for _, session := range gnolandlaunch.Sessions {
-		session.SetRenderOpts(renderOpts)
-		gnolandlaunch.AddSpeaker(session.Speaker)
-		session.Speaker.SetRenderOpts(renderOpts)
-		gnolandlaunch.AddLocation(session.Location)
-		session.Location.SetRenderOpts(renderOpts)
-		gnolandlaunch.AddSession(session)
-	}
-	registry.Events = avl.NewTree()
-	registry.Events.Set("000", gnolandlaunch)
-	registry.LiveEventId = "000"
 	registry.SetRenderOpts(renderOpts)
+	id := registry.RegisterEvent(gnolandlaunch, renderOpts)
+	registry.LiveEventId = id
 }
 
 func NotEmpty(value string) bool {

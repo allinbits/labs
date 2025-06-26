@@ -37,6 +37,10 @@ func NotEmpty(value string) bool {
 }
 
 func Render(path string) (out string) {
+    return render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+}
+
+func render(path string) (out string) {
 	fullURL := std.CurrentRealm().PkgPath() + path
 	u, err := url.Parse(fullURL)
 	if err != nil {
@@ -156,15 +160,10 @@ func ToggleOpts(opts ...string) {
 	}
 }
 
-/*
 func SetPatchLevel(level int) {
 	AssertAdminAccess()
-	if level != eventRegistry.PatchLevel+1 {
-		panic("patch level must be incremented by 1")
-	}
-	eventRegistry.SetPatchLevel(level)
+	registry.SetPatchLevel(level)
 }
-*/
 
 /* Auth API */
 func HasAllowedPrefix() bool {

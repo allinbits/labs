@@ -1,4 +1,4 @@
-package event
+package gnolandlaunch
 
 import (
 	"net/url"
@@ -8,7 +8,6 @@ import (
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/register"
-	"gno.land/p/moul/txlink"
 )
 
 var (
@@ -22,19 +21,7 @@ var (
 	}
 
 	realmAllowPrefix = []string{} // realms prefixes that have access to update the registry
-	banner           = &component.Content{
-		Published: true,
-		Markdown: "\n\n#### Status: Accepting Session Proposals\n\n" +
-			"Join us on [discord](https://discord.gg/YFtMjWwUN7) to get access to submit a proposal.\n\n" +
-			"or\n\n" + txlinkButton("Register To Attend", "JoinWaitlist"),
-	}
-	renderOpts = &component.RenderOpts{
-		Location: false,
-		Svg:      true,
-		Schedule: true,
-		Speaker:  false,
-	}
-	registry = &register.Registry{}
+	registry         = &register.Registry{}
 )
 
 func init() {
@@ -50,6 +37,10 @@ func NotEmpty(value string) bool {
 }
 
 func Render(path string) (out string) {
+    return render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+}
+
+func render(path string) (out string) {
 	fullURL := std.CurrentRealm().PkgPath() + path
 	u, err := url.Parse(fullURL)
 	if err != nil {
@@ -169,15 +160,10 @@ func ToggleOpts(opts ...string) {
 	}
 }
 
-/*
 func SetPatchLevel(level int) {
 	AssertAdminAccess()
-	if level != eventRegistry.PatchLevel+1 {
-		panic("patch level must be incremented by 1")
-	}
-	eventRegistry.SetPatchLevel(level)
+	registry.SetPatchLevel(level)
 }
-*/
 
 /* Auth API */
 func HasAllowedPrefix() bool {
@@ -197,8 +183,4 @@ func AssertAdminAccess() {
 		panic("access denied: " + std.CurrentRealm().PkgPath() +
 			" realm must match an allowed prefix:[" + strings.Join(realmAllowPrefix, ",") + "]")
 	}
-}
-
-func txlinkButton(label, method string) string {
-	return component.Button(label, txlink.NewLink(method).URL())
 }

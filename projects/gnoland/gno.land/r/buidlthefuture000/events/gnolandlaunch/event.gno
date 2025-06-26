@@ -1,13 +1,27 @@
-package event
+package gnolandlaunch
 
 import (
 	"time"
 
 	"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
 	"gno.land/p/eve000/event/speaker"
 )
+
+var banner = &component.Content{
+	Published: true,
+	Markdown: "\n\n#### Status: Accepting Session Proposals\n #### expected dates: Aug 2025 \n\n" +
+		component.TxlinkButton("Join Waitlist", "JoinWaitlist"),
+}
+
+var renderOpts = &component.RenderOpts{
+	Location: false,
+	Svg:      true,
+	Schedule: true,
+	Speaker:  false,
+}
 
 var locations = map[string]*location.Location{
 	"gnowhere": {
@@ -94,15 +108,16 @@ var Sessions = map[string]*session.Session{
 }
 
 var gnolandlaunch = &event.Event{
-	Name:        "Gnoland Launch",
-	Location:    locations["gnowhere"],
-	StartDate:   time.Date(2025, 6, 25, 0, 0, 0, 0, time.UTC),
-	EndDate:     time.Date(2025, 6, 25, 23, 59, 59, 0, time.UTC),
+	Name:     "Gnoland Launch",
+	Location: locations["gnowhere"],
+	//StartDate:   time.Date(2025, 7, 25, 0, 0, 0, 0, time.UTC),
+	//EndDate:     time.Date(2025, 7, 25, 23, 59, 59, 0, time.UTC),
 	Description: "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
-	Sessions: []*session.Session{
-		Sessions["keynote"],
-		Sessions["generics"],
-		Sessions["concurrency"],
-		Sessions["apis"],
+	Sessions:    []*session.Session{
+		// TODO: add finalized sessions here
+		// Sessions["keynote"],
+		// Sessions["generics"],
+		// Sessions["concurrency"],
+		// Sessions["apis"],
 	},
 }

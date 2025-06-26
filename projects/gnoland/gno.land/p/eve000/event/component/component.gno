@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gno.land/p/demo/ufmt"
+	"gno.land/p/moul/txlink"
 )
 
 const DtFmt = "Mon Jan 2"
@@ -215,6 +216,10 @@ func escapeHtml(s string) string {
 	s = strings.ReplaceAll(s, "\"", "&quot;")
 	s = strings.ReplaceAll(s, "'", "&#39;")
 	return s
+}
+
+func TxlinkButton(label, method string) string {
+	return Button(label, txlink.NewLink(method).URL())
 }
 
 func Button(label, path string) string {

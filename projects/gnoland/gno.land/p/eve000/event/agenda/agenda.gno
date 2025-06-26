@@ -11,14 +11,14 @@ import (
 )
 
 type Agenda struct {
-	Name           string
-	Location       *location.Location
-	StartDate      time.Time
-	EndDate        time.Time
-	Banner *component.Content
-	Description    string
-	Sessions       []*session.Session
-	renderOpts     *component.RenderOpts
+	Name        string
+	Location    *location.Location
+	StartDate   time.Time
+	EndDate     time.Time
+	Banner      *component.Content
+	Description string
+	Sessions    []*session.Session
+	renderOpts  *component.RenderOpts
 }
 
 var _ component.Component = (*Agenda)(nil)
@@ -37,10 +37,10 @@ func (a *Agenda) ToMarkdown() string {
 	if a.RenderOpts().Location {
 		markdown += "### " + a.Location.Name + "\n\n"
 	}
-	if a.StartDate.Format(component.DtFmt) == a.EndDate.Format(component.DtFmt) {
-		markdown += a.StartDate.Format(component.DtFmt) + "\n\n"
+	if DateToString(a.StartDate) == DateToString(a.EndDate) {
+		markdown += DateToString(a.StartDate) + "\n\n"
 	} else {
-		markdown += a.StartDate.Format(component.DtFmt) + " - " + a.EndDate.Format(component.DtFmt) + "\n\n"
+		markdown += DateToString(a.StartDate) + " - " + DateToString(a.EndDate) + "\n\n"
 	}
 	markdown += a.Description + "\n\n"
 
@@ -96,12 +96,19 @@ func (a *Agenda) ToMarkdown() string {
 	return markdown
 }
 
+func DateToString(date time.Time) string {
+	if date.IsZero() {
+		return ""
+	}
+	return date.Format(component.DtFmt)
+}
+
 func (a *Agenda) ToJson() string {
 	json := "{\n"
 	json += "\"Name\":\"" + a.Name + "\",\n"
 	json += "\"Location\":" + a.Location.ToJson() + ",\n"
-	json += "\"StartDate\":\"" + a.StartDate.Format(time.RFC3339) + "\",\n"
-	json += "\"EndDate\":\"" + a.EndDate.Format(time.RFC3339) + "\",\n"
+	json += "\"StartDate\":\"" + DateToString(a.StartDate) + "\",\n"
+	json += "\"EndDate\":\"" + DateToString(a.EndDate) + "\",\n"
 	json += "\"Description\":\"" + a.Description + "\",\n"
 	json += "\"Sessions\":[\n"
 	for i, session := range a.Sessions {
@@ -128,9 +135,9 @@ func (a *Agenda) ToSVGFragment(y *int) string {
 	svg += component.RenderSVGLine(y, "subtitle", "", a.Location.Name)
 	*y += 10
 	if a.StartDate.Format(component.DtFmt) == a.EndDate.Format(component.DtFmt) {
-		svg += component.RenderSVGLine(y, "text", "", a.StartDate.Format(component.DtFmt))
+		svg += component.RenderSVGLine(y, "text", "", DateToString(a.StartDate))
 	} else {
-		svg += component.RenderSVGLine(y, "text", "", a.StartDate.Format(component.DtFmt)+" - "+a.EndDate.Format(component.DtFmt))
+		svg += component.RenderSVGLine(y, "text", "", DateToString(a.StartDate)+" - "+DateToString(a.EndDate))
 	}
 	*y += 20
 	svg += component.RenderSVGLine(y, "text", "", a.Description)

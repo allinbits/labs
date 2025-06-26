@@ -5,17 +5,17 @@ import (
 )
 
 func addBlock(key, body string) {
-    register(key, func(_ string) string {
-        return body
-    })
-    displayPaths = append(displayPaths, key)
+	register(key, func(_ string) string {
+		return body
+	})
+	displayPaths = append(displayPaths, key)
 }
 
 func init() {
-    addBlock("Buidl the Future", intro)
-    addBlock("Upcoming", latestEvent)
-    addBlock("Contribute", contact)
-    addBlock("Topics", topics)
+	addBlock("Buidl the Future", intro)
+	addBlock("Upcoming", latestEvent)
+	addBlock("Contribute", contact)
+	addBlock("Topics", topics)
 }
 
 var latestEvent = `

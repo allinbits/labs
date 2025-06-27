@@ -5,7 +5,7 @@ import (
 )
 
 func addBlock(key, body string) {
-	api.Register(key, func(_ string) string {
+	app.Register(key, func(_ string) string {
 		return body
 	})
 	displayPaths = append(displayPaths, key)

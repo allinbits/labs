@@ -3,34 +3,11 @@ package gnolandlaunch
 import (
 	"net/url"
 	"std"
-	"strings"
 
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/register"
 )
-
-func init() {
-	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/patch")
-}
-
-func hasAllowedPrefix() bool {
-	currentRealm := std.CurrentRealm()
-	for _, callerPath := range realmAllowPrefix {
-		if strings.HasPrefix(currentRealm.PkgPath(), callerPath) {
-			return true
-		}
-	}
-	return false
-}
-
-// assertAccess is used to restrict access to certain functions intended to be used by patch-realm admins.
-func assertAccess() {
-	if !hasAllowedPrefix() {
-		panic("access denied: " + std.CurrentRealm().PkgPath() +
-			" realm must match an allowed prefix:[" + strings.Join(realmAllowPrefix, ",") + "]")
-	}
-}
 
 type Api struct{}
 
@@ -137,4 +114,75 @@ func (*Api) RegisterEvent(evt *event.Event, opts *component.RenderOpts) string {
 	id := registry.RegisterEvent(evt, opts)
 	registry.LiveEventId = id
 	return id
+}
+func (*Api) AdminSetRole(role string, addr std.Address) {
+	acl.AdminSetRole(role, addr)
+}
+
+func (*Api) AdminRemoveRole(role string, addr std.Address) {
+	acl.AdminRemoveRole(role, addr)
+}
+func (*Api) ResetRoles() {
+	acl.ResetRoles()
+}
+func (*Api) JoinWaitlist() {
+	acl.JoinWaitlist()
+}
+func (*Api) RemoveSelfFromWaitlist() {
+	acl.RemoveSelfFromWaitlist()
+}
+func (*Api) JoinAsAttendee() {
+	acl.JoinAsAttendee()
+}
+func (*Api) RemoveSelfAsAttendee() {
+	acl.RemoveSelfAsAttendee()
+}
+func (*Api) AddSpeaker(addr std.Address) {
+	acl.AddSpeaker(addr)
+}
+func (*Api) RemoveSpeaker(addr std.Address) {
+	acl.RemoveSpeaker(addr)
+}
+func (*Api) AddOrganizer(addr std.Address) {
+	acl.AddOrganizer(addr)
+}
+func (*Api) RemoveOrganizer(addr std.Address) {
+	acl.RemoveOrganizer(addr)
+}
+func (*Api) AddProposer(addr, sender std.Address) {
+	acl.AddProposer(addr, sender)
+}
+func (*Api) RemoveProposer(addr, sender std.Address) {
+	acl.RemoveProposer(addr, sender)
+}
+func (*Api) AddReviewer(addr, sender std.Address) {
+	acl.AddReviewer(addr, sender)
+}
+func (*Api) RemoveReviewer(addr, sender std.Address) {
+	acl.RemoveReviewer(addr, sender)
+}
+func (*Api) RoleExists(role string) bool {
+	return acl.RoleExists(role)
+}
+func (*Api) HasRole(role string, addr std.Address) bool {
+	return acl.HasRole(role, addr)
+}
+func (*Api) ListRoles() []string {
+	return acl.ListRoles()
+}
+func (*Api) SetRoleHandler(role string, fn func(string) bool) {
+	acl.SetRoleHandler(role, fn)
+}
+func (*Api) UnsetRoleHandler(role string) {
+	acl.UnsetRoleHandler(role)
+}
+func (*Api) AssertAtLeastRole(role string, sender std.Address) {
+	acl.AssertAtLeastRole(role, sender)
+}
+func (*Api) RenderList(role string) string {
+	return acl.RenderList(role)
+}
+
+func (*Api) RenderAcl(path string) string {
+	return acl.Render(path)
 }

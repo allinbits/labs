@@ -11,12 +11,12 @@ import (
 )
 
 func init() {
-    api.RegisterEvent(gnolandlaunch, &component.RenderOpts{
-        Location: false,
-        Svg:      true,
-        Schedule: true,
-        Speaker:  false,
-    })
+	api.RegisterEvent(gnolandlaunch, &component.RenderOpts{
+		Location: false,
+		Svg:      true,
+		Schedule: true,
+		Speaker:  false,
+	})
 }
 
 var banner = &component.Content{
@@ -24,7 +24,6 @@ var banner = &component.Content{
 	Markdown: "\n\n#### Status: Accepting Session Proposals\n #### expected dates: Aug 2025 \n\n" +
 		component.TxlinkButton("Join Waitlist", "JoinWaitlist"),
 }
-
 
 var locations = map[string]*location.Location{
 	"gnowhere": {

@@ -2,67 +2,152 @@ package events
 
 import (
 	"std"
-	"strings"
 
-	"gno.land/p/demo/avl"
+	"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event/component"
 )
 
-var (
-	api              = &Api{}
-	registry         = avl.NewTree() // registry of ContentBlock functions
-	displayPaths     []string
-	realmAllowPrefix []string
-)
+var api EveApi
 
-func init() {
-	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/") // must be in realm sub-path
-}
-
-func hasAllowedPrefix() bool {
-	prevRealm := std.PreviousRealm().PkgPath()
-	for _, callerPath := range realmAllowPrefix {
-		if strings.HasPrefix(prevRealm, callerPath) {
-			return true
-		}
+func SetApp(app EveApi) {
+	if app == nil {
+		// emit app is disabled
+	} else {
+		// emit updated app
 	}
-	return prevRealm == ""
+	api = app
 }
 
-func assertAccess() {
-	if !hasAllowedPrefix() {
-		panic("access denied: " + std.PreviousRealm().PkgPath() +
-			" realm must match an allowed prefix:[" + strings.Join(realmAllowPrefix, ",") + "]")
+func eve() EveApi {
+	if api == nil {
+		panic("app is disabled")
 	}
+	return api
 }
 
-func Render(path string) (out string) {
-	return api.Render(path)
+type EveApi interface {
+	AddOrganizer(addr std.Address)
+	AddProposer(addr, sender std.Address)
+	AddReviewer(addr, sender std.Address)
+	AddSpeaker(addr std.Address)
+	AdminRemoveRole(role string, addr std.Address)
+	AdminSetRole(role string, addr std.Address)
+	AssertAtLeastRole(role string, sender std.Address)
+	Destroy(markdown string)
+	HasRole(role string, addr std.Address) bool
+	JoinAsAttendee()
+	JoinWaitlist()
+	ListRoles() []string
+	Publish(markdown string)
+	RegisterEvent(evt *event.Event, opts *component.RenderOpts) string
+	RemoveOrganizer(addr std.Address)
+	RemoveProposer(addr, sender std.Address)
+	RemoveReviewer(addr, sender std.Address)
+	RemoveSelfAsAttendee()
+	RemoveSelfFromWaitlist()
+	RemoveSpeaker(addr std.Address)
+	Render(path string) string
+	RenderAcl(path string) string
+	RenderList(role string) string
+	ResetRoles()
+	RoleExists(role string) bool
+	SetContent(key, markdown string)
+	SetPatchLevel(level int)
+	SetRoleHandler(role string, fn func(string) bool)
+	Unpublish(key string)
+	UnsetRoleHandler(role string)
 }
 
-// Register registers a ContentBlock function - use this to override the default rendering
-func Register(key string, block func(string) string) {
-	api.Register(key, block)
+func AddOrganizer(addr std.Address) {
+	eve().AddOrganizer(addr)
+}
+func AddProposer(addr, sender std.Address) {
+	eve().AddProposer(addr, sender)
+}
+func AddReviewer(addr, sender std.Address) {
+	eve().AddReviewer(addr, sender)
+}
+func AddSpeaker(addr std.Address) {
+	eve().AddSpeaker(addr)
+}
+func AdminRemoveRole(role string, addr std.Address) {
+	eve().AdminRemoveRole(role, addr)
+}
+func AdminSetRole(role string, addr std.Address) {
+	eve().AdminSetRole(role, addr)
 }
 
-type Api struct{}
-
-func (*Api) Register(key string, block func(string) string) {
-	assertAccess()
-	if _, ok := registry.Get(key); ok {
-		// TODO emit update event
-	}
-	registry.Set(key, block)
+// TODO: deprecate
+func AssertAtLeastRole(role string, sender std.Address) {
+	eve().AssertAtLeastRole(role, sender)
+}
+func Destroy(markdown string) {
+	eve().Destroy(markdown)
+}
+func HasRole(role string, addr std.Address) bool {
+	return eve().HasRole(role, addr)
+}
+func JoinAsAttendee() {
+	eve().JoinAsAttendee()
+}
+func JoinWaitlist() {
+	eve().JoinWaitlist()
+}
+func ListRoles() []string {
+	return eve().ListRoles()
+}
+func Publish(markdown string) {
+	eve().Publish(markdown)
+}
+func RegisterEvent(evt *event.Event, opts *component.RenderOpts) string {
+	return ""
+}
+func RemoveOrganizer(addr std.Address) {
+	eve().RemoveOrganizer(addr)
+}
+func RemoveProposer(addr, sender std.Address) {
+	eve().RemoveProposer(addr, sender)
+}
+func RemoveReviewer(addr, sender std.Address) {
+	eve().RemoveReviewer(addr, sender)
+}
+func RemoveSelfAsAttendee() {
+	eve().RemoveSelfAsAttendee()
+}
+func RemoveSelfFromWaitlist() {
+	eve().RemoveSelfFromWaitlist()
+}
+func RemoveSpeaker(addr std.Address) {
+	eve().RemoveSpeaker(addr)
 }
 
-func (*Api) Render(path string) string {
-	sb := strings.Builder{}
-	for _, key := range displayPaths {
-		if block, ok := registry.Get(key); ok {
-			sb.WriteString("### " + key + "\n")
-			sb.WriteString(block.(func(string) string)(path))
-			// TODO: also render TermSet
-			sb.WriteString("\n")
-		}
-	}
-	return sb.String()
+//	func Render(path string) (out string) {
+//	    return ""
+//	}
+func RenderAcl(path string) string {
+	return eve().RenderAcl(path)
+}
+func RenderList(role string) string {
+	return eve().RenderList(role)
+}
+func ResetRoles() {
+	eve().ResetRoles()
+}
+func RoleExists(role string) bool {
+	return eve().RoleExists(role)
+}
+func SetContent(key, markdown string) {
+	eve().SetContent(key, markdown)
+}
+func SetPatchLevel(level int) {
+	eve().SetPatchLevel(level)
+}
+func SetRoleHandler(role string, fn func(string) bool) {
+	eve().SetRoleHandler(role, fn)
+}
+func Unpublish(key string) {
+	eve().Unpublish(key)
+}
+func UnsetRoleHandler(role string) {
+	eve().UnsetRoleHandler(role)
 }

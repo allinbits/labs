@@ -8,10 +8,10 @@ const releaseNotes = `
 example patch 01
 `
 
-var api = &gnolandlaunch.Api{}
+var app = &gnolandlaunch.App{}
 
 func init() {
-	api.SetPatchLevel(1) // set the patch level to 1
+	app.SetPatchLevel(1) // set the patch level to 1
 }
 
 func Render(_ string) string {

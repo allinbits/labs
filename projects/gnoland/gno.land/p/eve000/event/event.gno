@@ -1,6 +1,7 @@
 package event
 
 import (
+    "std"
 	"strconv"
 	"time"
 
@@ -12,6 +13,39 @@ import (
 	"gno.land/p/eve000/event/session"
 	"gno.land/p/eve000/event/speaker"
 )
+
+type Api interface {
+	AddOrganizer(addr std.Address)
+	AddProposer(addr, sender std.Address)
+	AddReviewer(addr, sender std.Address)
+	AddSpeaker(addr std.Address)
+	AdminRemoveRole(role string, addr std.Address)
+	AdminSetRole(role string, addr std.Address)
+	AssertAtLeastRole(role string, sender std.Address)
+	Destroy(markdown string)
+	HasRole(role string, addr std.Address) bool
+	JoinAsAttendee()
+	JoinWaitlist()
+	ListRoles() []string
+	Publish(markdown string)
+	RegisterEvent(evt *Event, opts *component.RenderOpts) string
+	RemoveOrganizer(addr std.Address)
+	RemoveProposer(addr, sender std.Address)
+	RemoveReviewer(addr, sender std.Address)
+	RemoveSelfAsAttendee()
+	RemoveSelfFromWaitlist()
+	RemoveSpeaker(addr std.Address)
+	Render(path string) string
+	RenderAcl(path string) string
+	RenderList(role string) string
+	ResetRoles()
+	RoleExists(role string) bool
+	SetContent(key, markdown string)
+	SetPatchLevel(level int)
+	SetRoleHandler(role string, fn func(string) bool)
+	Unpublish(key string)
+	UnsetRoleHandler(role string)
+}
 
 var f = ufmt.Sprintf
 

@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	api              = &Api{}
+	api              = &App{}
 	registry         = avl.NewTree()
 	displayPaths     []string
 	realmAllowPrefix []string
@@ -44,9 +44,9 @@ func Register(key string, block func(path string) string) {
 	api.Register(key, block)
 }
 
-type Api struct{}
+type App struct{}
 
-func (*Api) Register(key string, block func(path string) string) {
+func (*App) Register(key string, block func(path string) string) {
 	assertAccess()
 	if _, ok := registry.Get(key); ok {
 		// TODO emit update event
@@ -54,7 +54,7 @@ func (*Api) Register(key string, block func(path string) string) {
 	registry.Set(key, block)
 }
 
-func (*Api) Render(path string) string {
+func (*App) Render(path string) string {
 	sb := strings.Builder{}
 	for _, key := range displayPaths {
 		if block, ok := registry.Get(key); ok {

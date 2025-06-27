@@ -3,151 +3,199 @@ package events
 import (
 	"std"
 
+	"gno.land/p/demo/avl"
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
 )
 
-var api EveApi
+var (
+	featuredRealm = ""
+	eventRealms   = avl.NewTree()
+)
 
-func SetApp(app EveApi) {
-	if app == nil {
-		// emit app is disabled
-	} else {
-		// emit updated app
+// SetFeaturedRealm sets the featured realm for the events package.
+func SetFeaturedRealm(realm string) {
+	assertAccess()
+	if realm == "" {
+		panic("cannot set empty featured realm")
 	}
-	api = app
+	featuredRealm = realm
 }
 
-func eve() EveApi {
-	if api == nil {
-		panic("app is disabled")
+// AddEventRealm adds an event realm to the global eventRealms tree.
+func AddEventRealm(eveApi event.Api) {
+	assertAccess()
+	path := std.CurrentRealm().PkgPath()
+	if path == "" {
+		panic("cannot add event realm with empty path")
 	}
-	return api
+	eventRealms.Set(path, eveApi)
 }
 
-type EveApi interface {
-	AddOrganizer(addr std.Address)
-	AddProposer(addr, sender std.Address)
-	AddReviewer(addr, sender std.Address)
-	AddSpeaker(addr std.Address)
-	AdminRemoveRole(role string, addr std.Address)
-	AdminSetRole(role string, addr std.Address)
-	AssertAtLeastRole(role string, sender std.Address)
-	Destroy(markdown string)
-	HasRole(role string, addr std.Address) bool
-	JoinAsAttendee()
-	JoinWaitlist()
-	ListRoles() []string
-	Publish(markdown string)
-	RegisterEvent(evt *event.Event, opts *component.RenderOpts) string
-	RemoveOrganizer(addr std.Address)
-	RemoveProposer(addr, sender std.Address)
-	RemoveReviewer(addr, sender std.Address)
-	RemoveSelfAsAttendee()
-	RemoveSelfFromWaitlist()
-	RemoveSpeaker(addr std.Address)
-	Render(path string) string
-	RenderAcl(path string) string
-	RenderList(role string) string
-	ResetRoles()
-	RoleExists(role string) bool
-	SetContent(key, markdown string)
-	SetPatchLevel(level int)
-	SetRoleHandler(role string, fn func(string) bool)
-	Unpublish(key string)
-	UnsetRoleHandler(role string)
+// Eve returns event.Api for a given realm path.
+func Eve(realmPath string) event.Api {
+	evt, ok := eventRealms.Get(realmPath)
+	if !ok {
+		panic("no event realm found for the given path")
+	}
+	app, ok := evt.(event.Api)
+	if !ok {
+		panic("event is not an EveApi")
+	}
+	return app
 }
 
-func AddOrganizer(addr std.Address) {
-	eve().AddOrganizer(addr)
-}
-func AddProposer(addr, sender std.Address) {
-	eve().AddProposer(addr, sender)
-}
-func AddReviewer(addr, sender std.Address) {
-	eve().AddReviewer(addr, sender)
-}
-func AddSpeaker(addr std.Address) {
-	eve().AddSpeaker(addr)
-}
-func AdminRemoveRole(role string, addr std.Address) {
-	eve().AdminRemoveRole(role, addr)
-}
-func AdminSetRole(role string, addr std.Address) {
-	eve().AdminSetRole(role, addr)
+// AddOrganizer adds an organizer to the event realm.
+func AddOrganizer(realmPath string, addr std.Address) {
+	Eve(realmPath).AddOrganizer(addr)
 }
 
-// TODO: deprecate
-func AssertAtLeastRole(role string, sender std.Address) {
-	eve().AssertAtLeastRole(role, sender)
-}
-func Destroy(markdown string) {
-	eve().Destroy(markdown)
-}
-func HasRole(role string, addr std.Address) bool {
-	return eve().HasRole(role, addr)
-}
-func JoinAsAttendee() {
-	eve().JoinAsAttendee()
-}
-func JoinWaitlist() {
-	eve().JoinWaitlist()
-}
-func ListRoles() []string {
-	return eve().ListRoles()
-}
-func Publish(markdown string) {
-	eve().Publish(markdown)
-}
-func RegisterEvent(evt *event.Event, opts *component.RenderOpts) string {
-	return ""
-}
-func RemoveOrganizer(addr std.Address) {
-	eve().RemoveOrganizer(addr)
-}
-func RemoveProposer(addr, sender std.Address) {
-	eve().RemoveProposer(addr, sender)
-}
-func RemoveReviewer(addr, sender std.Address) {
-	eve().RemoveReviewer(addr, sender)
-}
-func RemoveSelfAsAttendee() {
-	eve().RemoveSelfAsAttendee()
-}
-func RemoveSelfFromWaitlist() {
-	eve().RemoveSelfFromWaitlist()
-}
-func RemoveSpeaker(addr std.Address) {
-	eve().RemoveSpeaker(addr)
+// AddProposer adds a proposer to the event realm.
+func AddProposer(realmPath string, addr, sender std.Address) {
+	Eve(realmPath).AddProposer(addr, sender)
 }
 
-//	func Render(path string) (out string) {
-//	    return ""
-//	}
-func RenderAcl(path string) string {
-	return eve().RenderAcl(path)
+// AddReviewer adds a reviewer to the event realm.
+func AddReviewer(realmPath string, addr, sender std.Address) {
+	Eve(realmPath).AddReviewer(addr, sender)
 }
-func RenderList(role string) string {
-	return eve().RenderList(role)
+
+// AddSpeaker adds a speaker to the event realm.
+func AddSpeaker(realmPath string, addr std.Address) {
+	Eve(realmPath).AddSpeaker(addr)
 }
-func ResetRoles() {
-	eve().ResetRoles()
+
+// AdminAddRole adds a role to the event realm for a given address.
+func AdminRemoveRole(realmPath string, role string, addr std.Address) {
+	Eve(realmPath).AdminRemoveRole(role, addr)
 }
-func RoleExists(role string) bool {
-	return eve().RoleExists(role)
+
+// AdminSetRole sets a role for a given address in the event realm.
+func AdminSetRole(realmPath string, role string, addr std.Address) {
+	Eve(realmPath).AdminSetRole(role, addr)
 }
-func SetContent(key, markdown string) {
-	eve().SetContent(key, markdown)
+
+// FIXME: remove this deprecated func
+func AssertAtLeastRole(realmPath string, role string, sender std.Address) {
+	Eve(realmPath).AssertAtLeastRole(role, sender)
 }
-func SetPatchLevel(level int) {
-	eve().SetPatchLevel(level)
+
+// Destroy removes all data in the event realm and publishes a markdown message in it's place.
+func Destroy(realmPath string, markdown string) {
+	Eve(realmPath).Destroy(markdown)
 }
-func SetRoleHandler(role string, fn func(string) bool) {
-	eve().SetRoleHandler(role, fn)
+
+// HasRole checks if the given address has the specified role in the event realm.
+func HasRole(realmPath string, role string, addr std.Address) bool {
+	return Eve(realmPath).HasRole(role, addr)
 }
-func Unpublish(key string) {
-	eve().Unpublish(key)
+
+// JoinAsOrganizer allows the sender to join the event realm as an organizer.
+func JoinAsAttendee(realmPath string) {
+	Eve(realmPath).JoinAsAttendee()
 }
-func UnsetRoleHandler(role string) {
-	eve().UnsetRoleHandler(role)
+
+// JoinWaitlist allows the sender to join the event realm's waitlist.
+func JoinWaitlist(realmPath string) {
+	Eve(realmPath).JoinWaitlist()
+}
+
+// ListRoles returns a list of roles in the event realm.
+func ListRoles(realmPath string) []string {
+	return Eve(realmPath).ListRoles()
+}
+
+// Publish publishes a markdown message in the event realm.
+func Publish(realmPath string, markdown string) {
+	Eve(realmPath).Publish(markdown)
+}
+
+// RegisterEvent registers an event in the event realm with the given options.
+func RegisterEvent(realmPath string, evt *event.Event, opts *component.RenderOpts) string {
+	return Eve(realmPath).RegisterEvent(evt, opts)
+}
+
+// RemoveOrganizer removes an organizer from the event realm.
+func RemoveOrganizer(realmPath string, addr std.Address) {
+	Eve(realmPath).RemoveOrganizer(addr)
+}
+
+// RemoveProposer removes a proposer from the event realm.
+func RemoveProposer(realmPath string, addr, sender std.Address) {
+	Eve(realmPath).RemoveProposer(addr, sender)
+}
+
+// RemoveReviewer removes a reviewer from the event realm.
+func RemoveReviewer(realmPath string, addr, sender std.Address) {
+	Eve(realmPath).RemoveReviewer(addr, sender)
+}
+
+// RemoveSelfAsAttendee removes the sender from the event realm as an attendee.
+func RemoveSelfAsAttendee(realmPath string) {
+	Eve(realmPath).RemoveSelfAsAttendee()
+}
+
+// RemoveSelfFromWaitlist removes the sender from the event realm's waitlist.
+func RemoveSelfFromWaitlist(realmPath string) {
+	Eve(realmPath).RemoveSelfFromWaitlist()
+}
+
+// RemoveSpeaker removes a speaker from the event realm.
+func RemoveSpeaker(realmPath string, addr std.Address) {
+	Eve(realmPath).RemoveSpeaker(addr)
+}
+
+// RenderAcl renders the ACL for the given path in the event realm.
+func RenderAcl(realmPath string, path string) string {
+	return Eve(realmPath).RenderAcl(path)
+}
+
+// RenderList renders the list of events for the given role in the event realm.
+func RenderList(realmPath string, role string) string {
+	return Eve(realmPath).RenderList(role)
+}
+
+// ResetRoles resets all roles in the event realm.
+func ResetRoles(realmPath string) {
+	Eve(realmPath).ResetRoles()
+}
+
+// RoleExists checks if the specified role exists in the event realm.
+func RoleExists(realmPath string, role string) bool {
+	return Eve(realmPath).RoleExists(role)
+}
+
+// SetContent sets the content for a given key in the event realm.
+func SetContent(realmPath string, key, markdown string) {
+	Eve(realmPath).SetContent(key, markdown)
+}
+
+// SetPatchLevel sets the patch level for the event realm.
+func SetPatchLevel(realmPath string, level int) {
+	Eve(realmPath).SetPatchLevel(level)
+}
+
+// SetRoleHandler sets a handler function for a specific role in the event realm.
+func SetRoleHandler(realmPath string, role string, fn func(string) bool) {
+	Eve(realmPath).SetRoleHandler(role, fn)
+}
+
+// Unpublish removes the content associated with the given key in the event realm.
+func Unpublish(realmPath string, key string) {
+	Eve(realmPath).Unpublish(key)
+}
+
+// UnsetRoleHandler removes the handler function for a specific role in the event realm.
+func UnsetRoleHandler(realmPath string, role string) {
+	Eve(realmPath).UnsetRoleHandler(role)
+}
+
+// Register registers a ContentBlock function - use this to override the default rendering
+func Register(key string, block func(string) string) {
+	app.Register(key, block)
+}
+
+// Render renders the content for the given path using the registered ContentBlock function.
+func Render(path string) (out string) {
+	return app.Render(path)
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	api.RegisterEvent(gnolandlaunch, &component.RenderOpts{
+	app.RegisterEvent(gnolandlaunch, &component.RenderOpts{
 		Location: false,
 		Svg:      true,
 		Schedule: true,
@@ -112,8 +112,8 @@ var Sessions = map[string]*session.Session{
 var gnolandlaunch = &event.Event{
 	Name:     "Gnoland Launch",
 	Location: locations["gnowhere"],
-	//StartDate:   time.Date(2025, 7, 25, 0, 0, 0, 0, time.UTC),
-	//EndDate:     time.Date(2025, 7, 25, 23, 59, 59, 0, time.UTC),
+	// StartDate:   time.Date(2025, 7, 25, 0, 0, 0, 0, time.UTC),
+	// EndDate:     time.Date(2025, 7, 25, 23, 59, 59, 0, time.UTC),
 	Description: "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
 	Sessions:    []*session.Session{
 		// TODO: add finalized sessions here

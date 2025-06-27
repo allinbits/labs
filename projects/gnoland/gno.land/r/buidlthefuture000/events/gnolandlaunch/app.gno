@@ -9,10 +9,12 @@ import (
 	"gno.land/p/eve000/event/register"
 )
 
-type Api struct{}
+type App struct{}
 
 var (
-	api = &Api{}
+    _ event.Api = (*App)(nil)
+
+	app = &App{}
 
 	staticContent = &component.Content{
 		Published: false,
@@ -32,10 +34,10 @@ func notEmpty(value string) bool {
 }
 
 func Render(path string) (out string) {
-	return api.Render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+	return app.Render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
 }
 
-func (*Api) Render(path string) (out string) {
+func (*App) Render(path string) (out string) {
 	fullURL := std.CurrentRealm().PkgPath() + path
 	u, err := url.Parse(fullURL)
 	if err != nil {
@@ -62,18 +64,18 @@ func (*Api) Render(path string) (out string) {
 	}
 }
 
-func (*Api) Publish(markdown string) {
+func (*App) Publish(markdown string) {
 	assertAccess()
 	staticContent.Published = true
 	staticContent.Markdown = markdown
 }
 
-func (*Api) Destroy(markdown string) {
-	api.Publish(markdown)
+func (*App) Destroy(markdown string) {
+	app.Publish(markdown)
 	registry = register.NewRegistry(registry.RenderOpts) // reset the registry to a new instance
 }
 
-func (*Api) Unpublish(key string) {
+func (*App) Unpublish(key string) {
 	assertAccess()
 	switch key {
 	case "map":
@@ -87,7 +89,7 @@ func (*Api) Unpublish(key string) {
 	}
 }
 
-func (*Api) SetContent(key, markdown string) {
+func (*App) SetContent(key, markdown string) {
 	assertAccess()
 	switch key {
 	case "map":
@@ -104,85 +106,85 @@ func (*Api) SetContent(key, markdown string) {
 	}
 }
 
-func (*Api) SetPatchLevel(level int) {
+func (*App) SetPatchLevel(level int) {
 	assertAccess()
 	registry.SetPatchLevel(level)
 }
 
-func (*Api) RegisterEvent(evt *event.Event, opts *component.RenderOpts) string {
+func (*App) RegisterEvent(evt *event.Event, opts *component.RenderOpts) string {
 	registry.SetRenderOpts(opts) // REVIEW: still needed?
 	id := registry.RegisterEvent(evt, opts)
 	registry.LiveEventId = id
 	return id
 }
-func (*Api) AdminSetRole(role string, addr std.Address) {
+func (*App) AdminSetRole(role string, addr std.Address) {
 	acl.AdminSetRole(role, addr)
 }
 
-func (*Api) AdminRemoveRole(role string, addr std.Address) {
+func (*App) AdminRemoveRole(role string, addr std.Address) {
 	acl.AdminRemoveRole(role, addr)
 }
-func (*Api) ResetRoles() {
+func (*App) ResetRoles() {
 	acl.ResetRoles()
 }
-func (*Api) JoinWaitlist() {
+func (*App) JoinWaitlist() {
 	acl.JoinWaitlist()
 }
-func (*Api) RemoveSelfFromWaitlist() {
+func (*App) RemoveSelfFromWaitlist() {
 	acl.RemoveSelfFromWaitlist()
 }
-func (*Api) JoinAsAttendee() {
+func (*App) JoinAsAttendee() {
 	acl.JoinAsAttendee()
 }
-func (*Api) RemoveSelfAsAttendee() {
+func (*App) RemoveSelfAsAttendee() {
 	acl.RemoveSelfAsAttendee()
 }
-func (*Api) AddSpeaker(addr std.Address) {
+func (*App) AddSpeaker(addr std.Address) {
 	acl.AddSpeaker(addr)
 }
-func (*Api) RemoveSpeaker(addr std.Address) {
+func (*App) RemoveSpeaker(addr std.Address) {
 	acl.RemoveSpeaker(addr)
 }
-func (*Api) AddOrganizer(addr std.Address) {
+func (*App) AddOrganizer(addr std.Address) {
 	acl.AddOrganizer(addr)
 }
-func (*Api) RemoveOrganizer(addr std.Address) {
+func (*App) RemoveOrganizer(addr std.Address) {
 	acl.RemoveOrganizer(addr)
 }
-func (*Api) AddProposer(addr, sender std.Address) {
+func (*App) AddProposer(addr, sender std.Address) {
 	acl.AddProposer(addr, sender)
 }
-func (*Api) RemoveProposer(addr, sender std.Address) {
+func (*App) RemoveProposer(addr, sender std.Address) {
 	acl.RemoveProposer(addr, sender)
 }
-func (*Api) AddReviewer(addr, sender std.Address) {
+func (*App) AddReviewer(addr, sender std.Address) {
 	acl.AddReviewer(addr, sender)
 }
-func (*Api) RemoveReviewer(addr, sender std.Address) {
+func (*App) RemoveReviewer(addr, sender std.Address) {
 	acl.RemoveReviewer(addr, sender)
 }
-func (*Api) RoleExists(role string) bool {
+func (*App) RoleExists(role string) bool {
 	return acl.RoleExists(role)
 }
-func (*Api) HasRole(role string, addr std.Address) bool {
+func (*App) HasRole(role string, addr std.Address) bool {
 	return acl.HasRole(role, addr)
 }
-func (*Api) ListRoles() []string {
+func (*App) ListRoles() []string {
 	return acl.ListRoles()
 }
-func (*Api) SetRoleHandler(role string, fn func(string) bool) {
+func (*App) SetRoleHandler(role string, fn func(string) bool) {
 	acl.SetRoleHandler(role, fn)
 }
-func (*Api) UnsetRoleHandler(role string) {
+func (*App) UnsetRoleHandler(role string) {
 	acl.UnsetRoleHandler(role)
 }
-func (*Api) AssertAtLeastRole(role string, sender std.Address) {
+func (*App) AssertAtLeastRole(role string, sender std.Address) {
 	acl.AssertAtLeastRole(role, sender)
 }
-func (*Api) RenderList(role string) string {
+func (*App) RenderList(role string) string {
 	return acl.RenderList(role)
 }
 
-func (*Api) RenderAcl(path string) string {
+func (*App) RenderAcl(path string) string {
 	return acl.Render(path)
 }

@@ -11,14 +11,14 @@ import (
 )
 
 type Agenda struct {
-	Name           string
-	Location       *location.Location
-	StartDate      time.Time
-	EndDate        time.Time
-	Banner *component.Content
-	Description    string
-	Sessions       []*session.Session
-	renderOpts     *component.RenderOpts
+	Name        string
+	Location    *location.Location
+	StartDate   time.Time
+	EndDate     time.Time
+	Banner      *component.Content
+	Description string
+	Sessions    []*session.Session
+	renderOpts  *component.RenderOpts
 }
 
 var _ component.Component = (*Agenda)(nil)

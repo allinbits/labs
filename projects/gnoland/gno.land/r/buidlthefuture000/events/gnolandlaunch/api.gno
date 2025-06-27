@@ -1,17 +1,42 @@
-package event
+package gnolandlaunch
 
 import (
 	"net/url"
 	"std"
 	"strings"
 
-	"gno.land/p/demo/ufmt"
+	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/register"
-	"gno.land/p/moul/txlink"
 )
 
+func init() {
+	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/patch")
+}
+
+func hasAllowedPrefix() bool {
+	currentRealm := std.CurrentRealm()
+	for _, callerPath := range realmAllowPrefix {
+		if strings.HasPrefix(currentRealm.PkgPath(), callerPath) {
+			return true
+		}
+	}
+	return false
+}
+
+// assertAccess is used to restrict access to certain functions intended to be used by patch-realm admins.
+func assertAccess() {
+	if !hasAllowedPrefix() {
+		panic("access denied: " + std.CurrentRealm().PkgPath() +
+			" realm must match an allowed prefix:[" + strings.Join(realmAllowPrefix, ",") + "]")
+	}
+}
+
+type Api struct{}
+
 var (
+	api = &Api{}
+
 	staticContent = &component.Content{
 		Published: false,
 		Markdown:  "This page has been disabled",
@@ -22,34 +47,18 @@ var (
 	}
 
 	realmAllowPrefix = []string{} // realms prefixes that have access to update the registry
-	banner           = &component.Content{
-		Published: true,
-		Markdown: "\n\n#### Status: Accepting Session Proposals\n\n" +
-			"Join us on [discord](https://discord.gg/YFtMjWwUN7) to get access to submit a proposal.\n\n" +
-			"or\n\n" + txlinkButton("Register To Attend", "JoinWaitlist"),
-	}
-	renderOpts = &component.RenderOpts{
-		Location: false,
-		Svg:      true,
-		Schedule: true,
-		Speaker:  false,
-	}
-	registry = &register.Registry{}
+	registry         = &register.Registry{}
 )
 
-func init() {
-	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/patch")
-
-	registry.SetRenderOpts(renderOpts)
-	id := registry.RegisterEvent(gnolandlaunch, renderOpts)
-	registry.LiveEventId = id
-}
-
-func NotEmpty(value string) bool {
+func notEmpty(value string) bool {
 	return value != ""
 }
 
 func Render(path string) (out string) {
+	return api.Render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+}
+
+func (*Api) Render(path string) (out string) {
 	fullURL := std.CurrentRealm().PkgPath() + path
 	u, err := url.Parse(fullURL)
 	if err != nil {
@@ -63,60 +72,32 @@ func Render(path string) (out string) {
 
 	event := registry.GetEvent(event_id)
 	switch {
-	case NotEmpty(q.Get("session")):
+	case notEmpty(q.Get("session")):
 		return component.RenderComponent(path, event.GetSession(q.Get("session")))
-	case NotEmpty(q.Get("location")):
+	case notEmpty(q.Get("location")):
 		return component.RenderComponent(path, event.GetLocation(q.Get("location")))
-	case NotEmpty(q.Get("speaker")):
+	case notEmpty(q.Get("speaker")):
 		return component.RenderComponent(path, event.GetSpeaker(q.Get("speaker")))
 	default:
 		agenda := event.Agenda()
-		agenda.SetBanner(banner)
+		agenda.SetBanner(banner) // REVIEW: is there a better way to inject the banner?
 		return component.RenderComponent(path, agenda)
 	}
 }
 
-// Info returns a formatted string with the message and path
-// including the liveEventId for debugging purposes.
-func info(opts ...string) string {
-	msg := "info: "
-	path := ""
-	if len(opts) == 1 {
-		msg = opts[0]
-	} else if len(opts) == 2 {
-		msg = opts[0]
-		path = opts[1]
-	}
-	return ufmt.Sprintf("%s\n\nliveEvent: %d\n\npath: %v", msg, registry.LiveEventId, path)
-}
-
-/* Content Management API */
-/*
-func Publish(markdown string) {
-	AssertAdminAccess()
+func (*Api) Publish(markdown string) {
+	assertAccess()
 	staticContent.Published = true
 	staticContent.Markdown = markdown
 }
 
-func Destroy(markdown string) {
-	Publish(markdown)
-	registry = register.NewRegistry(renderOpts) // reset the registry to a new instance
+func (*Api) Destroy(markdown string) {
+	api.Publish(markdown)
+	registry = register.NewRegistry(registry.RenderOpts) // reset the registry to a new instance
 }
 
-/*
-func Revision() string {
-	patchLevelStr := strconv.Itoa(eventRegistry.PatchLevel)
-	if eventRegistry.PatchLevel < 10 {
-		patchLevelStr = "00" + patchLevelStr
-	} else if eventRegistry.PatchLevel < 100 {
-		patchLevelStr = "0" + patchLevelStr
-	}
-	return "\n\n[rev: " + strconv.Itoa(eventRegistry.PatchLevel) + "](./gophercon/patch" + patchLevelStr + ")\n\n"
-}
-*/
-
-func Unpublish(key string) {
-	AssertAdminAccess()
+func (*Api) Unpublish(key string) {
+	assertAccess()
 	switch key {
 	case "map":
 		eventMap.Published = false
@@ -129,8 +110,8 @@ func Unpublish(key string) {
 	}
 }
 
-func SetContent(key, markdown string) {
-	AssertAdminAccess()
+func (*Api) SetContent(key, markdown string) {
+	assertAccess()
 	switch key {
 	case "map":
 		eventMap.SetPublished(true)
@@ -146,59 +127,14 @@ func SetContent(key, markdown string) {
 	}
 }
 
-/* Render Management API */
-func ToggleOpts(opts ...string) {
-	AssertAdminAccess()
-	for _, opt := range opts {
-		switch opt {
-		case "location":
-			renderOpts.Location = !renderOpts.Location
-		case "svg":
-			renderOpts.Svg = !renderOpts.Svg
-		case "schedule":
-			renderOpts.Schedule = !renderOpts.Schedule
-		case "content":
-			staticContent.Published = !staticContent.Published
-		case "map":
-			eventMap.Published = !eventMap.Published
-		case "speaker":
-			renderOpts.Speaker = !renderOpts.Speaker
-		default:
-			panic("invalid option: " + opt)
-		}
-	}
+func (*Api) SetPatchLevel(level int) {
+	assertAccess()
+	registry.SetPatchLevel(level)
 }
 
-/*
-func SetPatchLevel(level int) {
-	AssertAdminAccess()
-	if level != eventRegistry.PatchLevel+1 {
-		panic("patch level must be incremented by 1")
-	}
-	eventRegistry.SetPatchLevel(level)
-}
-*/
-
-/* Auth API */
-func HasAllowedPrefix() bool {
-	currentRealm := std.CurrentRealm()
-	for _, callerPath := range realmAllowPrefix {
-		if strings.HasPrefix(currentRealm.PkgPath(), callerPath) {
-			return true
-		}
-	}
-	return false
-}
-
-// AssertAdminAccess panics if the caller's realm does not match the allowed prefix.
-// This is used to restrict access to certain functions intended to be used by patch-realm admins.
-func AssertAdminAccess() {
-	if !HasAllowedPrefix() {
-		panic("access denied: " + std.CurrentRealm().PkgPath() +
-			" realm must match an allowed prefix:[" + strings.Join(realmAllowPrefix, ",") + "]")
-	}
-}
-
-func txlinkButton(label, method string) string {
-	return component.Button(label, txlink.NewLink(method).URL())
+func (*Api) RegisterEvent(evt *event.Event, opts *component.RenderOpts) string {
+	registry.SetRenderOpts(opts) // REVIEW: still needed?
+	id := registry.RegisterEvent(evt, opts)
+	registry.LiveEventId = id
+	return id
 }

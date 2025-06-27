@@ -1,4 +1,4 @@
-package event
+package gnolandlaunch
 
 import (
 	"std"
@@ -69,7 +69,7 @@ func init() {
 
 // Use Admin access to set the role of an address.
 func AdminSetRole(role string, addr std.Address) {
-	AssertAdminAccess()
+	assertAccess()
 	switch role {
 	case "waitlist":
 		waitlist.Set(string(addr), struct{}{})
@@ -90,7 +90,7 @@ func AdminSetRole(role string, addr std.Address) {
 
 // AdminRemoveRole removes the address from the specified role.
 func AdminRemoveRole(role string, addr std.Address) {
-	AssertAdminAccess()
+	assertAccess()
 	switch role {
 	case "waitlist":
 		waitlist.Remove(string(addr))
@@ -111,7 +111,7 @@ func AdminRemoveRole(role string, addr std.Address) {
 
 // ResetRoles resets all roles to empty trees and re-initializes the accessChecks map.
 func ResetRoles() {
-	AssertAdminAccess()
+	assertAccess()
 	waitlist = avl.NewTree()
 	organizers = avl.NewTree()
 	speakers = avl.NewTree()
@@ -239,13 +239,13 @@ func ListRoles() []string {
 // SetRoleHandler takes a role and a function that takes an address and returns a boolean value.
 func SetRoleHandler(role string, fn func(string) bool) {
 	aclOverride[role] = true
-	AssertAdminAccess()
+	assertAccess()
 	accessChecks[role] = fn
 }
 
 // UnsetRoleHandler takes a role and removes it from the accessChecks map.
 func UnsetRoleHandler(role string) {
-	AssertAdminAccess()
+	assertAccess()
 	delete(accessChecks, role)
 }
 

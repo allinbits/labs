@@ -26,4 +26,6 @@ test: build
 # Add paths that you want tested here
 test-all: build
 	@make test path=gno.land/r/linker000/... && \
-	make test path=gno.land/p/eve000/...
+	make test path=gno.land/p/eve000/... && \
+	make test path=gno.land/r/buidlthefuture000/... && \
+	make test path=gno.land/r/labs000/...

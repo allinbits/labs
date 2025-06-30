@@ -12,6 +12,7 @@ services:
       - ./gno.land/p/eve000:/gnoroot/examples/gno.land/p/eve000
       - ./gno.land/r/linker000:/gnoroot/examples/gno.land/r/linker000
       - ./gno.land/r/buidlthefuture000:/gnoroot/examples/gno.land/r/buidlthefuture000
+      - ./gno.land/r/labs000:/gnoroot/examples/gno.land/r/labs000
     environment:
       - GNO_HOME=/gnoroot
     command: ["dev"]

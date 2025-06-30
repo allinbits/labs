@@ -1,4 +1,4 @@
-FROM ghcr.io/gnolang/gno/gnodev:0.0.1-a3237eb57-master
+FROM ghcr.io/gnolang/gno/gnodev:0.0.1-f8e57320d-master
 
 RUN apk add --no-cache ca-certificates bash
 

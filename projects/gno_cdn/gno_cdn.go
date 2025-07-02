@@ -1,6 +1,8 @@
 package gno_cdn
 
 import (
+	"github.com/gnolang/gno/gno.land/pkg/gnoclient"
+	rpcclient "github.com/gnolang/gno/tm2/pkg/bft/rpc/client"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/exp/slog"
@@ -11,13 +13,16 @@ import (
 )
 
 type Server struct {
-	router *chi.Mux
-	config *ServerOptions
+	router    *chi.Mux
+	config    *ServerOptions
+	gnoClient *gnoclient.Client
 }
 
 type ServerOptions struct {
 	TargetHost    string // The target host to proxy requests to
 	ListenAddress string
+	GnolandRpcUrl string
+	Realm         string
 }
 
 func NewCdnServer(config *ServerOptions) *Server {
@@ -25,11 +30,16 @@ func NewCdnServer(config *ServerOptions) *Server {
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+	gnolandRpcClient, err := rpcclient.NewHTTPClient(config.GnolandRpcUrl)
+	if err != nil {
+		panic("Failed to create Gno client: " + err.Error())
+	}
 
 	// Create server instance
 	s := &Server{
-		router: chi.NewRouter(),
-		config: config,
+		router:    chi.NewRouter(),
+		config:    config,
+		gnoClient: &gnoclient.Client{RPCClient: gnolandRpcClient},
 	}
 
 	// Middleware setup
@@ -65,6 +75,10 @@ func (s *Server) handleProxyRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid backend URL", http.StatusInternalServerError)
 		return
 	}
+	if !s.isValidCdnPath(user, repo, version) {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
 
 	proxy := s.createReverseProxy(proxyURL)
 	proxy.ServeHTTP(w, r)
@@ -87,4 +101,11 @@ func (s *Server) createReverseProxy(proxyURL *url.URL) *httputil.ReverseProxy {
 		return nil
 	}
 	return proxy
+}
+
+func (s *Server) isValidCdnPath(user, repo, version string) bool {
+	url := s.buildBackendURL(user, repo, version, "static/")
+	// FIXME: check url against on-chain registry
+	slog.Info("Validating CDN path", slog.String("url", url))
+	return true
 }

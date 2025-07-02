@@ -104,6 +104,7 @@ func (s *Server) createReverseProxy(proxyURL *url.URL) *httputil.ReverseProxy {
 	return proxy
 }
 
+// TODO: consider caching logic so query doesn't hit the backend every time
 func (s *Server) isValidCdnPath(user, repo, version string) bool {
 	url := s.buildBackendURL(user, repo, version, "static/")
 	req := fmt.Sprintf(`IsValidHost("%s")`, url)

@@ -2,7 +2,8 @@ package cdn
 
 import (
 	"std"
-    "strings"
+	"strings"
+
 	"gno.land/p/demo/avl"
 	"gno.land/p/moul/txlink"
 )
@@ -12,39 +13,42 @@ type App struct{}
 var (
 	app      = &App{}
 	registry = avl.NewTree()
-	admins  = avl.NewTree()
+	admins   = avl.NewTree()
 )
 
 type Admin struct {
-    Address string
+	Address string
 }
 
 type Host struct {
-    Path string
+	Path string
 }
 
 func setHost(path string) {
-    registry.Set(path, &Host{Path: path})
+	if _, ok := registry.Get(path); ok {
+		// TODO emit update event
+	}
+	registry.Set(path, &Host{Path: path})
 }
 
 func IsAdmin() bool {
-    addr := std.OriginCaller().String()
-    _, ok := admins.Get(addr)
-    return ok
+	addr := std.OriginCaller().String()
+	_, ok := admins.Get(addr)
+	return ok
 }
 
 func assertAccess() {
-    if !IsAdmin() {
-        panic("access denied")
-    }
+	if !IsAdmin() {
+		panic("access denied")
+	}
 }
 
 func setAdmin(address string) {
-    admins.Set(address, &Admin{ Address: address })
+	admins.Set(address, &Admin{Address: address})
 }
 
 func init() {
-    registry.Set("gno.land/static/", true)
+	setHost("https://cdn.jsdelivr.net/gh/pflow-xyz/pflow-app@main/static/")
 }
 
 func (*App) Name() string {
@@ -56,7 +60,7 @@ func (*App) Version() string {
 }
 
 func (*App) Render(path string) string {
-    _ = path
+	_ = path
 	return "[IsAdmin](" + txlink.NewLink("IsAdmin").URL() + ")"
 }
 
@@ -65,13 +69,14 @@ func AddStaticHost(host string) {
 }
 
 func IsValidHost(host string) bool {
-    if !strings.HasSuffix(host, "/static/") {
-        return false
-    }
-    _, ok := registry.Get(host)
-    return ok
+	// by convention hosts must serve data from "/static/"
+	if !strings.HasSuffix(host, "/static/") {
+		return false
+	}
+	_, ok := registry.Get(host)
+	return ok
 }
 
 func Render(path string) string {
-    return app.Render(path)
+	return app.Render(path)
 }

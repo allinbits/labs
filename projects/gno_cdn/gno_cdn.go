@@ -1,6 +1,7 @@
 package gno_cdn
 
 import (
+	"fmt"
 	"github.com/gnolang/gno/gno.land/pkg/gnoclient"
 	rpcclient "github.com/gnolang/gno/tm2/pkg/bft/rpc/client"
 	"github.com/go-chi/chi/v5"
@@ -105,7 +106,13 @@ func (s *Server) createReverseProxy(proxyURL *url.URL) *httputil.ReverseProxy {
 
 func (s *Server) isValidCdnPath(user, repo, version string) bool {
 	url := s.buildBackendURL(user, repo, version, "static/")
-	// FIXME: check url against on-chain registry
-	slog.Info("Validating CDN path", slog.String("url", url))
-	return true
+	req := fmt.Sprintf(`IsValidHost("%s")`, url)
+	stringToken, _, err := s.gnoClient.QEval(s.config.Realm, req)
+	if err != nil {
+		slog.Error("Error validating CDN path", slog.String("path", url), slog.String("err", err.Error()))
+		return false
+	} else {
+		slog.Info("Validating CDN path", slog.String("path", url), slog.String("result", stringToken))
+	}
+	return stringToken == "(true bool)"
 }

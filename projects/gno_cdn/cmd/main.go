@@ -43,7 +43,7 @@ func main() {
 		TargetHost:    targetHost,
 		ListenAddress: listenAddress,
 		GnolandRpcUrl: rpcUrl,
-		Realm:         "/r/cdn000",
+		Realm:         "gno.land/r/cdn000",
 	}
 
 	server := gno_cdn.NewCdnServer(&config)

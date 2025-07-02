@@ -1,0 +1,90 @@
+package gno_cdn
+
+import (
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/exp/slog"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+)
+
+type Server struct {
+	router *chi.Mux
+	config *ServerOptions
+}
+
+type ServerOptions struct {
+	TargetHost    string // The target host to proxy requests to
+	ListenAddress string
+}
+
+func NewCdnServer(config *ServerOptions) *Server {
+	// Initialize logger
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	// Create server instance
+	s := &Server{
+		router: chi.NewRouter(),
+		config: config,
+	}
+
+	// Middleware setup
+	s.router.Use(middleware.Logger)
+	s.router.Use(middleware.Recoverer)
+
+	// Routes setup
+	s.router.NotFound(s.handleNotFound)
+	s.router.Get("/gh/{user}/{repo}@{version}/*", s.handleProxyRequest)
+
+	return s
+}
+
+func (s *Server) Run() error {
+	return http.ListenAndServe(s.config.ListenAddress, s.router)
+}
+
+func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Route not found: "+r.URL.Path, http.StatusNotFound)
+}
+
+func (s *Server) handleProxyRequest(w http.ResponseWriter, r *http.Request) {
+	user := chi.URLParam(r, "user")
+	repo := chi.URLParam(r, "repo")
+	version := chi.URLParam(r, "version")
+	filepath := chi.URLParam(r, "*") // Capture the wildcard path
+
+	backendURL := s.buildBackendURL(user, repo, version, filepath)
+	slog.Info("Forwarding request", slog.String("url", backendURL))
+
+	proxyURL, err := url.Parse(backendURL)
+	if err != nil {
+		http.Error(w, "Invalid backend URL", http.StatusInternalServerError)
+		return
+	}
+
+	proxy := s.createReverseProxy(proxyURL)
+	proxy.ServeHTTP(w, r)
+}
+
+func (s *Server) buildBackendURL(user, repo, version, filepath string) string {
+	return s.config.TargetHost + "/gh/" + user + "/" + repo + "@" + version + "/" + filepath
+}
+
+func (s *Server) createReverseProxy(proxyURL *url.URL) *httputil.ReverseProxy {
+	proxy := httputil.NewSingleHostReverseProxy(proxyURL)
+	proxy.Director = func(req *http.Request) {
+		req.Host = proxyURL.Host // Ensure Host matches the backend server
+		req.URL.Scheme = proxyURL.Scheme
+		req.URL.Host = proxyURL.Host
+		req.URL.Path = proxyURL.Path
+	}
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		resp.Header.Set("X-Cache-Status", "MISS") // Example header similar to nginx
+		return nil
+	}
+	return proxy
+}

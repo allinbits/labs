@@ -1,0 +1,57 @@
+name: Gnoland CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "projects/gnoland/**"
+      - ".github/workflows/gnoland.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "projects/gnoland/**"
+      - ".github/workflows/gnoland.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy-caddy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: labsnet-prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for Caddy changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            caddy:
+              - 'projects/gnoland/caddy/**'
+
+      - name: Setup Fly CLI
+        if: steps.changes.outputs.caddy == 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy Caddy to Fly.io
+        if: steps.changes.outputs.caddy == 'true'
+        run: |
+          cd projects/gnoland/caddy
+          flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_CADDY }}
+
+  deploy-gnoland:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: labsnet-prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Gnoland (TODO)
+        run: |
+          echo "Gnoland deployment not yet implemented"

@@ -5,13 +5,10 @@ import (
 	"strings"
 
 	"gno.land/p/demo/avl"
-	"gno.land/p/moul/txlink"
 )
 
-type App struct{}
 
 var (
-	app      = &App{}
 	registry = avl.NewTree()
 	admins   = avl.NewTree()
 )
@@ -20,15 +17,12 @@ type Admin struct {
 	Address string
 }
 
-type Host struct {
+type BannedHost struct {
 	Path string
 }
 
-func setHost(path string) {
-	if _, ok := registry.Get(path); ok {
-		// TODO emit update event
-	}
-	registry.Set(path, &Host{Path: path})
+func banHost(path string) {
+	registry.Set(path, &BannedHost{Path: path})
 }
 
 func IsAdmin() bool {
@@ -48,35 +42,62 @@ func setAdmin(address string) {
 }
 
 func init() {
-	setHost("https://cdn.jsdelivr.net/gh/pflow-xyz/pflow-app@main/static/")
+    setAdmin("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz")
+	banHost("https://cdn.example.com/gh/pflow-xyz/pflow-app@main/static/")
+	banHost("https://cdn.example.com/gh/allinbits/gnoserve@main/static/")
+	//banHost("https://cdn.jsdelivr.net/gh/pflow-xyz/pflow-app@main/static/")
 }
 
-func (*App) Name() string {
-	return "cdn"
+func Render(path string) string {
+    var sb strings.Builder
+    // print admins
+    sb.WriteString("# cdn000 - CDN blocklist\n")
+    sb.WriteString("This is a list of banned CDN hosts and admins who can manage them.\n\n")
+    sb.WriteString("CDN paths that are not banned are usable via the gno_cdn proxy.\n")
+
+    sb.WriteString("## CDN Admins\n")
+    admins.IterateByOffset(0, admins.Size(), func(key string, value interface{}) bool {
+        sb.WriteString("\n- [" + key + "](/u/" + key + ")")
+        return false
+    })
+    sb.WriteString("\n\n")
+    sb.WriteString("## Banned CDN Hosts\n")
+    registry.IterateByOffset(0, registry.Size(), func(key string, value interface{}) bool {
+        sb.WriteString("\n- " +key)
+        return false
+    })
+
+    return sb.String()
 }
 
-func (*App) Version() string {
-	return "0.0.1"
-}
-
-func (*App) Render(path string) string {
-	_ = path
-	return "[IsAdmin](" + txlink.NewLink("IsAdmin").URL() + ")"
-}
-
-func AddStaticHost(host string) {
+// BanHost adds a host to the banned list, only callable by an admin.
+func BanHost(_ realm , host string) {
+    assertAccess()
 	registry.Set(host, true)
 }
 
 func IsValidHost(host string) bool {
+	if !strings.HasPrefix(host, "https://") {
+        return false
+    }
+
 	// by convention hosts must serve data from "/static/"
 	if !strings.HasSuffix(host, "/static/") {
 		return false
 	}
-	_, ok := registry.Get(host)
-	return ok
+
+	return !IsBannedHost(host)
 }
 
-func Render(path string) string {
-	return app.Render(path)
+func IsBannedHost(host string) bool {
+    _, banned := registry.Get(host)
+    return banned
+}
+
+func RequestBan(_ realm, host string, msg string) {
+    if IsBannedHost(host) {
+        panic("host is already banned")
+    }
+    // emit event to request a ban
+    std.Emit("action", "RequestBan", "host", host, "msg",  msg)
 }

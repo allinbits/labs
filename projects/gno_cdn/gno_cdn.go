@@ -97,10 +97,11 @@ func (s *Server) createReverseProxy(proxyURL *url.URL) *httputil.ReverseProxy {
 		req.URL.Host = proxyURL.Host
 		req.URL.Path = proxyURL.Path
 	}
-	proxy.ModifyResponse = func(resp *http.Response) error {
-		resp.Header.Set("X-Cache-Status", "MISS") // Example header similar to nginx
-		return nil
-	}
+	// proxy.ModifyResponse = func(resp *http.Response) error {
+	// 	// REVIEW: is this needed
+	// 	resp.Header.Set("X-Cache-Status", "MISS") // Example header similar to nginx
+	// 	return nil
+	// }
 	return proxy
 }
 

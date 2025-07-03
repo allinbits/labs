@@ -1,10 +1,13 @@
-.PHONY: dev staging test test-all build down
+.PHONY: dev staging test test-all build build-test down
 
 build:
 	docker compose build
 
 build-no-cache:
 	docker compose build --no-cache
+
+build-test:
+	docker build -f Dockerfile_testrunner -t gnoland-testrunner .
 
 down:
 	docker compose down --remove-orphans -v
@@ -15,16 +18,16 @@ dev: down build
 staging: down build
 	docker compose run --rm gnodev-labs staging
 
-# Pass test path to docker compose using bash as entrypoint
-test: build
+# Pass test path to docker using testrunner
+test: build-test
 	@if [ -z "$(path)" ]; then \
 		echo "Usage: make test path=gno.land/r/linker000/mockevent/v1"; \
 	else \
-		docker compose run --rm gnodev-labs gno test -v /gnoroot/examples/$(path); \
+		docker run --rm gnoland-testrunner gno test -v /gnoroot/examples/$(path); \
 	fi
 
 # Add paths that you want tested here
-test-all: build
+test-all: build-test
 	@make test path=gno.land/r/linker000/... && \
 	make test path=gno.land/p/eve000/... && \
 	make test path=gno.land/r/buidlthefuture000/... && \

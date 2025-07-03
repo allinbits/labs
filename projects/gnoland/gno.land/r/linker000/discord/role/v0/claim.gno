@@ -110,14 +110,41 @@ func claimFromPayload(payload string) (*Claim, error) {
 	if err != nil {
 		return nil, errors.New("claim: failed to parse timestamp")
 	}
+
+	discordAccountID := splitPayload[1]
+	discordGuildID := splitPayload[2]
+	discordRoleID := splitPayload[3]
+	addr := std.Address(splitPayload[4])
+	roleName := splitPayload[5]
+	realmPath := splitPayload[6]
+
+	// Validate discord IDs
+	if err := validateDiscordID(discordAccountID); err != nil {
+		return nil, err
+	}
+	if err := validateDiscordID(discordGuildID); err != nil {
+		return nil, err
+	}
+	if err := validateDiscordID(discordRoleID); err != nil {
+		return nil, err
+	}
+
+	// Validate role name and realm path are not empty
+	if len(roleName) == 0 {
+		return nil, errors.New("claim: role name cannot be empty")
+	}
+	if len(realmPath) == 0 {
+		return nil, errors.New("claim: realm path cannot be empty")
+	}
+
 	return &Claim{
 		timestamp:        timestamp,
-		discordAccountID: splitPayload[1],
-		discordGuildID:   splitPayload[2],
-		discordRoleID:    splitPayload[3],
-		addr:             std.Address(splitPayload[4]),
-		roleName:         splitPayload[5],
-		realmPath:        splitPayload[6],
+		discordAccountID: discordAccountID,
+		discordGuildID:   discordGuildID,
+		discordRoleID:    discordRoleID,
+		addr:             addr,
+		roleName:         roleName,
+		realmPath:        realmPath,
 	}, nil
 }
 
@@ -151,6 +178,23 @@ func verifyAddress(addr std.Address) error {
 	caller := std.PreviousRealm().Address()
 	if addr != caller {
 		return errors.New("claim: address does not match caller")
+	}
+	return nil
+}
+
+// validateDiscordID validates that the Discord ID is reasonable
+func validateDiscordID(discordID string) error {
+	if len(discordID) == 0 {
+		return errors.New("claim: discord ID cannot be empty")
+	}
+	if len(discordID) > 32 {
+		return errors.New("claim: discord ID too long")
+	}
+	// Discord IDs should be numeric (snowflake format)
+	for _, char := range discordID {
+		if char < '0' || char > '9' {
+			return errors.New("claim: discord ID must be numeric")
+		}
 	}
 	return nil
 }

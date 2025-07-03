@@ -2,27 +2,22 @@ package user
 
 import (
 	"std"
-
-	"gno.land/p/demo/avl"
 )
 
 var (
 	// ds is the primary datastore for claims
-	ds datastore
+	ds *datastore
 )
 
 func init() {
-	ds = datastore{
-		byAddr:      avl.NewTree(),
-		byDiscordID: avl.NewTree(),
-	}
+	ds = newDatastore()
 }
 
 // Link takes a base64 encoded ed25519 signed claim from the gno discord linker bot.
 // If the claim is valid, it will use the claim to link a gno address to a discord id.
 // A gno address may only be linked to a single discord ID and a single discord ID may
 // only be linked to a single gno address.
-func Link(encodedClaim string) {
+func Link(cur realm, encodedClaim string) {
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)
@@ -34,7 +29,7 @@ func Link(encodedClaim string) {
 
 // UnlinkByCaller removes a discord link, based on the caller address
 // This does not require a claim because the caller is the link owner
-func UnlinkByCaller() {
+func UnlinkByCaller(cur realm) {
 	caller := std.PreviousRealm().Address()
 	ds.removeByAddress(caller)
 }
@@ -43,7 +38,7 @@ func UnlinkByCaller() {
 // and unlinks a discordID from a gno address. This is useful if you
 // still have access to your discord account, but you have lost
 // access to your old gno address.
-func UnlinkByClaim(encodedClaim string) {
+func UnlinkByClaim(cur realm, encodedClaim string) {
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)

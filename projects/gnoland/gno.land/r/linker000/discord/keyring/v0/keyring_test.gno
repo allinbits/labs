@@ -105,7 +105,7 @@ func TestRotate(t *testing.T) {
 		testing.SetOriginCaller(test.caller)
 		if test.shouldFail {
 			r := revive(func() {
-				cross(Rotate)(test.key)
+				Rotate(cross, test.key)
 			})
 			if r != test.reviveMsg {
 				t.Errorf("expected: %v, got: %v, description: %v\n", test.reviveMsg, r, test.description)
@@ -113,7 +113,7 @@ func TestRotate(t *testing.T) {
 			continue
 		}
 		if test.key != "" {
-			cross(Rotate)(test.key)
+			Rotate(cross, test.key)
 		}
 		pubk := hex.EncodeToString(PubKey())
 		if test.expectedKey != pubk {

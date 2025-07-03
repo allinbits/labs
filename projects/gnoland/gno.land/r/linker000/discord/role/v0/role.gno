@@ -11,7 +11,7 @@ func init() {
 }
 
 // Link takes an encoded claim and saves it to the datastore, or it panics and rolls back the transaction
-func Link(encodedClaim string) {
+func Link(cur realm, encodedClaim string) {
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)
@@ -24,7 +24,7 @@ func Link(encodedClaim string) {
 
 // UnlinkByClaim takes a base64 encoded string of a ed25519 signed claim, if if it passes
 // validation, it removes the linked role from registry.
-func UnlinkByClaim(encodedClaim string) {
+func UnlinkByClaim(cur realm, encodedClaim string) {
 	claim, err := validateEncodedClaim(encodedClaim, false)
 	if err != nil {
 		panic(err)

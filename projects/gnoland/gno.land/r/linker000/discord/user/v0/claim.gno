@@ -81,10 +81,19 @@ func claimFromPayload(payload string) (*Claim, error) {
 	if err != nil {
 		return nil, errors.New("claim: failed to parse timestamp")
 	}
+
+	discordID := splitPayload[1]
+	addr := std.Address(splitPayload[2])
+
+	// Validate discord ID
+	if err := validateDiscordID(discordID); err != nil {
+		return nil, err
+	}
+
 	return &Claim{
 		timestamp: timestamp,
-		discordID: splitPayload[1],
-		addr:      std.Address(splitPayload[2]),
+		discordID: discordID,
+		addr:      addr,
 	}, nil
 }
 
@@ -92,6 +101,23 @@ func verifyAddress(addr std.Address) error {
 	caller := std.PreviousRealm().Address()
 	if addr != caller {
 		return errors.New("claim: address does not match caller")
+	}
+	return nil
+}
+
+// validateDiscordID validates that the Discord ID is reasonable
+func validateDiscordID(discordID string) error {
+	if len(discordID) == 0 {
+		return errors.New("claim: discord ID cannot be empty")
+	}
+	if len(discordID) > 32 {
+		return errors.New("claim: discord ID too long")
+	}
+	// Discord IDs should be numeric (snowflake format)
+	for _, char := range discordID {
+		if char < '0' || char > '9' {
+			return errors.New("claim: discord ID must be numeric")
+		}
 	}
 	return nil
 }

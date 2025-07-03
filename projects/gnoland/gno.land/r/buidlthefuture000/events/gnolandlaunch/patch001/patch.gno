@@ -9,10 +9,10 @@ example patch 01
 `
 
 func init() {
-    // TODO: update to match new permissions model
-    _ = gnolandlaunch.SetPatchLevel
+	// TODO: update to match new permissions model
+	_ = gnolandlaunch.SetPatchLevel
 
-    // FIXME: error: cannot modify external-realm or non-realm object
+	// FIXME: error: cannot modify external-realm or non-realm object
 	gnolandlaunch.SetPatchLevel(1) // set the patch level to 1
 }
 

@@ -37,7 +37,7 @@ func NotEmpty(value string) bool {
 }
 
 func Render(path string) (out string) {
-    return render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+	return render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
 }
 
 func render(path string) (out string) {

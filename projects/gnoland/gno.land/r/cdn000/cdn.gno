@@ -3,7 +3,9 @@ package cdn
 import (
 	"std"
 	"strings"
+	"net/url"
 
+	"gno.land/p/moul/txlink"
 	"gno.land/p/demo/avl"
 )
 
@@ -48,12 +50,60 @@ func init() {
 	//banHost("https://cdn.jsdelivr.net/gh/pflow-xyz/pflow-app@main/static/")
 }
 
-func Render(path string) string {
+var requestBanForm = `
+<gno-form>
+<gno-input name="host" placeholder="https://cdn.example.com/gh/user/repo@main/static/" />
+<gno-input name="msg" placeholder=" has a security issue: XXX" />
+</gno-form>
+`
+
+func renderConfirmation(path string) string {
     var sb strings.Builder
-    // print admins
+    fullURL := std.CurrentRealm().PkgPath() + path
+    u, err := url.Parse(fullURL)
+    if err != nil {
+        panic("invalid path in renderConfirmation: " + path)
+    }
+
+    q := u.Query()
+    host := q.Get("host")
+    msg := q.Get("msg")
+
+    if !IsValidHost(host) {
+        sb.WriteString("# Invalid Host\n")
+        sb.WriteString("The host you provided is not valid. Please ensure it starts with `https://` and ends with `/static/`.\n")
+        sb.WriteString("You provided: `" + host + "`\n\n")
+        return sb.String()
+    }
+
+    sb.WriteString("## Request to ban CDN host\n")
+    sb.WriteString("You are requesting to ban the following host:\n\n")
+    sb.WriteString("- " + host + "\n\n")
+    sb.WriteString("Reason: " + msg + "\n\n")
+    sb.WriteString("To submit -  sign request by clicking the button below.\n\n")
+    sb.WriteString(confirmButton(host, msg))
+    return sb.String()
+}
+
+func confirmButton(host, msg string) string {
+    label := "Confirm Ban"
+    link := txlink.NewLink("RequestBan").AddArgs("host", host, "msg", msg).URL()
+    svgButton := buttonSvg(label)
+	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
+
+	return "[![" + label + "](" + dataUrl + ")](" + link + ")"
+}
+
+func Render(path string) string {
+    if strings.Contains(path, "?") {
+        return renderConfirmation(path)
+    }
+    var sb strings.Builder
     sb.WriteString("# cdn000 - CDN blocklist\n")
     sb.WriteString("This is a list of banned CDN hosts and admins who can manage them.\n\n")
     sb.WriteString("CDN paths that are not banned are usable via the gno_cdn proxy.\n")
+
+    sb.WriteString(requestBanForm)
 
     sb.WriteString("## CDN Admins\n")
     admins.IterateByOffset(0, admins.Size(), func(key string, value interface{}) bool {
@@ -73,31 +123,51 @@ func Render(path string) string {
 // BanHost adds a host to the banned list, only callable by an admin.
 func BanHost(_ realm , host string) {
     assertAccess()
-	registry.Set(host, true)
+    if !IsValidHost(host) {
+        panic("invalid host")
+    }
+    std.Emit("action", "Ban", "host", host)
+    banHost(host)
 }
 
-func IsValidHost(host string) bool {
+func isValidFormat(host string) bool {
 	if !strings.HasPrefix(host, "https://") {
         return false
     }
 
-	// by convention hosts must serve data from "/static/"
 	if !strings.HasSuffix(host, "/static/") {
 		return false
 	}
 
-	return !IsBannedHost(host)
+	return true
 }
 
+func IsValidHost(host string) bool {
+	return isValidFormat(host) && !IsBannedHost(host)
+}
+
+// IsBannedHost checks if a host is banned in the CDN registry.
 func IsBannedHost(host string) bool {
     _, banned := registry.Get(host)
     return banned
 }
 
+// RequestBan sends a request to ban a host, only callable by an admin.
 func RequestBan(_ realm, host string, msg string) {
     if IsBannedHost(host) {
         panic("host is already banned")
     }
-    // emit event to request a ban
     std.Emit("action", "RequestBan", "host", host, "msg",  msg)
+}
+
+func buttonSvg(label string) string {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40">
+    <foreignObject x="0" y="0" width="200" height="40">
+        <body xmlns="http://www.w3.org/1999/xhtml">
+            <button style="width: 100%; height: 100%; font-size: 16px;">
+                ` + label + `
+            </button>
+        </body>
+    </foreignObject>
+</svg>`
 }

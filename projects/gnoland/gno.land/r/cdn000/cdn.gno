@@ -69,6 +69,9 @@ func renderConfirmation(path string) string {
     host := q.Get("host")
     msg := q.Get("msg")
 
+    host, _ = url.QueryUnescape(host)
+    msg, _ = url.QueryUnescape(msg)
+
     if !IsValidHost(host) {
         sb.WriteString("# Invalid Host\n")
         sb.WriteString("The host you provided is not valid. Please ensure it starts with `https://` and ends with `/static/`.\n")
@@ -87,6 +90,7 @@ func renderConfirmation(path string) string {
 
 func confirmButton(host, msg string) string {
     label := "Confirm Ban"
+    // FIXME: this link doesn't work properly in adena - it tries to add the realm path
     link := txlink.NewLink("RequestBan").AddArgs("host", host, "msg", msg).URL()
     svgButton := buttonSvg(label)
 	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
@@ -121,12 +125,14 @@ func Render(path string) string {
 }
 
 // BanHost adds a host to the banned list, only callable by an admin.
-func BanHost(_ realm , host string) {
+func BanHost(cur realm, host string) {
     assertAccess()
+    host, _ = url.QueryUnescape(host)
     if !IsValidHost(host) {
         panic("invalid host")
     }
-    std.Emit("action", "Ban", "host", host)
+
+    std.Emit("BanHost", "host", host)
     banHost(host)
 }
 
@@ -148,16 +154,22 @@ func IsValidHost(host string) bool {
 
 // IsBannedHost checks if a host is banned in the CDN registry.
 func IsBannedHost(host string) bool {
+    host, _ = url.QueryUnescape(host)
     _, banned := registry.Get(host)
     return banned
 }
 
 // RequestBan sends a request to ban a host, only callable by an admin.
-func RequestBan(_ realm, host string, msg string) {
+func RequestBan(cur realm, host string, msg string) {
+    host, _ = url.QueryUnescape(host)
+    msg, _ = url.QueryUnescape(msg)
+    if !isValidFormat(host) {
+        panic("invalid host")
+    }
     if IsBannedHost(host) {
         panic("host is already banned")
     }
-    std.Emit("action", "RequestBan", "host", host, "msg",  msg)
+    std.Emit("RequestBan", "host", host, "msg",  msg)
 }
 
 func buttonSvg(label string) string {

@@ -2,8 +2,8 @@ package register
 
 import (
 	"std"
-	"strings"
 	"strconv"
+	"strings"
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
@@ -15,21 +15,21 @@ type Registry struct {
 	Events      *avl.Tree
 	LiveEventId string
 	renderOpts  *component.RenderOpts
-	patchLevel int // current patch level, used for debugging and content management
-	patchRealm string // realm that is allowed to update the patch level, used for debugging and content management
+	patchLevel  int    // current patch level, used for debugging and content management
+	patchRealm  string // realm that is allowed to update the patch level, used for debugging and content management
 }
 
-func (r *Registry)GetPatchLevel() string {
-    realmLink := strings.TrimPrefix(r.patchRealm, "gno.land")
-    return ufmt.Sprintf("[rev %d](%s)", r.patchLevel, realmLink)
+func (r *Registry) GetPatchLevel() string {
+	realmLink := strings.TrimPrefix(r.patchRealm, "gno.land")
+	return ufmt.Sprintf("[rev %d](%s)", r.patchLevel, realmLink)
 }
 
-func (r *Registry)SetPatchLevel(level int) {
-    if r.patchLevel + 1 != level {
-        panic("patch level must be incremented by 1, current: " + strconv.Itoa(r.patchLevel) + ", new: " + strconv.Itoa(level))
-    }
-    r.patchRealm = std.CurrentRealm().PkgPath()
-    r.patchLevel = level
+func (r *Registry) SetPatchLevel(level int) {
+	if r.patchLevel+1 != level {
+		panic("patch level must be incremented by 1, current: " + strconv.Itoa(r.patchLevel) + ", new: " + strconv.Itoa(level))
+	}
+	r.patchRealm = std.CurrentRealm().PkgPath()
+	r.patchLevel = level
 }
 
 func (r *Registry) GetEvent(id string) *event.Event {

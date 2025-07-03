@@ -12,6 +12,13 @@ type datastore struct {
 	byDiscordID *avl.Tree
 }
 
+func newDatastore() *datastore {
+	return &datastore{
+		byAddr:      avl.NewTree(),
+		byDiscordID: avl.NewTree(),
+	}
+}
+
 func (ds *datastore) set(claim *Claim) error {
 	if ds.getByAddress(claim.addr) != nil {
 		return errors.New("datastore: gno address is already linked")

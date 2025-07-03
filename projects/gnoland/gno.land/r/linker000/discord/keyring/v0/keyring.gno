@@ -45,7 +45,7 @@ func PreviousPubKey() []byte {
 // and the new key becomes the current key. The caller must be either the owner or backup
 // address specified in the contract. The hexKey must be exactly 64 characters long, and
 // the hexKey must be valid hex encoding, otherwise, rotate panics.
-func Rotate(hexKey string) {
+func Rotate(cur realm, hexKey string) {
 	assertIsAuthorized()
 	if len(hexKey) != 64 {
 		panic(invalidKeyLength)

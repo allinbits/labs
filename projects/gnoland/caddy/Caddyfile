@@ -47,12 +47,6 @@ Disallow: /`
     import block_crawlers
     import add_noindex_header
 
-    # Redirect root to home realm
-    @root {
-        path /
-    }
-    redir @root /r/labs000/home permanent
-
     # Proxy to gnodev web
     reverse_proxy labsnet.internal:8888
 

@@ -119,9 +119,6 @@ func RenderForm(path string) string {
 		sb.WriteString("\n- [" + key + "](/u/" + key + ")")
 		return false
 	})
-	sb.WriteString("\n\n")
-	sb.WriteString(RenderBlockList(path)) // show first page of banned hosts
-
 	return sb.String()
 }
 
@@ -192,7 +189,11 @@ func Render(path string) string {
 	} else if strings.Contains(path, "?") {
 		return RenderConfirmation(path)
 	}
-	return RenderForm(path)
+	var sb strings.Builder
+	sb.WriteString(RenderForm(path))
+	sb.WriteString("\n\n")
+	sb.WriteString(RenderBlockList(path)) // show first page of banned hosts
+	return sb.String()
 }
 
 // BanHost adds a host to the banned list, only callable by an admin.
@@ -243,6 +244,24 @@ func RequestBan(cur realm, host string, msg string) {
 	std.Emit("RequestBan", "host", host, "msg", msg)
 }
 
+func getIntProp(props map[string]interface{}, key string, defaultValue int) int {
+	if val, ok := props[key]; ok {
+		if intVal, ok := val.(int); ok {
+			return intVal
+		}
+	}
+	return defaultValue
+}
+
+func getStringProp(props map[string]interface{}, key string, defaultValue string) string {
+	if val, ok := props[key]; ok {
+		if strVal, ok := val.(string); ok {
+			return strVal
+		}
+	}
+	return defaultValue
+}
+
 func button(format string, props map[string]interface{}) string {
 	if format != "svg" {
 		panic("button: format must be 'svg'")
@@ -262,22 +281,4 @@ func button(format string, props map[string]interface{}) string {
         </body>
     </foreignObject>
 </svg>`
-}
-
-func getIntProp(props map[string]interface{}, key string, defaultValue int) int {
-	if val, ok := props[key]; ok {
-		if intVal, ok := val.(int); ok {
-			return intVal
-		}
-	}
-	return defaultValue
-}
-
-func getStringProp(props map[string]interface{}, key string, defaultValue string) string {
-	if val, ok := props[key]; ok {
-		if strVal, ok := val.(string); ok {
-			return strVal
-		}
-	}
-	return defaultValue
 }

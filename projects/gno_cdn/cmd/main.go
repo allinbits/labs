@@ -44,6 +44,7 @@ func main() {
 		ListenAddress: listenAddress,
 		GnolandRpcUrl: rpcUrl,
 		Realm:         "gno.land/r/cdn000",
+		CacheSize:     100,
 	}
 
 	server := gno_cdn.NewCdnServer(&config)

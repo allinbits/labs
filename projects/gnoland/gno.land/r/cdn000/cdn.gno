@@ -3,7 +3,9 @@ package cdn
 import (
 	"net/url"
 	"std"
+	"strconv"
 	"strings"
+	"time"
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
@@ -20,11 +22,12 @@ type Admin struct {
 }
 
 type BannedHost struct {
-	Path string
+	Path    string
+	BanDate time.Time
 }
 
 func banHost(path string) {
-	registry.Set(path, &BannedHost{Path: path})
+	registry.Set(path, &BannedHost{Path: path, BanDate: time.Now()})
 }
 
 func IsAdmin() bool {
@@ -117,22 +120,79 @@ func RenderForm(path string) string {
 		return false
 	})
 	sb.WriteString("\n\n")
-	sb.WriteString("## Banned CDN Hosts\n")
-	registry.IterateByOffset(0, registry.Size(), func(key string, value interface{}) bool {
-		sb.WriteString("\n- " + key)
-		return false
-	})
-	sb.WriteString("\n\n")
+	sb.WriteString(RenderBlockList(path)) // show first page of banned hosts
 
 	return sb.String()
 }
 
-func Render(path string) string {
-	if strings.Contains(path, "?") {
-		return RenderConfirmation(path)
-	} else {
-		return RenderForm(path)
+func RenderBlockList(path string) string {
+	var sb strings.Builder
+	const pageSize = 25
+
+	page := 1
+	u, err := url.Parse(std.CurrentRealm().PkgPath() + path)
+	if err == nil {
+		q := u.Query()
+		if p := q.Get("page"); p != "" {
+			if n, err := strconv.Atoi(p); err == nil && n > 0 {
+				page = n
+			}
+		}
 	}
+	sb.WriteString("## Banned Hosts\n\n")
+	sb.WriteString(renderPageControls(page, 0, pageSize))
+
+	total := registry.Size()
+	start := total - (page * pageSize)
+	end := start + pageSize
+	if start < 0 {
+		start = 0
+	}
+	if end > total {
+		end = total
+	}
+
+	// Iterate in reverse order
+	for i := end - 1; i >= start; i-- {
+		key, _ := registry.GetByIndex(i)
+		sb.WriteString("\n- " + key)
+	}
+
+	sb.WriteString("\n\n")
+	return sb.String()
+}
+
+func renderPageControls(current, start, pageSize int) string {
+	var sb strings.Builder
+	total := pageSize - start
+	if total <= 0 {
+		return ""
+	}
+	// add previous page link
+	if current > 1 {
+		prevPageLink := "?page=" + strconv.Itoa(current-1)
+		sb.WriteString("[<- Previous ](" + prevPageLink + ") ")
+	}
+
+	// add link to current page with page number
+	pageLink := "?page=" + strconv.Itoa(current)
+	sb.WriteString(" [Page " + strconv.Itoa(current) + "](" + pageLink + ") of " + strconv.Itoa((total+pageSize-1)/pageSize))
+
+	// add link to -> next page
+	if current*pageSize < total {
+		nextPageLink := "?page=" + strconv.Itoa(current+1)
+		sb.WriteString("[ -> Next](" + nextPageLink + ")\n")
+	}
+	return sb.String()
+}
+
+func Render(path string) string {
+	if strings.Contains(path, "?page=") {
+		return RenderBlockList(path)
+	} else if strings.Contains(path, "?") {
+		return RenderConfirmation(path)
+	}
+	return RenderForm(path)
 }
 
 // BanHost adds a host to the banned list, only callable by an admin.

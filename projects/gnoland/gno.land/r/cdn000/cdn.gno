@@ -26,6 +26,10 @@ type BannedHost struct {
 	BanDate time.Time
 }
 
+func (b *BannedHost) ToString() string {
+	return b.Path + " | " + b.BanDate.Format(time.RFC3339)
+}
+
 func banHost(path string) {
 	registry.Set(path, &BannedHost{Path: path, BanDate: time.Now()})
 }
@@ -136,6 +140,7 @@ func RenderBlockList(path string) string {
 			}
 		}
 	}
+
 	sb.WriteString("## Banned Hosts\n\n")
 	sb.WriteString(renderPageControls(page, 0, pageSize))
 
@@ -149,10 +154,15 @@ func RenderBlockList(path string) string {
 		end = total
 	}
 
-	// Iterate in reverse order
+	// Add table header
+	sb.WriteString("\n| Host Path | Ban Date |\n")
+	sb.WriteString("|-----------|-----------|\n")
+
+	// Iterate in reverse order and populate table rows
 	for i := end - 1; i >= start; i-- {
-		key, _ := registry.GetByIndex(i)
-		sb.WriteString("\n- " + key)
+		_, host := registry.GetByIndex(i)
+		bannedHost := host.(*BannedHost)
+		sb.WriteString("| " + bannedHost.Path + " | " + bannedHost.BanDate.Format(time.RFC3339) + " |\n")
 	}
 
 	sb.WriteString("\n\n")

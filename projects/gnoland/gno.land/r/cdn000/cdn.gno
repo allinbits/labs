@@ -52,17 +52,23 @@ func init() {
 
 var requestBanForm = `
 <gno-form>
-<gno-input name="host" placeholder="https://cdn.example.com/gh/user/repo@main/static/" />
-<gno-input name="msg" placeholder=" has a security issue: XXX" />
+    <gno-input name="host" placeholder="https://cdn.example.com/gh/user/repo@main/static/" />
+    <gno-input name="msg" placeholder=" has a security issue: XXX" />
 </gno-form>
 `
 
-func renderConfirmation(path string) string {
+func confirmMessage(host, msg string) string {
+	return "### Confirm Ban Request\n\n You are requesting to ban the following host: " + host + "\n\n" +
+		"Reason: " + msg + "\n\n" +
+		"To submit - sign request by clicking the button below."
+}
+
+func RenderConfirmation(path string) string {
 	var sb strings.Builder
 	fullURL := std.CurrentRealm().PkgPath() + path
 	u, err := url.Parse(fullURL)
 	if err != nil {
-		panic("invalid path in renderConfirmation: " + path)
+		panic("invalid path in renderConfirmation")
 	}
 
 	q := u.Query()
@@ -79,11 +85,7 @@ func renderConfirmation(path string) string {
 		return sb.String()
 	}
 
-	sb.WriteString("## Request to ban CDN host\n")
-	sb.WriteString("You are requesting to ban the following host:\n\n")
-	sb.WriteString("- " + host + "\n\n")
-	sb.WriteString("Reason: " + msg + "\n\n")
-	sb.WriteString("To submit -  sign request by clicking the button below.\n\n")
+	sb.WriteString(confirmMessage(host, msg))
 	sb.WriteString(confirmButton(host, msg))
 	return sb.String()
 }
@@ -98,14 +100,10 @@ func confirmButton(host, msg string) string {
 		"label":    label,
 	})
 	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
-
 	return "[![" + label + "](" + dataUrl + ")](" + link + ")"
 }
 
-func Render(path string) string {
-	if strings.Contains(path, "?") {
-		return renderConfirmation(path)
-	}
+func RenderForm(path string) string {
 	var sb strings.Builder
 	sb.WriteString("# cdn000 - CDN blocklist\n")
 	sb.WriteString("This is a list of banned CDN hosts and admins who can manage them.\n\n")
@@ -124,8 +122,17 @@ func Render(path string) string {
 		sb.WriteString("\n- " + key)
 		return false
 	})
+	sb.WriteString("\n\n")
 
 	return sb.String()
+}
+
+func Render(path string) string {
+	if strings.Contains(path, "?") {
+		return RenderConfirmation(path)
+	} else {
+		return RenderForm(path)
+	}
 }
 
 // BanHost adds a host to the banned list, only callable by an admin.

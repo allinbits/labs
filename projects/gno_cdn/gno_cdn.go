@@ -50,6 +50,8 @@ func NewCdnServer(config *ServerOptions) *Server {
 		gnoClient: &gnoclient.Client{RPCClient: gnolandRpcClient},
 	}
 
+	s.Cache, err = lru.New[string, bool](config.CacheSize)
+
 	// Middleware setup
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.Recoverer)
@@ -71,6 +73,27 @@ func NewCdnServer(config *ServerOptions) *Server {
 	s.router.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte("User-agent: *\nDisallow: /\n"))
+	})
+
+	s.router.Get("/lru", func(w http.ResponseWriter, r *http.Request) {
+		if s.Cache == nil {
+			http.Error(w, "Cache not initialized", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		// write all keys and values in the cache
+		response := "[\n"
+		for _, key := range s.Cache.Keys() {
+			_, found := s.Cache.Get(key)
+			if found {
+				response += fmt.Sprintf("  \"%s\",\n", key)
+			}
+		}
+		if len(s.Cache.Keys()) > 0 {
+			response = response[:len(response)-2] // Remove the last comma
+		}
+		response += "\n]"
+		_, _ = w.Write([]byte(response))
 	})
 
 	return s

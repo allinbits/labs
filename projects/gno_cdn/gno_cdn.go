@@ -1,6 +1,7 @@
 package gno_cdn
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/gnolang/gno/gno.land/pkg/gnoclient"
 	rpcclient "github.com/gnolang/gno/tm2/pkg/bft/rpc/client"
@@ -13,6 +14,9 @@ import (
 	"net/url"
 	"os"
 )
+
+//go:embed index.html
+var indexHtml string
 
 type Server struct {
 	Cache     *lru.Cache[string, bool]

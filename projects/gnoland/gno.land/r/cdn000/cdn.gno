@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gno.land/p/demo/avl"
+	"gno.land/p/demo/ufmt"
 	"gno.land/p/moul/txlink"
 )
 
@@ -90,7 +91,12 @@ func renderConfirmation(path string) string {
 func confirmButton(host, msg string) string {
 	label := "Confirm Ban"
 	link := txlink.NewLink("RequestBan").AddArgs("host", host, "msg", msg).URL()
-	svgButton := buttonSvg(label)
+	svgButton := button("svg", map[string]interface{}{
+		"width":    200,
+		"height":   40,
+		"fontSize": 16,
+		"label":    label,
+	})
 	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
 
 	return "[![" + label + "](" + dataUrl + ")](" + link + ")"
@@ -170,31 +176,41 @@ func RequestBan(cur realm, host string, msg string) {
 	std.Emit("RequestBan", "host", host, "msg", msg)
 }
 
-func buttonSvg(label string) string {
-	return button("svg", label, 200, 40, 16)
-}
-
-func button(format string, label string, width int, height int, fontSize int) string {
+func button(format string, props map[string]interface{}) string {
 	if format != "svg" {
-		panic("buttonSvg: format must be 'svg'")
-	}
-	if width <= 0 {
-		width = 200
-	}
-	if height <= 0 {
-		height = 40
-	}
-	if fontSize <= 0 {
-		fontSize = 16
+		panic("button: format must be 'svg'")
 	}
 
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="` + fmt.Sprintf("%d", width) + `" height="` + fmt.Sprintf("%d", height) + `">
-    <foreignObject x="0" y="0" width="` + fmt.Sprintf("%d", width) + `" height="` + fmt.Sprintf("%d", height) + `">
+	width := getIntProp(props, "width", 200)
+	height := getIntProp(props, "height", 40)
+	fontSize := getIntProp(props, "fontSize", 16)
+	label := getStringProp(props, "label", "Button")
+
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="` + ufmt.Sprintf("%d", width) + `" height="` + ufmt.Sprintf("%d", height) + `">
+    <foreignObject x="0" y="0" width="` + ufmt.Sprintf("%d", width) + `" height="` + ufmt.Sprintf("%d", height) + `">
         <body xmlns="http://www.w3.org/1999/xhtml">
-            <button style="width: 100%; height: 100%; font-size: ` + fmt.Sprintf("%d", fontSize) + `px;">
+            <button style="width: 100%; height: 100%; font-size: ` + ufmt.Sprintf("%d", fontSize) + `px;">
                 ` + label + `
             </button>
         </body>
     </foreignObject>
 </svg>`
+}
+
+func getIntProp(props map[string]interface{}, key string, defaultValue int) int {
+	if val, ok := props[key]; ok {
+		if intVal, ok := val.(int); ok {
+			return intVal
+		}
+	}
+	return defaultValue
+}
+
+func getStringProp(props map[string]interface{}, key string, defaultValue string) string {
+	if val, ok := props[key]; ok {
+		if strVal, ok := val.(string); ok {
+			return strVal
+		}
+	}
+	return defaultValue
 }

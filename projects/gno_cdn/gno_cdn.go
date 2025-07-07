@@ -6,6 +6,7 @@ import (
 	rpcclient "github.com/gnolang/gno/tm2/pkg/bft/rpc/client"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"golang.org/x/exp/slog"
 	"net/http"
 	"net/http/httputil"
@@ -14,6 +15,7 @@ import (
 )
 
 type Server struct {
+	Cache     *lru.Cache[string, bool]
 	router    *chi.Mux
 	config    *ServerOptions
 	gnoClient *gnoclient.Client
@@ -24,6 +26,7 @@ type ServerOptions struct {
 	ListenAddress string
 	GnolandRpcUrl string
 	Realm         string
+	CacheSize     int // Size of the LRU cache for CDN paths
 }
 
 func NewCdnServer(config *ServerOptions) *Server {
@@ -50,6 +53,21 @@ func NewCdnServer(config *ServerOptions) *Server {
 	// Routes setup
 	s.router.NotFound(s.handleNotFound)
 	s.router.Get("/gh/{user}/{repo}@{version}/*", s.handleProxyRequest)
+
+	s.router.Get("/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		response := fmt.Sprintf(`{"status": "ok", "cache_size": %d }`, s.Cache.Len())
+		_, _ = w.Write([]byte(response))
+	})
+
+	s.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(indexHtml))
+	})
+	s.router.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write([]byte("User-agent: *\nDisallow: /\n"))
+	})
 
 	return s
 }
@@ -97,24 +115,31 @@ func (s *Server) createReverseProxy(proxyURL *url.URL) *httputil.ReverseProxy {
 		req.URL.Host = proxyURL.Host
 		req.URL.Path = proxyURL.Path
 	}
-	// proxy.ModifyResponse = func(resp *http.Response) error {
-	// 	// REVIEW: is this needed
-	// 	resp.Header.Set("X-Cache-Status", "MISS") // Example header similar to nginx
-	// 	return nil
-	// }
 	return proxy
 }
 
-// TODO: consider caching logic so query doesn't hit the backend every time
+// Use cache to avoid hitting the backend every time
 func (s *Server) isValidCdnPath(user, repo, version string) bool {
-	url := s.buildBackendURL(user, repo, version, "static/")
-	req := fmt.Sprintf(`IsValidHost("%s")`, url)
+	cacheKey := user + "/" + repo + "@" + version
+	if s.Cache != nil {
+		if ok, found := s.Cache.Get(cacheKey); found {
+			return ok
+		}
+	}
+	backendURL := s.buildBackendURL(user, repo, version, "static/")
+	req := fmt.Sprintf(`IsValidHost("%s")`, backendURL)
 	stringToken, _, err := s.gnoClient.QEval(s.config.Realm, req)
 	if err != nil {
-		slog.Error("Error validating CDN path", slog.String("path", url), slog.String("err", err.Error()))
+		slog.Error("Error validating CDN path", slog.String("path", backendURL), slog.String("err", err.Error()))
+		if s.Cache != nil {
+			s.Cache.Add(cacheKey, false)
+		}
 		return false
-	} else {
-		slog.Info("Validating CDN path", slog.String("path", url), slog.String("result", stringToken))
 	}
-	return stringToken == "(true bool)"
+	isValid := stringToken == "(true bool)"
+	if s.Cache != nil {
+		s.Cache.Add(cacheKey, isValid)
+	}
+	slog.Info("Validating CDN path", slog.String("path", backendURL), slog.String("result", stringToken))
+	return isValid
 }

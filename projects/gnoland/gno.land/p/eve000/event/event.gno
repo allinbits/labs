@@ -115,6 +115,19 @@ func (event *Event) GetSession(id string) *session.Session {
 	return s.(*session.Session)
 }
 
+func (evt *Event) GetSessions() []*session.Session {
+	if evt.storage == nil || evt.storage.Sessions == nil {
+		return nil
+	}
+	var sessions []*session.Session
+	evt.storage.Sessions.IterateByOffset(0, evt.storage.Sessions.Size(), func(_ string, val any) bool {
+		s := val.(*session.Session)
+		sessions = append(sessions, s)
+		return false
+	})
+	return sessions
+}
+
 func (evt *Event) Agenda() *agenda.Agenda {
 	a := &agenda.Agenda{
 		Name:        evt.Name,

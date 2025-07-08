@@ -54,8 +54,20 @@ func Rotate(cur realm, hexKey string) {
 	if err != nil {
 		panic(invalidHexEncoding)
 	}
+	
+	// Store old key for event
+	previousHex := hex.EncodeToString(current)
+	
 	previous = current
 	current = key
+	
+	// Emit KeyRotated event
+	caller := std.PreviousRealm().Address()
+	std.Emit("KeyRotated",
+		"rotatedBy", caller.String(),
+		"previousKey", previousHex,
+		"currentKey", hexKey,
+	)
 }
 
 // assertIsAuthorized checks that the caller is either the owner or the backup user.

@@ -1,5 +1,9 @@
 package role
 
+import (
+	"std"
+)
+
 var (
 
 	// ds is the primary datastore for claims
@@ -20,6 +24,14 @@ func Link(cur realm, encodedClaim string) {
 	if err := ds.set(claim); err != nil {
 		panic(err)
 	}
+	
+	// Emit RoleLinked event
+	std.Emit("RoleLinked",
+		"realmPath", claim.realmPath,
+		"roleName", claim.roleName,
+		"discordGuildID", claim.discordGuildID,
+		"discordRoleID", claim.discordRoleID,
+	)
 }
 
 // UnlinkByClaim takes a base64 encoded string of a ed25519 signed claim, if if it passes
@@ -29,6 +41,19 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 	if err != nil {
 		panic(err)
 	}
+	
+	// Get the existing claim to retrieve the discord role ID
+	existingClaim := ds.getByPathRoleGuild(claim.realmPath, claim.roleName, claim.discordGuildID)
+	if existingClaim != nil {
+		// Emit RoleUnlinked event
+		std.Emit("RoleUnlinked",
+			"realmPath", claim.realmPath,
+			"roleName", claim.roleName,
+			"discordGuildID", claim.discordGuildID,
+			"discordRoleID", existingClaim.discordRoleID,
+		)
+	}
+	
 	ds.removeByPathRoleGuild(claim.realmPath, claim.roleName, claim.discordGuildID)
 }
 

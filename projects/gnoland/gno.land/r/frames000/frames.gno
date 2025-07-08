@@ -6,13 +6,16 @@ var frame = `
     "frame": {
         "title": "Frames",
         "description": "A simple frame example",
-        "author": "Gno.land",
-        "version": "0.1.0"
+        "logo": "/static/logo.svg",
+        "icon": "/static/favicon.ico"
     }
 }
 `
 
 var index = `
+
+### How to create a frame
+
 1. add manifest to github repository
 ` + "```" + `
 /gh/user/repo@main/static/gnomark.json
@@ -22,16 +25,7 @@ populate with minimum required fields to bootstrap frame rendering:
 
 ` + "```" + `
 // data needed to bootstrap frame, point to cdn and declare gnomark type
-
-{
-    "gnomark": "gno-frame",
-    "frame": {
-        "title": "Frames",
-        "description": "A simple frame example",
-        "logo": "/static/logo.svg",
-        "icon": "/static/favicon.ico"
-    }
-}
+` + frame + `
 ` + "```" + `
 
 2. publish frame content to github repository
@@ -66,12 +60,39 @@ CDN webservice is used to locate the assets and frame the content using an HTML 
     <script src="https://cdn.example.com/gn/user/repo@main/static/gno-frame.js"></script>
 </head>
 <body>
+<!-- tag name is determined by gnomark type -->
 <gno-frame>
  {json content returned by render :frame}
 </gno-frame>
 </body>
 </html>
-` + "```"
+` + "```" + `
+
+5. update live data on frame realm
+
+NOTE: Data is merged w/ static copy on the CDN
+- live copy can specify the 'live' cdn path
+- Vocabulary Tip: 'static' content also implies data is off-chain
+
+` + "```" + `
+{
+    "gnomark": "gno-frame", // just one of many gnomark types
+    "frame": { // custom fields for this gnomark type
+        "logo": "/static/logo2.svg", // updated logo
+    },
+    "cdn": { // a common field for all gnomark types
+        "static": "https://cdn.example.com/gn/user/repo@main/static/"
+    }
+
+}
+` + "```" + `
+
+### FUTURE: gno-mark types are extensible
+Any name that is also compatible as a valid HTML Custom Element name can be used.
+
+CDN content is moderated using a blocklist found at [/r/cdn000](/r/cdn000).
+
+`
 
 func Render(path string) string {
 	if path == "frame" {

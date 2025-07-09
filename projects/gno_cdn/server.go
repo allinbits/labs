@@ -123,7 +123,7 @@ func (s *Server) handleProxyRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.isValidCdnPath(user, repo, version) {
-		http.Error(w, "Invalid path", http.StatusBadRequest)
+		slog.Error("Invalid CDN path", slog.String("user", user), slog.String("repo", repo), slog.String("version", version))
 		return
 	}
 
@@ -158,7 +158,7 @@ func (s *Server) isValidCdnPath(user, repo, version string) bool {
 	req := fmt.Sprintf(`IsValidHost("%s")`, backendURL)
 	stringToken, _, err := s.gnoClient.QEval(s.config.Realm, req)
 	if err != nil {
-		slog.Error("Error validating CDN path", slog.String("path", backendURL), slog.String("err", err.Error()))
+		slog.Error("Error evaluating QEval for CDN path", slog.String("path", backendURL), slog.String("err", err.Error()))
 		if s.Cache != nil {
 			s.Cache.Add(cacheKey, false)
 		}

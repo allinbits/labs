@@ -16,7 +16,7 @@ var index = `
 
 ### How to create a frame
 
-1. add manifest to github repository
+1. add manifest to a github repository you control
 ` + "```" + `
 /gh/user/repo@main/static/gnomark.json
 ` + "```" + `
@@ -56,8 +56,8 @@ CDN webservice is used to locate the assets and frame the content using an HTML 
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- js file path is determined by gnomark.json -->
-    <script src="https://cdn.example.com/gn/user/repo@main/static/gno-frame.js"></script>
+    <!-- js file path is set using gnomark.json & is loaded by proxy through the CDN service -->
+    <script src="/gh/user/repo@main/static/gno-frame.js"></script>
 </head>
 <body>
 <!-- tag name is determined by gnomark type -->
@@ -81,7 +81,7 @@ NOTE: Data is merged w/ static copy on the CDN
         "logo": "/static/logo2.svg", // updated logo
     },
     "cdn": { // a common field for all gnomark types
-        "static": "https://cdn.example.com/gn/user/repo@main/static/"
+        "static": "https://cdn.example.com/gh/user/repo@main/static/"
     }
 
 }

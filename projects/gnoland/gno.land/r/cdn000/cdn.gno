@@ -54,13 +54,14 @@ func init() {
 	setAdmin("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz")
 	banHost("https://cdn.example.com/gh/pflow-xyz/pflow-app@main/static/")
 	banHost("https://cdn.example.com/gh/allinbits/gnoserve@main/static/")
-	//banHost("https://cdn.jsdelivr.net/gh/pflow-xyz/pflow-app@main/static/")
+	// banHost("https://cdn.example.com/gh/pflow-xyz/pflow-app@6cf1e3cf112bd39f2f815ba638fade9e835395d9/static/")
+	// banHost("https://cdn.jsdelivr.net/gh/pflow-xyz/pflow-app@main/static/")
 }
 
 var requestBanForm = `
 <gno-form>
     <gno-input name="host" placeholder="https://cdn.example.com/gh/user/repo@main/static/" />
-    <gno-input name="msg" placeholder=" has a security issue: XXX" />
+    <gno-input name="msg" placeholder="has a security issue: XXX" />
 </gno-form>
 `
 

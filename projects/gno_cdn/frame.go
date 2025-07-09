@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/exp/slog"
+	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -46,6 +47,55 @@ type Frame struct {
 	Data    map[string]interface{} `json:"-"`
 }
 
+type View struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
+	Src   string `json:"src"`
+	Tag   string `json:"tag"`
+}
+
+func (frame *Frame) View() *View {
+	if frame == nil || frame.Data == nil {
+		return nil
+	}
+	view := &View{
+		Title: "GnoMark Frame",
+		Body:  fmt.Sprintf("GnoMark: %s", frame.Gnomark),
+		Src:   frame.ScriptSrc(),
+		Tag:   frame.Gnomark,
+	}
+	// TODO: review field names compared to README.md
+	if title, ok := frame.Data["title"].(string); ok {
+		view.Title = title
+	}
+	data, _ := json.MarshalIndent(frame.Data, "", "  ")
+	view.Body = string(data)
+	return view
+}
+
+func (frame *Frame) Json() []byte {
+	if frame == nil {
+		return []byte("{}")
+	}
+	jsonData, err := json.MarshalIndent(frame.Data, "", "  ")
+	if err != nil {
+		slog.Error("Error marshalling frame data to JSON", slog.String("err", err.Error()))
+		return []byte("{}")
+	}
+	return jsonData
+}
+
+func (frame *Frame) ScriptSrc() string {
+	if frame == nil || frame.Cdn == nil {
+		return ""
+	}
+	if staticCdn, ok := frame.Cdn["static"]; ok {
+		cdn, _ := url.Parse(staticCdn.(string))
+		return cdn.Path
+	}
+	return ""
+}
+
 func (frame *Frame) WriteHtml(w http.ResponseWriter) error {
 	if frame == nil {
 		return fmt.Errorf("frame is nil")
@@ -55,28 +105,36 @@ func (frame *Frame) WriteHtml(w http.ResponseWriter) error {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	data, _ := json.MarshalIndent(frame.Data, "", "  ")
-	head := ""
 
-	var cdn *url.URL
-	staticCdn, ok := frame.Cdn["static"]
-	if ok {
-		cdn, _ = url.Parse(staticCdn.(string))
-		head = fmt.Sprintf("<head><script src=\"%sgnomark/frame/frame.js\"></script>\n</head>", cdn.Path)
-	}
-	htmlData := fmt.Sprintf(`<!DOCTYPE html>
+	// Define the HTML template
+	const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-%s
-<title>GnoMark Frame</title>
-<pre>
-%s</pre>
-<script>`, head, data)
+<title>{{.Title}}</title>
+<{{.Tag}}>
+{{.Body}}
+</{{.Tag}}>
+<script src="{{.Src}}{{.Tag}}.js"></script>
+</html>`
 
-	if _, err := w.Write([]byte(htmlData)); err != nil {
-		return fmt.Errorf("error writing response: %w", err)
+	// Parse the template
+	tmpl, err := template.New("frame").Parse(htmlTemplate)
+	if err != nil {
+		return fmt.Errorf("error parsing template: %w", err)
 	}
+
+	// Get the view data
+	view := frame.View()
+	if view == nil {
+		return fmt.Errorf("error generating view data")
+	}
+
+	// Execute the template
+	if err := tmpl.Execute(w, view); err != nil {
+		return fmt.Errorf("error executing template: %w", err)
+	}
+
 	return nil
 }
 

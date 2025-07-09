@@ -1,3 +1,18 @@
+// Package metamodel provides a framework for modeling and simulating Petri nets,
+// a mathematical representation of distributed systems. It includes structures
+// for places, transitions, and arcs, as well as methods for executing transitions,
+// visualizing the model as SVG, and exporting the model in various formats such as
+// JSON, Markdown, and GnoMark.
+//
+// Key features:
+// - Define places, transitions, and arcs with attributes like tokens, capacity, and weight.
+// - Simulate state changes in the Petri net using the Execute function.
+// - Generate SVG visualizations of the Petri net and its legend.
+// - Export the model to JSON and Markdown for integration with other tools.
+//
+// This package is designed for use in distributed systems modeling, workflow analysis,
+// and educational purposes.
+
 package metamodel
 
 import (
@@ -82,14 +97,14 @@ type Transition struct {
 	Y      int    // Y coordinate of the transition.
 }
 
-// Pflow represents a Petri net model.
-type Pflow struct {
+// Model represents a Petri-Net.
+type Model struct {
 	Places      map[string]Place      // Map of places.
 	Transitions map[string]Transition // Map of transitions.
 	Arrows      []Arrow               // List of arcs.
 }
 
-func (model *Pflow) State() []TokenType {
+func (model *Model) State() []TokenType {
 	state := make([]TokenType, len(model.Places))
 	for _, place := range model.Places {
 		state[place.Offset] = place.Tokens
@@ -98,7 +113,7 @@ func (model *Pflow) State() []TokenType {
 }
 
 // TODO: try this out w/ testing
-func Execute(state []TokenType, model *Pflow, action string) ([]TokenType, bool) {
+func Execute(state []TokenType, model *Model, action string) ([]TokenType, bool) {
 	newState := make([]TokenType, len(state))
 	copy(newState, state)
 
@@ -144,7 +159,7 @@ func fmtWeight(weight TokenType) (out string) {
 	return out
 }
 
-func (model *Pflow) CanvasSize() (width, height int) {
+func (model *Model) CanvasSize() (width, height int) {
 	maxX, maxY := 0, 0
 	for _, place := range model.Places {
 		if place.X > maxX {
@@ -165,7 +180,7 @@ func (model *Pflow) CanvasSize() (width, height int) {
 	return maxX + 50, maxY + 50 // Add some padding
 }
 
-func (model *Pflow) ToSvg(scale ...float64) string {
+func (model *Model) ToSvg(scale ...float64) string {
 	var sb strings.Builder
 	width, height := model.CanvasSize()
 	var s float64 = 2.0 // Default scale
@@ -273,11 +288,11 @@ func (model *Pflow) ToSvg(scale ...float64) string {
 	return sb.String()
 }
 
-func (model *Pflow) LegendDataUrl() string {
+func (model *Model) LegendDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(model.LegendSvg())
 }
 
-func (model *Pflow) LegendSvg(scale ...float64) string {
+func (model *Model) LegendSvg(scale ...float64) string {
 	scaleFactor := 4.0
 	if len(scale) > 0 && scale[0] > 0 {
 		scaleFactor = scale[0]
@@ -365,11 +380,12 @@ func (model *Pflow) LegendSvg(scale ...float64) string {
 	sb.WriteString("</svg>")
 	return sb.String()
 }
-func (model *Pflow) ToDataUrl() string {
+
+func (model *Model) ToDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(model.ToSvg())
 }
 
-func (model *Pflow) ToMarkdown() string {
+func (model *Model) ToMarkdown() string {
 	var sb strings.Builder
 
 	sb.WriteString("![Petri Net](")
@@ -383,16 +399,17 @@ func (model *Pflow) ToMarkdown() string {
 	return sb.String()
 }
 
-func (model *Pflow) ToGnoMark() string {
+func (model *Model) ToGnoMark(h WebHost) string {
 	var sb strings.Builder
 	sb.WriteString("{\n")
-	sb.WriteString(`  "gnoMark": "petrinet",` + "\n")
-	sb.WriteString(`  "petrinet": ` + model.ToJson() + "\n")
+	sb.WriteString(`  "gnomark": "petri-net",` + "\n")
+	sb.WriteString(`  "net": ` + model.ToJson() + "\n")
+	sb.WriteString(`  "cdn": { "static": "` + h.Cdn() + `" },` + "\n")
 	sb.WriteString("}")
 	return sb.String()
 }
 
-func (model *Pflow) ToJson() string {
+func (model *Model) ToJson() string {
 	var sb strings.Builder
 	sb.WriteString("{\n")
 	sb.WriteString(`  "modelType": "PetriNet",` + "\n")
@@ -472,13 +489,13 @@ var htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="{CDN}petri-net.js"></script>
     <title>pflow | metamodel</title>
 </head>
 <body>
     <petri-net>
     {SOURCE}
     </petri-net>
-    <script src="{CDN}petri-net.js"></script>
 </body>
 </html>
 `

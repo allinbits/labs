@@ -58,8 +58,8 @@ func NewCdnServer(config *ServerOptions) *Server {
 
 	// Routes setup
 	s.router.NotFound(s.handleNotFound)
+	s.router.Get("/frame/r/*", s.handleFrame) // REVIEW: we could use this to limit which realms are allowed
 	s.router.Get("/gh/{user}/{repo}@{version}/*", s.handleProxyRequest)
-	s.router.Get("/frame/r/*", s.handleFrame)
 
 	s.router.Get("/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -170,21 +170,4 @@ func (s *Server) isValidCdnPath(user, repo, version string) bool {
 	}
 	slog.Info("Validating CDN path", slog.String("path", backendURL), slog.String("result", stringToken))
 	return isValid
-}
-
-func (s *Server) handleFrame(w http.ResponseWriter, r *http.Request) {
-	// get the realm from the request
-	realm := chi.URLParam(r, "*")
-	if realm == "" {
-		http.Error(w, "Realm not specified", http.StatusBadRequest)
-		return
-	}
-
-	msg := "hello from gno_cdn frame handler!\n" + realm
-	w.Header().Set("Content-Type", "text/plain")
-	_, err := w.Write([]byte(msg))
-	if err != nil {
-		slog.Error("Error writing response", slog.String("err", err.Error()))
-		return
-	}
 }

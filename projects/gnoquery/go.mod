@@ -1,8 +1,6 @@
 module github.com/allinbits/labs/projects/gnoquery
 
-go 1.23.0
-
-toolchain go1.24.5
+go 1.24
 
 require github.com/gnolang/gno v0.0.0-20250420213829-404deea07261
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"gno.land/p/demo/ufmt"
+	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/register"
 )
@@ -36,8 +37,12 @@ func NotEmpty(value string) bool {
 	return value != ""
 }
 
+func LiveEvent() *event.Event {
+	return registry.GetEvent(registry.LiveEventId)
+}
+
 func Render(path string) (out string) {
-    return render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+	return render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
 }
 
 func render(path string) (out string) {

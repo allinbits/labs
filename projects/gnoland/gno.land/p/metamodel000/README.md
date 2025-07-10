@@ -1,6 +1,9 @@
 # metamodel
 
-A model library for GnoLand, providing a framework for defining and using Petri-nets.
+> A metamodel is a model that defines the structure, rules, and constraints of other models — essentially, a model of models.
+> It provides the schema or blueprint for how valid models should be constructed.
+
+This GnoLand Library provides a framework for modeling with [Petri-net](https://en.wikipedia.org/wiki/Petri_net) style models.
 
 ## Overview
 
@@ -14,9 +17,18 @@ A model library for GnoLand, providing a framework for defining and using Petri-
 - Models are exportable to be analyzed or used in other systems.
     - Julia nets here... 
 
-### What is a model?
+### Using models for analysis and weighted choice decision-making
+// FIXME: use pScore voting as an example
+1. Formally define a model using the metamodel library in gno code.
+   - It's a system of discrete state transformations formalized as a [Petri net](https://en.wikipedia.org/wiki/Petri_net) that can be used to represent and analyze the behavior of systems.
+2. Each Model is executable in the GnoLand runtime, and visualized in markdown.
+3. Model Data is make exportable to other languages or systems for analysis 
+  - see [AlgebraicJulia/Petri.jl](github.com/AlgebraicJulia/Petri.jl) for an example of a Julia package that can work with these models.
+  - This system can be directly converted to a dynamic system as an [Ordinary Differential Equation (ODE)](https://en.wikipedia.org/wiki/Ordinary_differential_equation).
+   
+#### pScore voting
 
-FIXME
+FIXME: explain how this works 
 
 
 ### References

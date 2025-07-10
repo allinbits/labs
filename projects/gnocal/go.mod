@@ -4,7 +4,7 @@ go 1.24.3
 
 require (
 	github.com/gnolang/gno v0.0.0-20250528110257-f6b725541d59
-	github.com/go-chi/chi/v5 v5.2.1
+	github.com/go-chi/chi/v5 v5.2.2
 )
 
 require (

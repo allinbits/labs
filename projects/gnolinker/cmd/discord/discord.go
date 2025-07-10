@@ -3,9 +3,9 @@ package discord
 import (
 	"encoding/hex"
 	"flag"
-	"log"
 	"os"
 
+	"github.com/allinbits/labs/projects/gnolinker/core"
 	"github.com/allinbits/labs/projects/gnolinker/core/contracts"
 	"github.com/allinbits/labs/projects/gnolinker/core/workflows"
 	"github.com/allinbits/labs/projects/gnolinker/platforms/discord"
@@ -23,8 +23,16 @@ func Run() {
 		baseURLFlag      = flag.String("base-url", "https://gno.land", "Base URL for claim links")
 		userContractFlag = flag.String("user-contract", "r/linker000/discord/user/v0", "User contract path")
 		roleContractFlag = flag.String("role-contract", "r/linker000/discord/role/v0", "Role contract path")
+		logLevelFlag     = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	)
 	flag.Parse()
+	
+	// Load log level from environment or flag
+	logLevel := getEnvOrFlag("GNOLINKER__LOG_LEVEL", *logLevelFlag)
+	
+	// Initialize logger with configurable level
+	logger := core.NewLoggerFromLevel(logLevel)
+	logger.Info("Starting gnolinker Discord bot", "log_level", logLevel)
 
 	// Load from environment if flags not provided
 	token := getEnvOrFlag("GNOLINKER__DISCORD_TOKEN", *tokenFlag)
@@ -39,28 +47,35 @@ func Run() {
 
 	// Validate required parameters
 	if token == "" {
-		log.Fatal("Discord token is required (use -token flag or GNOLINKER__DISCORD_TOKEN env var)")
+		logger.Error("Discord token is required (use -token flag or GNOLINKER__DISCORD_TOKEN env var)")
+		os.Exit(1)
 	}
 	if guildID == "" {
-		log.Fatal("Discord guild ID is required (use -guild flag or GNOLINKER__DISCORD_GUILD_ID env var)")
+		logger.Error("Discord guild ID is required (use -guild flag or GNOLINKER__DISCORD_GUILD_ID env var)")
+		os.Exit(1)
 	}
 	if adminRole == "" {
-		log.Fatal("Admin role ID is required (use -admin-role flag or GNOLINKER__DISCORD_ADMIN_ROLE_ID env var)")
+		logger.Error("Admin role ID is required (use -admin-role flag or GNOLINKER__DISCORD_ADMIN_ROLE_ID env var)")
+		os.Exit(1)
 	}
 	if verifiedRole == "" {
-		log.Fatal("Verified role ID is required (use -verified-role flag or GNOLINKER__DISCORD_VERIFIED_ROLE_ID env var)")
+		logger.Error("Verified role ID is required (use -verified-role flag or GNOLINKER__DISCORD_VERIFIED_ROLE_ID env var)")
+		os.Exit(1)
 	}
 	if signingKeyStr == "" {
-		log.Fatal("Signing key is required (use -signing-key flag or GNOLINKER__SIGNING_KEY env var)")
+		logger.Error("Signing key is required (use -signing-key flag or GNOLINKER__SIGNING_KEY env var)")
+		os.Exit(1)
 	}
 
 	// Decode signing key
 	signingKeyBytes, err := hex.DecodeString(signingKeyStr)
 	if err != nil {
-		log.Fatalf("Failed to decode hex signing key: %v", err)
+		logger.Error("Failed to decode hex signing key", "error", err)
+		os.Exit(1)
 	}
 	if len(signingKeyBytes) != 64 {
-		log.Fatalf("Signing key must be 64 bytes, got %d", len(signingKeyBytes))
+		logger.Error("Signing key must be 64 bytes", "actual", len(signingKeyBytes))
+		os.Exit(1)
 	}
 
 	var signingKey [64]byte
@@ -83,7 +98,8 @@ func Run() {
 
 	gnoClient, err := contracts.NewGnoClient(clientConfig)
 	if err != nil {
-		log.Fatalf("Failed to create Gno client: %v", err)
+		logger.Error("Failed to create Gno client", "error", err)
+		os.Exit(1)
 	}
 
 	// Create workflow config
@@ -100,14 +116,16 @@ func Run() {
 	syncFlow := workflows.NewSyncWorkflow(gnoClient, workflowConfig)
 
 	// Create and start bot
-	bot, err := discord.NewBot(discordConfig, userFlow, roleFlow, syncFlow)
+	bot, err := discord.NewBot(discordConfig, userFlow, roleFlow, syncFlow, logger)
 	if err != nil {
-		log.Fatalf("Failed to create Discord bot: %v", err)
+		logger.Error("Failed to create Discord bot", "error", err)
+		os.Exit(1)
 	}
 
-	log.Printf("Starting gnolinker Discord bot connected to: %s", rpcURL)
+	logger.Info("Starting gnolinker Discord bot", "rpc_url", rpcURL)
 	if err := bot.Start(); err != nil {
-		log.Fatalf("Bot error: %v", err)
+		logger.Error("Bot error", "error", err)
+		os.Exit(1)
 	}
 }
 

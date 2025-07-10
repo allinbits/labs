@@ -2,11 +2,11 @@ package discord
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/allinbits/labs/projects/gnolinker/core"
 	"github.com/allinbits/labs/projects/gnolinker/core/workflows"
 	"github.com/allinbits/labs/projects/gnolinker/platforms"
 	"github.com/bwmarrin/discordgo"
@@ -18,13 +18,15 @@ type Bot struct {
 	platform   platforms.Platform
 	router     *platforms.CommandRouter
 	config     Config
+	logger     core.Logger
 }
 
 // NewBot creates a new Discord bot
 func NewBot(config Config, 
 	userFlow workflows.UserLinkingWorkflow,
 	roleFlow workflows.RoleLinkingWorkflow,
-	syncFlow workflows.SyncWorkflow) (*Bot, error) {
+	syncFlow workflows.SyncWorkflow,
+	logger core.Logger) (*Bot, error) {
 	
 	// Create Discord session
 	session, err := discordgo.New("Bot " + config.Token)
@@ -36,7 +38,7 @@ func NewBot(config Config,
 	platform := NewDiscordPlatform(session, config)
 	
 	// Create command handlers
-	handlers := NewCommandHandlers(userFlow, roleFlow, syncFlow)
+	handlers := NewCommandHandlers(userFlow, roleFlow, syncFlow, logger)
 	
 	// Create command router
 	router := platforms.NewCommandRouter()
@@ -50,6 +52,7 @@ func NewBot(config Config,
 		platform: platform,
 		router:   router,
 		config:   config,
+		logger:   logger,
 	}
 	
 	// Set up event handlers
@@ -61,7 +64,7 @@ func NewBot(config Config,
 
 // Start starts the Discord bot
 func (b *Bot) Start() error {
-	log.Println("Starting Discord bot...")
+	b.logger.Info("Starting Discord bot...")
 	
 	// Open connection
 	err := b.session.Open()
@@ -69,7 +72,7 @@ func (b *Bot) Start() error {
 		return fmt.Errorf("failed to open Discord connection: %w", err)
 	}
 	
-	log.Println("Discord bot is running. Press Ctrl+C to exit.")
+	b.logger.Info("Discord bot is running. Press Ctrl+C to exit.")
 	
 	// Wait for interrupt signal
 	stop := make(chan os.Signal, 1)
@@ -81,7 +84,7 @@ func (b *Bot) Start() error {
 
 // Stop stops the Discord bot
 func (b *Bot) Stop() error {
-	log.Println("Stopping Discord bot...")
+	b.logger.Info("Stopping Discord bot...")
 	return b.session.Close()
 }
 
@@ -94,7 +97,7 @@ func (b *Bot) GetPlatform() platforms.Platform {
 
 func (b *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
 	s.UpdateGameStatus(0, "Linking gno.land addresses")
-	log.Printf("Bot is ready! Logged in as %s", event.User.Username)
+	b.logger.Info("Bot is ready! Logged in", "username", event.User.Username)
 }
 
 func (b *Bot) onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -130,7 +133,7 @@ func (b *Bot) handleDirectMessage(message *DiscordMessage) {
 	// Route command
 	err := b.router.HandleCommand(b.platform, message, *command)
 	if err != nil {
-		log.Printf("Command handling error: %v", err)
+		b.logger.Error("Command handling error", "error", err, "author_id", message.GetAuthorID())
 		b.platform.SendDirectMessage(message.GetAuthorID(), 
 			"Something went wrong processing your command. Please try again.")
 	}

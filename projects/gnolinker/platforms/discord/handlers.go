@@ -2,8 +2,8 @@ package discord
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/allinbits/labs/projects/gnolinker/core"
 	"github.com/allinbits/labs/projects/gnolinker/core/workflows"
 	"github.com/allinbits/labs/projects/gnolinker/platforms"
 )
@@ -13,6 +13,7 @@ type CommandHandlers struct {
 	userLinkingFlow workflows.UserLinkingWorkflow
 	roleLinkingFlow workflows.RoleLinkingWorkflow
 	syncFlow        workflows.SyncWorkflow
+	logger          core.Logger
 }
 
 // NewCommandHandlers creates command handlers with workflow dependencies
@@ -20,21 +21,27 @@ func NewCommandHandlers(
 	userFlow workflows.UserLinkingWorkflow,
 	roleFlow workflows.RoleLinkingWorkflow,
 	syncFlow workflows.SyncWorkflow,
+	logger core.Logger,
 ) *CommandHandlers {
 	return &CommandHandlers{
 		userLinkingFlow: userFlow,
 		roleLinkingFlow: roleFlow,
 		syncFlow:        syncFlow,
+		logger:          logger,
 	}
 }
 
 // LinkHandler handles !link commands
 type LinkHandler struct {
 	handlers *CommandHandlers
+	logger   core.Logger
 }
 
 func NewLinkHandler(handlers *CommandHandlers) *LinkHandler {
-	return &LinkHandler{handlers: handlers}
+	return &LinkHandler{
+		handlers: handlers,
+		logger:   handlers.logger.WithGroup("link"),
+	}
 }
 
 func (h *LinkHandler) HandleCommand(platform platforms.Platform, message platforms.Message, command platforms.Command) error {
@@ -64,9 +71,10 @@ func (h *LinkHandler) handleLinkAddress(platform platforms.Platform, message pla
 	// Generate claim
 	claim, err := h.handlers.userLinkingFlow.GenerateClaim(userID, address)
 	if err != nil {
-		log.Printf("Failed to generate user claim: %v", err)
+		h.logger.Error("Failed to generate user claim", "error", err, "user_id", userID, "address", address)
 		return platform.SendDirectMessage(userID, "Failed to generate claim. Please try again.")
 	}
+	h.logger.Info("User claim generated successfully", "user_id", userID, "address", address)
 
 	// Create response with claim and URL
 	claimURL := h.handlers.userLinkingFlow.GetClaimURL(claim)
@@ -82,7 +90,7 @@ func (h *LinkHandler) handleLinkRole(platform platforms.Platform, message platfo
 	// Check if user is admin
 	isAdmin, err := platform.IsAdmin(userID)
 	if err != nil {
-		log.Printf("Failed to check admin status: %v", err)
+		h.logger.Error("Failed to check admin status", "error", err, "user_id", userID)
 		return platform.SendDirectMessage(userID, "Failed to verify permissions.")
 	}
 
@@ -94,14 +102,14 @@ func (h *LinkHandler) handleLinkRole(platform platforms.Platform, message platfo
 	discordRoleName := roleName + "-" + realmPath
 	platformRole, err := platform.GetOrCreateRole(discordRoleName)
 	if err != nil {
-		log.Printf("Failed to create/get role: %v", err)
+		h.logger.Error("Failed to create/get role", "error", err, "user_id", userID, "discord_role_name", discordRoleName)
 		return platform.SendDirectMessage(userID, "Failed to create Discord role.")
 	}
 
 	// Generate claim
 	claim, err := h.handlers.roleLinkingFlow.GenerateClaim(userID, platform.GetServerID(), platformRole.ID, roleName, realmPath)
 	if err != nil {
-		log.Printf("Failed to generate role claim: %v", err)
+		h.logger.Error("Failed to generate role claim", "error", err, "user_id", userID, "role_name", roleName, "realm_path", realmPath)
 		return platform.SendDirectMessage(userID, "Failed to generate claim: "+err.Error())
 	}
 
@@ -116,10 +124,14 @@ func (h *LinkHandler) handleLinkRole(platform platforms.Platform, message platfo
 // VerifyHandler handles !verify commands
 type VerifyHandler struct {
 	handlers *CommandHandlers
+	logger   core.Logger
 }
 
 func NewVerifyHandler(handlers *CommandHandlers) *VerifyHandler {
-	return &VerifyHandler{handlers: handlers}
+	return &VerifyHandler{
+		handlers: handlers,
+		logger:   handlers.logger.WithGroup("verify"),
+	}
 }
 
 func (h *VerifyHandler) HandleCommand(platform platforms.Platform, message platforms.Message, command platforms.Command) error {
@@ -149,7 +161,7 @@ func (h *VerifyHandler) handleVerifyAddress(platform platforms.Platform, message
 	// Get linked address
 	address, err := h.handlers.userLinkingFlow.GetLinkedAddress(userID)
 	if err != nil {
-		log.Printf("Failed to get linked address: %v", err)
+		h.logger.Error("Failed to get linked address", "error", err, "user_id", userID)
 		return platform.SendDirectMessage(userID, "Failed to check linked address.")
 	}
 
@@ -174,26 +186,26 @@ func (h *VerifyHandler) handleVerifyRole(platform platforms.Platform, message pl
 	// Get linked role
 	roleMapping, err := h.handlers.roleLinkingFlow.GetLinkedRole(realmPath, roleName, platform.GetServerID())
 	if err != nil {
-		log.Printf("Failed to get linked role: %v", err)
+		h.logger.Error("Failed to get linked role", "error", err, "user_id", userID, "role_name", roleName, "realm_path", realmPath)
 		return platform.SendDirectMessage(userID, "Failed to check linked role.")
 	}
-	fmt.Println("Role mapping:", roleMapping)
+	h.logger.Info("Role mapping found", "role_mapping", roleMapping, "user_id", userID)
 
 	// Get platform role details
 	platformRole, err := platform.GetRoleByID(roleMapping.PlatformRole.ID)
 	if err != nil {
-		log.Printf("Failed to get platform role: %v", err)
+		h.logger.Error("Failed to get platform role", "error", err, "user_id", userID, "platform_role_id", roleMapping.PlatformRole.ID)
 		return platform.SendDirectMessage(userID, "Discord role not found.")
 	}
-	fmt.Println("Platform role:", platformRole)
+	h.logger.Info("Platform role found", "platform_role", platformRole, "user_id", userID)
 
 	// Check if user is member of the realm role
-	statuses, err := h.handlers.syncFlow.SyncUserRoles(userID, realmPath)
+	statuses, err := h.handlers.syncFlow.SyncUserRoles(userID, realmPath, platform.GetServerID())
 	if err != nil {
-		log.Printf("Failed to sync user roles: %v", err)
+		h.logger.Error("Failed to sync user roles", "error", err, "user_id", userID, "realm_path", realmPath)
 		return platform.SendDirectMessage(userID, "Failed to check role membership.")
 	}
-	fmt.Println("Sync statuses:", statuses)
+	h.logger.Info("Sync statuses retrieved", "statuses", statuses, "user_id", userID, "realm_path", realmPath)
 
 	// Find the specific role in the statuses
 	var isMember bool
@@ -203,8 +215,10 @@ func (h *VerifyHandler) handleVerifyRole(platform platforms.Platform, message pl
 
 			// Update Discord role
 			if isMember {
+				h.logger.Info("Adding Discord role to user", "user_id", userID, "platform_role_id", platformRole.ID, "role_name", roleName)
 				platform.AddRole(userID, platformRole.ID)
 			} else {
+				h.logger.Info("Removing Discord role from user", "user_id", userID, "platform_role_id", platformRole.ID, "role_name", roleName)
 				platform.RemoveRole(userID, platformRole.ID)
 			}
 			break
@@ -225,10 +239,14 @@ func (h *VerifyHandler) handleVerifyRole(platform platforms.Platform, message pl
 // SyncHandler handles !sync commands
 type SyncHandler struct {
 	handlers *CommandHandlers
+	logger   core.Logger
 }
 
 func NewSyncHandler(handlers *CommandHandlers) *SyncHandler {
-	return &SyncHandler{handlers: handlers}
+	return &SyncHandler{
+		handlers: handlers,
+		logger:   handlers.logger.WithGroup("sync"),
+	}
 }
 
 func (h *SyncHandler) HandleCommand(platform platforms.Platform, message platforms.Message, command platforms.Command) error {
@@ -256,9 +274,9 @@ func (h *SyncHandler) HandleCommand(platform platforms.Platform, message platfor
 	}
 
 	// Sync roles
-	statuses, err := h.handlers.syncFlow.SyncUserRoles(targetUserID, realmPath)
+	statuses, err := h.handlers.syncFlow.SyncUserRoles(targetUserID, realmPath, platform.GetServerID())
 	if err != nil {
-		log.Printf("Failed to sync user roles: %v", err)
+		h.logger.Error("Failed to sync user roles", "error", err, "target_user_id", targetUserID, "realm_path", realmPath)
 		return platform.SendDirectMessage(message.GetAuthorID(),
 			"Failed to sync roles: "+err.Error())
 	}
@@ -269,7 +287,7 @@ func (h *SyncHandler) HandleCommand(platform platforms.Platform, message platfor
 		// Get platform role details
 		platformRole, err := platform.GetRoleByID(status.RoleMapping.PlatformRole.ID)
 		if err != nil {
-			log.Printf("Failed to get platform role: %v", err)
+			h.logger.Error("Failed to get platform role", "error", err, "platform_role_id", status.RoleMapping.PlatformRole.ID)
 			continue
 		}
 

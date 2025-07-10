@@ -34,7 +34,7 @@ type RoleLinkingWorkflow interface {
 // SyncWorkflow handles role membership synchronization
 type SyncWorkflow interface {
 	// SyncUserRoles synchronizes all roles for a user in a specific realm
-	SyncUserRoles(platformID, realmPath string) ([]core.RoleStatus, error)
+	SyncUserRoles(platformID, realmPath, platformGuildID string) ([]core.RoleStatus, error)
 }
 
 // WorkflowConfig contains configuration for all workflows

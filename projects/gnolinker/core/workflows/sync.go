@@ -23,7 +23,7 @@ func NewSyncWorkflow(client *contracts.GnoClient, config WorkflowConfig) SyncWor
 }
 
 // SyncUserRoles synchronizes all roles for a user in a specific realm
-func (w *SyncWorkflowImpl) SyncUserRoles(platformID, realmPath string) ([]core.RoleStatus, error) {
+func (w *SyncWorkflowImpl) SyncUserRoles(platformID, realmPath, platformGuildID string) ([]core.RoleStatus, error) {
 	// Get the user's linked Gno address
 	gnoAddress, err := w.gnoClient.GetLinkedAddress(platformID)
 	if err != nil {
@@ -35,8 +35,7 @@ func (w *SyncWorkflowImpl) SyncUserRoles(platformID, realmPath string) ([]core.R
 	}
 	
 	// Get all linked roles for the realm
-	// Note: platformGuildID will need to be passed by the platform layer
-	linkedRoles, err := w.gnoClient.ListLinkedRoles(realmPath, "")
+	linkedRoles, err := w.gnoClient.ListLinkedRoles(realmPath, platformGuildID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list linked roles: %w", err)
 	}

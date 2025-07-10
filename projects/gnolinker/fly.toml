@@ -6,12 +6,15 @@
 app = 'gnolinker-discord-stg'
 primary_region = 'dfw'
 
+[env]
+GNOLINKER__LOG_LEVEL = 'debug'
+
 [build]
 
 [processes]
-  app = 'discord'
+app = 'discord'
 
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
+memory = '1gb'
+cpu_kind = 'shared'
+cpus = 1

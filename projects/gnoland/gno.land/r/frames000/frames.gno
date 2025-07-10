@@ -7,9 +7,17 @@ var frame = `
         "title": "Frames",
         "description": "A simple frame example",
         "logo": "logo.svg",
-        "icon": "favicon.ico"
+        "icon": "favicon.ico",
+        "version": "0.1.0",
+        "name": "GnoFrame",
+        "iconUrl": "favicon-32x32.png",
+        "homeUrl": "https://gno.land",
+        "imageUrl": "android-chrome-512x512.png",
+        "buttonTitle": "GnoFrame",
+        "splashImageUrl": "",
+        "splashBackgroundColor": "#ffffff"
     },
-    "cdn": { "static": "https://cdn.jsdelivr.net/gh/allinbits/gnoserve@main/static/" }
+    "cdn": { "static": "/gh/allinbits/gnoserve@frame/static/" }
 }
 `
 

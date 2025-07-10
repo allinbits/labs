@@ -48,10 +48,12 @@ type Frame struct {
 }
 
 type View struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-	Src   string `json:"src"`
-	Tag   string `json:"tag"`
+	Title    string        `json:"title"`
+	Body     template.HTML `json:"body"` // Mark Body as safe HTML
+	Src      string        `json:"src"`
+	Name     string        `json:"name"`
+	OpenTag  template.HTML `json:"open_tag"`
+	CloseTag template.HTML `json:"close_tag"`
 }
 
 func (frame *Frame) View() *View {
@@ -59,20 +61,19 @@ func (frame *Frame) View() *View {
 		return nil
 	}
 	view := &View{
-		Title: "GnoMark Frame",
-		Body:  fmt.Sprintf("GnoMark: %s", frame.Gnomark),
-		Src:   frame.ScriptSrc(),
-		Tag:   frame.Gnomark,
+		Title:    "GnoMark Frame",
+		Src:      frame.ScriptSrc(),
+		Name:     frame.Gnomark,
+		OpenTag:  template.HTML("<" + frame.Gnomark + ">"),
+		CloseTag: template.HTML("</" + frame.Gnomark + ">"),
 	}
-	// TODO: review field names compared to README.md
 	if title, ok := frame.Data["title"].(string); ok {
 		view.Title = title
 	}
 	data, _ := json.MarshalIndent(frame.Data, "", "  ")
-	view.Body = string(data)
+	view.Body = template.HTML(data) // Use template.HTML for JSON data
 	return view
 }
-
 func (frame *Frame) Json() []byte {
 	if frame == nil {
 		return []byte("{}")
@@ -96,6 +97,20 @@ func (frame *Frame) ScriptSrc() string {
 	return ""
 }
 
+// Define the HTML template
+const htmlTemplate = `<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{.Title}}</title>
+<body>
+{{.OpenTag}}
+{{.Body}}
+{{.CloseTag}}
+<script src="{{.Src}}{{.Name}}.js"></script>
+</body>
+</html>`
+
 func (frame *Frame) WriteHtml(w http.ResponseWriter) error {
 	if frame == nil {
 		return fmt.Errorf("frame is nil")
@@ -105,18 +120,6 @@ func (frame *Frame) WriteHtml(w http.ResponseWriter) error {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-
-	// Define the HTML template
-	const htmlTemplate = `<!DOCTYPE html>
-<html lang="en">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{.Title}}</title>
-<{{.Tag}}>
-{{.Body}}
-</{{.Tag}}>
-<script src="{{.Src}}{{.Tag}}.js"></script>
-</html>`
 
 	// Parse the template
 	tmpl, err := template.New("frame").Parse(htmlTemplate)

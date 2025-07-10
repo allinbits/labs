@@ -112,6 +112,24 @@ func (model *Model) State() []TokenType {
 	return state
 }
 
+// Execute executes a callback if the model transformation is successful.
+func (model *Model) Execute(action string, onCommit func(newState []TokenType)) ([]TokenType, bool) {
+    if model == nil {
+        return nil, false // No model to execute.
+    }
+
+    state := model.State()
+    newState, ok := Execute(state, model, action)
+    if !ok {
+        panic("Failed to execute action: " + action + " on model: " + model.ToJson())
+    }
+    if onCommit != nil {
+        onCommit(newState) // Execute the callback if provided.
+    }
+
+    return newState, true
+}
+
 // TODO: try this out w/ testing
 func Execute(state []TokenType, model *Model, action string) ([]TokenType, bool) {
 	newState := make([]TokenType, len(state))
@@ -399,6 +417,7 @@ func (model *Model) ToMarkdown() string {
 	return sb.String()
 }
 
+// ToGnoMark converts the Petri net model to GnoMark format json string.
 func (model *Model) ToGnoMark(h WebHost) string {
 	var sb strings.Builder
 	sb.WriteString("{\n")
@@ -409,6 +428,7 @@ func (model *Model) ToGnoMark(h WebHost) string {
 	return sb.String()
 }
 
+// ToJson converts the Petri net model to a JSON string.
 func (model *Model) ToJson() string {
 	var sb strings.Builder
 	sb.WriteString("{\n")

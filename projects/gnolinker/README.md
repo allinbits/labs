@@ -15,6 +15,7 @@ gnolinker <platform> [options]
 ```
 
 Available platforms:
+
 - `discord` - Discord bot (implemented)
 - `telegram` - Telegram bot (planned)
 - `slack` - Slack bot (planned)
@@ -79,7 +80,7 @@ go build -o gnolinker ./cmd/
 The bot supports multiple environment files for different deployment scenarios:
 
 - `.env` - Local development (default, gitignored)
-- `.dev.env` - Development environment (gitignored)  
+- `.dev.env` - Development environment (gitignored)
 - `.stg.env` - Staging environment (committed)
 - `.prod.env` - Production environment (gitignored)
 
@@ -142,37 +143,37 @@ export GNOLINKER__ROLE_CONTRACT="gno.land/r/linker000/discord/role/v0"
 
 ### Commands
 
-All commands are executed via DM with the bot:
+The bot uses modern Discord slash commands under `/gnolinker`. All responses are private (ephemeral) to you in channels. See [SLASH_COMMANDS.md](SLASH_COMMANDS.md) for complete documentation.
 
 #### User Commands
-- `!link address {address}` - Generate claim to link Discord ID to Gno address
-- `!verify address` - Verify and update address linking status
-- `!sync roles {realmPath}` - Sync all roles for a realm
+
+- `/gnolinker link address <address>` - Generate claim to link Discord ID to Gno address
+- `/gnolinker verify address` - Verify and update address linking status
+- `/gnolinker sync roles <realm>` - Sync all roles for a realm
+- `/gnolinker help` - Show all available commands
 
 #### Admin Commands
-- `!link role {roleName} {realmPath}` - Link realm role to Discord role
-- `!verify role {roleName} {realmPath}` - Verify role linking and update membership
-- `!sync roles {realmPath} {userID}` - Sync roles for another user
 
-#### Help
-- `!help` - Show available commands
+- `/gnolinker link role <role> <realm>` - Link realm role to Discord role
+- `/gnolinker verify role <role> <realm>` - Verify role linking and update membership
+- `/gnolinker sync user <realm> <user>` - Sync roles for another user
 
 ### Example Workflow
 
 1. **User links their address:**
    ```
-   !link address g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5
+   /gnolinker link address g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5
    ```
 
 2. **Admin links a realm role:**
    ```
-   !link role member gno.land/r/demo/events
+   /gnolinker link role member gno.land/r/demo/events
    ```
 
 3. **User verifies and syncs their roles:**
    ```
-   !verify address
-   !sync roles gno.land/r/demo/events
+   /gnolinker verify address
+   /gnolinker sync roles gno.land/r/demo/events
    ```
 
 ## Development
@@ -211,6 +212,7 @@ Update `config/networks.go` with new network configuration:
 ### Single-Server Model
 
 Each bot instance manages one chat server to:
+
 - Maintain clear trust boundaries
 - Simplify permission models
 - Encourage community ownership of bot instances
@@ -219,11 +221,13 @@ Each bot instance manages one chat server to:
 ### Workflow-Centric Architecture
 
 Organized around business workflows rather than platform features:
+
 - User linking workflow
-- Role linking workflow  
+- Role linking workflow
 - Sync workflow
 
 This makes it easier to:
+
 - Test business logic independently
 - Add new platforms
 - Maintain consistency across platforms
@@ -231,6 +235,7 @@ This makes it easier to:
 ### Multi-Network Support
 
 Allows single bot to work with multiple Gno networks:
+
 - Development against testnets
 - Production on mainnet
 - Local development environments

@@ -24,6 +24,7 @@ func Run() {
 		userContractFlag = flag.String("user-contract", "r/linker000/discord/user/v0", "User contract path")
 		roleContractFlag = flag.String("role-contract", "r/linker000/discord/role/v0", "Role contract path")
 		logLevelFlag     = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
+		cleanupFlag      = flag.Bool("cleanup-commands", false, "Remove all existing slash commands on startup")
 	)
 	flag.Parse()
 	
@@ -87,6 +88,7 @@ func Run() {
 		GuildID:               guildID,
 		AdminRoleID:           adminRole,
 		VerifiedAddressRoleID: verifiedRole,
+		CleanupOldCommands:    *cleanupFlag,
 	}
 
 	// Create Gno client

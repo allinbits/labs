@@ -8,3 +8,6 @@ gnolinker
 
 # runbook files for gnolinker
 runbook.*
+
+# session scratch files and brainstorming
+SCRATCH_IDEAS.md

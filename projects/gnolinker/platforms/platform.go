@@ -30,17 +30,6 @@ type Message interface {
 	IsDirectMessage() bool
 }
 
-// Command represents a parsed command
-type Command struct {
-	Name string
-	Args []string
-}
-
-// CommandHandler handles platform-agnostic commands
-type CommandHandler interface {
-	HandleCommand(platform Platform, message Message, command Command) error
-}
-
 // BotMode represents a platform-specific bot implementation
 type BotMode interface {
 	// Start initializes and runs the bot

@@ -14,11 +14,11 @@ import (
 
 // Bot represents a Discord bot instance
 type Bot struct {
-	session    *discordgo.Session
-	platform   platforms.Platform
-	router     *platforms.CommandRouter
-	config     Config
-	logger     core.Logger
+	session              *discordgo.Session
+	platform             platforms.Platform
+	interactionHandlers  *InteractionHandlers
+	config               Config
+	logger               core.Logger
 }
 
 // NewBot creates a new Discord bot
@@ -37,27 +37,21 @@ func NewBot(config Config,
 	// Create platform adapter
 	platform := NewDiscordPlatform(session, config)
 	
-	// Create command handlers
-	handlers := NewCommandHandlers(userFlow, roleFlow, syncFlow, logger)
-	
-	// Create command router
-	router := platforms.NewCommandRouter()
-	router.RegisterHandler("!link", NewLinkHandler(handlers))
-	router.RegisterHandler("!verify", NewVerifyHandler(handlers))
-	router.RegisterHandler("!sync", NewSyncHandler(handlers))
-	router.RegisterHandler("!help", NewHelpHandler())
+	// Create interaction handlers
+	interactionHandlers := NewInteractionHandlers(userFlow, roleFlow, syncFlow, config, logger)
 	
 	bot := &Bot{
-		session:  session,
-		platform: platform,
-		router:   router,
-		config:   config,
-		logger:   logger,
+		session:             session,
+		platform:            platform,
+		interactionHandlers: interactionHandlers,
+		config:              config,
+		logger:              logger,
 	}
 	
 	// Set up event handlers
 	session.AddHandler(bot.onReady)
 	session.AddHandler(bot.onMessageCreate)
+	session.AddHandler(bot.interactionHandlers.HandleInteraction)
 	
 	return bot, nil
 }
@@ -98,6 +92,20 @@ func (b *Bot) GetPlatform() platforms.Platform {
 func (b *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
 	s.UpdateGameStatus(0, "Linking gno.land addresses")
 	b.logger.Info("Bot is ready! Logged in", "username", event.User.Username)
+	
+	// Cleanup old commands if requested
+	if b.config.CleanupOldCommands {
+		err := b.interactionHandlers.CleanupOldCommands(s, b.config.GuildID)
+		if err != nil {
+			b.logger.Error("Failed to cleanup old commands", "error", err)
+		}
+	}
+	
+	// Register slash commands
+	err := b.interactionHandlers.RegisterSlashCommands(s, b.config.GuildID)
+	if err != nil {
+		b.logger.Error("Failed to register slash commands", "error", err)
+	}
 }
 
 func (b *Bot) onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -109,32 +117,26 @@ func (b *Bot) onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) 
 	// Create message wrapper
 	message := NewDiscordMessage(m)
 	
-	// Handle DMs
+	// Handle DMs with a simple redirect message
 	if message.IsDirectMessage() {
-		b.handleDirectMessage(message)
-		return
-	}
-	
-	// Handle guild messages with !link
-	if m.Content == "!link" {
-		s.ChannelMessageSend(m.ChannelID, "Please DM me to start the linking process.")
+		b.handleDirectMessage(s, m.Author.ID)
 	}
 }
 
-func (b *Bot) handleDirectMessage(message *DiscordMessage) {
-	// Parse command
-	command, isCommand := platforms.ParseCommand(message.GetContent())
-	if !isCommand {
-		b.platform.SendDirectMessage(message.GetAuthorID(), 
-			"I'm not sure what you mean. Try `!help` to see available commands.")
+func (b *Bot) handleDirectMessage(s *discordgo.Session, userID string) {
+	response := "👋 Hi! I only work with slash commands in server channels now.\n\n" +
+		"Please go to a server channel and use `/gnolinker help` to see all available commands.\n\n" +
+		"All responses are private to you, so don't worry about spam!"
+	
+	// Send DM response
+	channel, err := s.UserChannelCreate(userID)
+	if err != nil {
+		b.logger.Error("Failed to create DM channel", "error", err, "user_id", userID)
 		return
 	}
 	
-	// Route command
-	err := b.router.HandleCommand(b.platform, message, *command)
+	_, err = s.ChannelMessageSend(channel.ID, response)
 	if err != nil {
-		b.logger.Error("Command handling error", "error", err, "author_id", message.GetAuthorID())
-		b.platform.SendDirectMessage(message.GetAuthorID(), 
-			"Something went wrong processing your command. Please try again.")
+		b.logger.Error("Failed to send DM", "error", err, "user_id", userID)
 	}
 }

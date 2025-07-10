@@ -13,4 +13,7 @@ type Config struct {
 	
 	// VerifiedAddressRoleID is given to users who have linked their address
 	VerifiedAddressRoleID string
+	
+	// CleanupOldCommands removes all existing slash commands on startup
+	CleanupOldCommands bool
 }

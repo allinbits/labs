@@ -14,9 +14,19 @@ import (
 type Registry struct {
 	Events      *avl.Tree
 	LiveEventId string
-	renderOpts  *component.RenderOpts
+	RenderOpts  *component.RenderOpts
 	patchLevel  int    // current patch level, used for debugging and content management
 	patchRealm  string // realm that is allowed to update the patch level, used for debugging and content management
+}
+
+func NewRegistry(renderOpts *component.RenderOpts) *Registry {
+	return &Registry{
+		Events:      avl.NewTree(),
+		LiveEventId: "",
+		RenderOpts:  renderOpts,
+		patchLevel:  0,
+		patchRealm:  "",
+	}
 }
 
 func (r *Registry) GetPatchLevel() string {
@@ -41,7 +51,7 @@ func (r *Registry) GetEvent(id string) *event.Event {
 }
 
 func (r *Registry) SetRenderOpts(opts *component.RenderOpts) {
-	r.renderOpts = opts
+	r.RenderOpts = opts
 }
 
 func (r *Registry) String() string {

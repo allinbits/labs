@@ -7,6 +7,8 @@ import (
 	"gno.land/p/eve000/event/component"
 )
 
+// FIXME: add address field
+
 type Speaker struct {
 	Name        string
 	Biography   string

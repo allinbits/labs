@@ -7,28 +7,30 @@ import (
 	"strings"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event"
-	"gno.land/r/buidlthefuture000/events/gnolandlaunch"
+	event "gno.land/r/buidlthefuture000/events/gnolandlaunch"
 )
+
+var api = event.App{}
 
 var f = ufmt.Sprintf
 
 func ToICS() string {
-	var b strings.Builder
-	w := makeWriter(&b)
+	var calendar strings.Builder
 
+	w := func(line string) { calendar.WriteString(line + "\n") }
 	w("BEGIN:VCALENDAR")
 	w("VERSION:2.0")
 	w("CALSCALE:GREGORIAN")
 	w("PRODID:-//gno.land//Launch Calendar//EN")
-	w("METHOD:PUBLISH")
+	w("METHOD:PUBLISH\n\n")
 
-	for _, s := range gnolandlaunch.LiveEvent().GetSessions() {
-		b.WriteString(s.ToICSFragment())
+	for _, s := range event.Sessions {
+		calendar.WriteString(s.ToICSFragment())
 	}
 
 	w("END:VCALENDAR")
-	return b.String()
+
+	return calendar.String()
 }
 
 func ToICSDataUrl() string {
@@ -36,112 +38,96 @@ func ToICSDataUrl() string {
 }
 
 func ToMarkdown() string {
-	var b strings.Builder
-	for _, s := range gnolandlaunch.LiveEvent().GetSessions() {
-		b.WriteString(s.ToMarkdown())
+	var calendar strings.Builder
+	for _, sess := range event.Sessions {
+		calendar.WriteString(sess.ToMarkdown())
 	}
-	return b.String()
+	return calendar.String()
 }
 
 func RenderCal(path string) string {
-	var b strings.Builder
-	w := makeWriter(&b)
+	var calendar strings.Builder
+	w := func(line string) { calendar.WriteString(line + "\n") }
 
-	q := parseQuery(path)
-	sessionIDs := q["session"]
-	format := strings.ToLower(q.Get("format"))
-
-	useAll := len(sessionIDs) == 0
-	allowed := make(map[string]bool)
-	for _, id := range sessionIDs {
-		allowed[id] = true
-	}
-	include := func(id string) bool { return useAll || allowed[id] }
-
-	sessions := gnolandlaunch.LiveEvent().GetSessions()
-
-	switch format {
-	case "json":
-		b.WriteString("[")
-		first := true
-		for i, s := range sessions {
-			id := event.Pad3(strconv.Itoa(i))
-			if !include(id) {
-				continue
-			}
-			if !first {
-				b.WriteString(",")
-			}
-			first = false
-			b.WriteString(s.ToJson())
+	var sessionIDs []string
+	var format string
+	if len(path) > 0 && path[0] == '?' {
+		fullURL := std.CurrentRealm().PkgPath() + path
+		if u, err := url.Parse(fullURL); err == nil {
+			q := u.Query()
+			sessionIDs = q["session"]
+			format = q.Get("format")
 		}
-		b.WriteString("]")
-		return b.String()
+	}
+
+	N := len(event.Sessions)
+	var validIDs []int
+	for _, idStr := range sessionIDs {
+		idx, err := strconv.Atoi(idStr)
+		if err != nil || idx < 0 || idx >= N {
+			continue
+		}
+		validIDs = append(validIDs, idx)
+	}
+	if len(validIDs) == 0 {
+		validIDs = make([]int, N)
+		for i := 0; i < N; i++ {
+			validIDs[i] = i
+		}
+	}
+
+	switch strings.ToLower(format) {
+
+	case "json":
+		calendar.WriteString("[")
+		first := true
+		for _, idx := range validIDs {
+			if !first {
+				calendar.WriteString(",")
+			}
+			calendar.WriteString(api.GetSession(idx).ToJson())
+			first = false
+		}
+		calendar.WriteString("]")
+		return calendar.String()
 
 	case "csv":
-		w("Title,Speaker,Start,End,Location")
-		for i, s := range sessions {
-			id := event.Pad3(strconv.Itoa(i))
-			if !include(id) {
-				continue
-			}
-			title := escapeCSV(s.Title)
-			speaker := escapeCSV(s.Speaker.ToMarkdown())
-			start := s.StartTime.Format("20060102T150000Z")
-			end := s.EndTime.Format("20060102T150000Z")
-			location := escapeCSV(s.Location.ToMarkdown())
+		w("Title,Speaker,Start,End,Location\n")
+		for _, idx := range validIDs {
+			sess := api.GetSession(idx)
+			title := `"` + strings.ReplaceAll(sess.Title, `"`, `""`) + `"`
+			speaker := `"` + strings.ReplaceAll(sess.Speaker.ToMarkdown(), `"`, `""`) + `"`
+			start := sess.StartTime.Format("20060102T150000Z")
+			end := sess.EndTime.Format("20060102T150000Z")
+			location := `"` + strings.ReplaceAll(sess.Location.ToMarkdown(), `"`, `""`) + `"`
+
 			w(f("%s,%s,%s,%s,%s", title, speaker, start, end, location))
 		}
-		return b.String()
+		return calendar.String()
 
 	case "ics":
 		w("BEGIN:VCALENDAR")
 		w("VERSION:2.0")
 		w("CALSCALE:GREGORIAN")
 		w("PRODID:-//gno.land//Launch Calendar//EN")
-		w("METHOD:PUBLISH")
-		for i, s := range sessions {
-			id := event.Pad3(strconv.Itoa(i))
-			if !include(id) {
-				continue
-			}
-			b.WriteString(s.ToICSFragment())
+		w("METHOD:PUBLISH\n\n")
+		for _, idx := range validIDs {
+			calendar.WriteString(api.GetSession(idx).ToICSFragment())
 		}
-		w("END:VCALENDAR")
-		return b.String()
+		w("\nEND:VCALENDAR")
+		return calendar.String()
 
-	default: // markdown
-		for i, s := range sessions {
-			id := event.Pad3(strconv.Itoa(i))
-			if !include(id) {
-				continue
-			}
-			w(s.ToMarkdown())
+	default: // "markdown"
+		for _, idx := range validIDs {
+			// FIXME: this is null pointer err
+			//w(api.GetSession(idx).ToMarkdown())
+			_ = w
+			_ = idx
 		}
-		return b.String()
+		return calendar.String()
 	}
 }
 
 func Render(path string) string {
 	return RenderCal(path)
-}
-
-func escapeCSV(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-}
-
-func parseQuery(path string) url.Values {
-	if len(path) > 0 && path[0] == '?' {
-		u, err := url.Parse(std.CurrentRealm().PkgPath() + path)
-		if err == nil {
-			return u.Query()
-		}
-	}
-	return url.Values{}
-}
-
-func makeWriter(b *strings.Builder) func(string) {
-	return func(s string) {
-		b.WriteString(s + "\n")
-	}
 }

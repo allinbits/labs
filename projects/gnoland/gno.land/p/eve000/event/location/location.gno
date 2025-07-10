@@ -33,8 +33,6 @@ func (l *Location) SetDescription(description string) {
 	l.Description = description
 }
 
-// REVIEW: need setters for tags and renderOpts?
-
 func (l *Location) ToAnchor() string {
 	return component.StringToAnchor(l.Name)
 }

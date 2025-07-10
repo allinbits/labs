@@ -12,6 +12,10 @@ import (
 	"gno.land/p/eve000/event/proposal"
 )
 
+var api = &event.App{}
+
+// TODO: try out forms here
+
 // Header for your Call for Proposals Realm
 var ProposalsRealmHeader = "# BTF 2025 Call for Proposals\n\n"
 
@@ -125,21 +129,9 @@ func Render(path string) string {
 	return out.String()
 }
 
-//      ACL HEIRARCHY
-//        Organizer
-//        approve
-//        export
-//       /        \
-//      v         v
-//    Proposer   Reviewer
-//    submit     review
-//    edit
-
-// --- API-Like Endpoints ---
-
 func SubmitProposal(title, abstract, topic, speaker string) {
 
-	event.AssertAtLeastRole("proposer", std.OriginCaller())
+	api.AssertAtLeastRole("proposer", std.OriginCaller())
 	if topic, ok := EventTopics[topic]; ok {
 		sp := &proposal.SubmittedProposal{
 			Title:    title,
@@ -155,7 +147,7 @@ func SubmitProposal(title, abstract, topic, speaker string) {
 
 func ReviewProposal(title, comments, reviewer string, score int) {
 
-	event.AssertAtLeastRole("reviewer", std.OriginCaller())
+	api.AssertAtLeastRole("reviewer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if sp, ok := p.(*proposal.SubmittedProposal); ok {
@@ -173,7 +165,7 @@ func ReviewProposal(title, comments, reviewer string, score int) {
 
 func ApproveProposal(title, approver string) {
 
-	event.AssertAtLeastRole("organizer", std.OriginCaller())
+	api.AssertAtLeastRole("organizer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
 			if rp, ok := p.(*proposal.ReviewedProposal); ok {
@@ -188,7 +180,7 @@ func ApproveProposal(title, approver string) {
 }
 
 func ApproveProposals(titles []string, approver string) {
-	event.AssertAtLeastRole("organizer", std.OriginCaller())
+	api.AssertAtLeastRole("organizer", std.OriginCaller())
 	for _, title := range titles {
 		ApproveProposal(title, approver)
 	}
@@ -201,7 +193,7 @@ func EditProposal(title, key, edit string) error {
 			continue
 		}
 
-		if !(event.HasRole("proposer", std.OriginCaller()) && std.OriginCaller().String() == p.GetOwner()) {
+		if !(api.HasRole("proposer", std.OriginCaller()) && std.OriginCaller().String() == p.GetOwner()) {
 			return ufmt.Errorf("unauthorized: %q may not edit %q", std.OriginCaller(), p.GetTitle())
 		}
 

@@ -14,16 +14,13 @@ const DtFmt = "Mon Jan 2"
 
 type Component interface {
 	ToAnchor() string
-	ToMarkdown() string // REVIEW: should we allow filtering?
+	ToMarkdown() string
 	ToJson() string
 	ToSVG() string
 	ToSvgDataUrl() string
-	RenderOpts() *RenderOpts
+	RenderOpts() *RenderOpts // REVIEW: should we remove renderOpts? we could add OnlineEvent vs InPersonEvent (see schema.org)
 }
 
-// RenderOpts is a "feature flag" struct for controlling the rendering of components.
-// It allows for selective rendering of different parts of a component.
-// REVIEW: consider using a new set of render opts per event rather than 1-per-registry as it is now
 type RenderOpts struct {
 	Svg      bool
 	Schedule bool

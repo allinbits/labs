@@ -240,19 +240,19 @@ func TestVerifyTimestamp(t *testing.T) {
 
 		if test.shouldFail {
 			if err == nil {
-				t.Errorf("expected error for claimTime=%v, evalTime=%v, description: %v", 
+				t.Errorf("expected error for claimTime=%v, evalTime=%v, description: %v",
 					test.claimTime, test.evalTime, test.description)
 				continue
 			}
 			if err.Error() != test.expectedErr {
-				t.Errorf("expected error '%v', got '%v', description: %v", 
+				t.Errorf("expected error '%v', got '%v', description: %v",
 					test.expectedErr, err.Error(), test.description)
 			}
 			continue
 		}
 
 		if err != nil {
-			t.Errorf("unexpected error for claimTime=%v, evalTime=%v: %v, description: %v", 
+			t.Errorf("unexpected error for claimTime=%v, evalTime=%v: %v, description: %v",
 				test.claimTime, test.evalTime, err, test.description)
 		}
 	}
@@ -263,7 +263,7 @@ func TestVerifySignature(t *testing.T) {
 	// Test 1: Message too short should fail
 	shortMessage := make([]byte, 32)
 	pubkey := make([]byte, 32)
-	
+
 	payload, ok := verifySignature(shortMessage, pubkey)
 	if ok {
 		t.Errorf("short message should fail verification")
@@ -277,7 +277,7 @@ func TestVerifySignature(t *testing.T) {
 	for i := range longMessage {
 		longMessage[i] = byte(i % 256)
 	}
-	
+
 	payload, ok = verifySignature(longMessage, pubkey)
 	if ok {
 		t.Errorf("invalid signature should fail verification")
@@ -298,7 +298,7 @@ func TestLinkedRealmRoleToJSON(t *testing.T) {
 
 	result := lrr.ToJSON()
 	expected := `{"RealmPath":"gno.land/r/demo/app","RealmRoleName":"admin","DiscordRoleID":"role123","DiscordGuildID":"guild456"}`
-	
+
 	if result != expected {
 		t.Errorf("ToJSON: expected '%v', got '%v'", expected, result)
 	}
@@ -345,12 +345,12 @@ func TestLinkedRealmRolesToJSON(t *testing.T) {
 	}
 
 	result := linkedRealmRolesToJSON(roles)
-	
+
 	// Should be a valid JSON array
 	if result[0] != '[' || result[len(result)-1] != ']' {
 		t.Errorf("result should be wrapped in square brackets")
 	}
-	
+
 	// Should contain both roles
 	if !containsString(result, "app1") {
 		t.Errorf("should contain first role")
@@ -364,7 +364,7 @@ func TestLinkedRealmRolesToJSON(t *testing.T) {
 	if !containsString(result, "moderator") {
 		t.Errorf("should contain moderator role")
 	}
-	
+
 	// Test empty array
 	emptyResult := linkedRealmRolesToJSON([]LinkedRealmRole{})
 	if emptyResult != "[]" {

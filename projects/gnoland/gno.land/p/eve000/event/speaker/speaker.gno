@@ -11,11 +11,12 @@ import (
 
 type Speaker struct {
 	Name        string
+	Address     string
 	Biography   string
 	Affiliation string
 	PictureURL  string
 	Tags        []string
-	renderOpts  *component.RenderOpts
+	renderOpts  map[string]interface{}
 }
 
 var _ component.Component = (*Speaker)(nil)
@@ -46,7 +47,7 @@ func (s *Speaker) ToAnchor() string {
 	return component.StringToAnchor(s.Name)
 }
 
-func (s *Speaker) ToMarkdown() string {
+func (s *Speaker) ToMarkdown(_ ...component.Content) string {
 	markdown := "#### " + s.Name + "\n\n"
 	if s.Biography != "" {
 		markdown += s.Biography + "\n\n"
@@ -114,11 +115,11 @@ func (s *Speaker) ToSvgDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(s.ToSVG())
 }
 
-func (s *Speaker) RenderOpts() *component.RenderOpts {
+func (s *Speaker) RenderOpts() map[string]interface{} {
 	return s.renderOpts
 }
 
-func (s *Speaker) SetRenderOpts(ro *component.RenderOpts) {
+func (s *Speaker) SetRenderOpts(ro map[string]interface{}) {
 	s.renderOpts = ro
 }
 

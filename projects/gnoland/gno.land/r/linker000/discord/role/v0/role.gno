@@ -24,7 +24,7 @@ func Link(cur realm, encodedClaim string) {
 	if err := ds.set(claim); err != nil {
 		panic(err)
 	}
-	
+
 	// Emit RoleLinked event
 	std.Emit("RoleLinked",
 		"realmPath", claim.realmPath,
@@ -41,7 +41,7 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	// Get the existing claim to retrieve the discord role ID
 	existingClaim := ds.getByPathRoleGuild(claim.realmPath, claim.roleName, claim.discordGuildID)
 	if existingClaim != nil {
@@ -53,7 +53,7 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 			"discordRoleID", existingClaim.discordRoleID,
 		)
 	}
-	
+
 	ds.removeByPathRoleGuild(claim.realmPath, claim.roleName, claim.discordGuildID)
 }
 

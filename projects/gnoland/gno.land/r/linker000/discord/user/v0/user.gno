@@ -25,7 +25,7 @@ func Link(cur realm, encodedClaim string) {
 	if err := ds.set(claim); err != nil {
 		panic(err)
 	}
-	
+
 	// Emit UserLinked event
 	std.Emit("UserLinked",
 		"address", claim.addr.String(),
@@ -37,7 +37,7 @@ func Link(cur realm, encodedClaim string) {
 // This does not require a claim because the caller is the link owner
 func UnlinkByCaller(cur realm) {
 	caller := std.PreviousRealm().Address()
-	
+
 	// Get the discord ID before removing
 	claim := ds.getByAddress(caller)
 	if claim != nil {
@@ -48,7 +48,7 @@ func UnlinkByCaller(cur realm) {
 			"triggeredBy", "UnlinkByCaller",
 		)
 	}
-	
+
 	ds.removeByAddress(caller)
 }
 
@@ -61,7 +61,7 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	// Get the existing claim to retrieve the address
 	existingClaim := ds.getByDiscordID(claim.discordID)
 	if existingClaim != nil {
@@ -72,7 +72,7 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 			"triggeredBy", "UnlinkByClaim",
 		)
 	}
-	
+
 	ds.removeByDiscordID(claim.discordID)
 }
 

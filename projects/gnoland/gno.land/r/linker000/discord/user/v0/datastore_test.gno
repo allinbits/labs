@@ -24,7 +24,7 @@ func TestDatastoreSet(t *testing.T) {
 		discordID: "alice_discord_123",
 		addr:      alice,
 	}
-	
+
 	err := ds.set(claim1)
 	if err != nil {
 		t.Errorf("first claim should succeed: %v", err)
@@ -36,7 +36,7 @@ func TestDatastoreSet(t *testing.T) {
 		discordID: "alice_discord_456",
 		addr:      alice, // same address
 	}
-	
+
 	err = ds.set(claim2)
 	if err == nil {
 		t.Errorf("should fail when linking same address twice")
@@ -51,7 +51,7 @@ func TestDatastoreSet(t *testing.T) {
 		discordID: "alice_discord_123", // same discord ID
 		addr:      bob,
 	}
-	
+
 	err = ds.set(claim3)
 	if err == nil {
 		t.Errorf("should fail when linking same discord ID twice")
@@ -66,7 +66,7 @@ func TestDatastoreSet(t *testing.T) {
 		discordID: "bob_discord_789",
 		addr:      bob,
 	}
-	
+
 	err = ds.set(claim4)
 	if err != nil {
 		t.Errorf("claim with different address and discord ID should succeed: %v", err)

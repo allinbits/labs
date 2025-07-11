@@ -12,7 +12,7 @@ type Location struct {
 	Address     string
 	Coordinates string
 	Description string
-	renderOpts  *component.RenderOpts
+	renderOpts  map[string]interface{}
 }
 
 var _ component.Component = (*Location)(nil)
@@ -37,7 +37,7 @@ func (l *Location) ToAnchor() string {
 	return component.StringToAnchor(l.Name)
 }
 
-func (l *Location) ToMarkdown() string {
+func (l *Location) ToMarkdown(_ ...component.Content) string {
 	md := "### " + l.Name + "\n"
 	if l.Address != "" {
 		md += l.Address + "\n"
@@ -88,10 +88,10 @@ func (l *Location) ToSvgDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(l.ToSVG())
 }
 
-func (l *Location) RenderOpts() *component.RenderOpts {
+func (l *Location) RenderOpts() map[string]interface{} {
 	return l.renderOpts
 }
 
-func (s *Location) SetRenderOpts(ro *component.RenderOpts) {
+func (s *Location) SetRenderOpts(ro map[string]interface{}) {
 	s.renderOpts = ro
 }

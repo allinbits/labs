@@ -11,14 +11,14 @@ import (
 )
 
 func init() {
-	app.RegisterEvent(gnolandlaunch, &component.RenderOpts{
-		Location: false,
-		Svg:      true,
-		Schedule: true,
-		Speaker:  false,
-	})
+    renderOpts := map[string]interface{}{
+        "Svg":       struct{}{},
+        "Schedule":  struct{}{},
+    }
+	app.RegisterEvent(gnolandlaunch, renderOpts)
 }
 
+// banner content block is shown in the top section of the event page
 var banner = &component.Content{
 	Published: true,
 	Markdown: "\n\n#### Status: Accepting Session Proposals\n #### expected dates: Aug 2025 \n\n" +
@@ -44,7 +44,7 @@ var locations = map[string]*location.Location{
 	},
 }
 
-var speakersNOTROLE = map[string]*speaker.Speaker{
+var speakerBios = map[string]*speaker.Speaker{
 	"jae": {
 		Name:        "Jae Kwon",
 		Biography:   "Jae Kwon is the creator of Gno.land and co-founder of Cosmos, pioneering decentralized systems built on logic and sovereignty.",
@@ -75,7 +75,7 @@ var Sessions = map[string]*session.Session{
 	"keynote": {
 		Title:       "The Road to Web7",
 		Description: "Join us for an inspiring keynote at the Build The Future Meeting featuring Jae Kwon, visionary blockchain pioneer and creator of Gno.land.",
-		Speaker:     speakersNOTROLE["jae"],
+		Speaker:     speakerBios["jae"],
 		StartTime:   time.Date(2025, 6, 25, 10, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 25, 11, 30, 0, 0, time.UTC),
 		Location:    locations["gnowhere"],
@@ -84,7 +84,7 @@ var Sessions = map[string]*session.Session{
 	"generics": {
 		Title:       "Generics in Action: Simplifying Go Code",
 		Description: "Learn practical use cases for Go generics to simplify and enhance your code.",
-		Speaker:     speakersNOTROLE["alice"],
+		Speaker:     speakerBios["alice"],
 		StartTime:   time.Date(2025, 6, 26, 10, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 26, 11, 30, 0, 0, time.UTC),
 		Location:    locations["room-a1"],
@@ -93,7 +93,7 @@ var Sessions = map[string]*session.Session{
 	"concurrency": {
 		Title:       "Concurrency Patterns in Real‐World Applications",
 		Description: "A deep dive into concurrency patterns to efficiently handle complex workflows.",
-		Speaker:     speakersNOTROLE["bob"],
+		Speaker:     speakerBios["bob"],
 		StartTime:   time.Date(2025, 6, 27, 13, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 27, 14, 30, 0, 0, time.UTC),
 		Location:    locations["room-b2"],
@@ -102,7 +102,7 @@ var Sessions = map[string]*session.Session{
 	"apis": {
 		Title:       "Building High‐Performance APIs with Go",
 		Description: "Techniques and best practices for building scalable and performant APIs.",
-		Speaker:     speakersNOTROLE["carol"],
+		Speaker:     speakerBios["carol"],
 		StartTime:   time.Date(2025, 6, 28, 15, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 6, 28, 16, 30, 0, 0, time.UTC),
 		Location:    locations["room-c3"],

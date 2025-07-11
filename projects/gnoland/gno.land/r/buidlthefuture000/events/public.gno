@@ -5,7 +5,6 @@ import (
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/eve000/event"
-	"gno.land/p/eve000/event/component"
 )
 
 var (
@@ -13,6 +12,7 @@ var (
 	eventRealms   = avl.NewTree()
 )
 
+// REVIEW: consider removing this if it is not used for anything else
 // SetFeaturedRealm sets the featured realm for the events package.
 func SetFeaturedRealm(realm string) {
 	assertAccess()
@@ -111,7 +111,7 @@ func Publish(realmPath string, markdown string) {
 }
 
 // RegisterEvent registers an event in the event realm with the given options.
-func RegisterEvent(realmPath string, evt *event.Event, opts *component.RenderOpts) string {
+func RegisterEvent(realmPath string, evt *event.Event, opts map[string]interface{}) string {
 	return Eve(realmPath).RegisterEvent(evt, opts)
 }
 

@@ -18,7 +18,7 @@ type Agenda struct {
 	Banner      *component.Content
 	Description string
 	Sessions    []*session.Session
-	renderOpts  *component.RenderOpts
+	renderOpts  map[string]interface{}
 }
 
 var _ component.Component = (*Agenda)(nil)
@@ -38,10 +38,10 @@ func (a *Agenda) ToAnchor() string {
 	return component.StringToAnchor(a.Name)
 }
 
-func (a *Agenda) ToMarkdown() string {
+func (a *Agenda) ToMarkdown(_ ...component.Content) string {
 	markdown := "## " + a.Name + "\n\n"
 
-	if a.RenderOpts().Location {
+	if _, ok := a.RenderOpts()["Location"]; ok {
 		markdown += "### " + a.Location.Name + "\n\n"
 	}
 	if FormatDate(a.StartDate) == FormatDate(a.EndDate) {
@@ -93,10 +93,10 @@ func (a *Agenda) ToMarkdown() string {
 		}
 	}
 
-	if a.RenderOpts().Speaker {
+	if _, ok := a.RenderOpts()["Speaker"]; ok {
 		markdown += "## Speakers\n\n" + speakersMarkdown
 	}
-	if a.RenderOpts().Location {
+	if _, ok := a.RenderOpts()["Location"]; ok {
 		markdown += "## Locations\n\n" + locationsMarkdown
 	}
 
@@ -153,11 +153,11 @@ func (a *Agenda) ToSvgDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(a.ToSVG())
 }
 
-func (a *Agenda) RenderOpts() *component.RenderOpts {
+func (a *Agenda) RenderOpts() map[string]interface{} {
 	return a.renderOpts
 }
 
-func (a *Agenda) SetRenderOpts(opts *component.RenderOpts) {
+func (a *Agenda) SetRenderOpts(opts map[string]interface{}) {
 	a.renderOpts = opts
 }
 

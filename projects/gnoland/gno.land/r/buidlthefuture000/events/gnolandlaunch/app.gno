@@ -38,6 +38,22 @@ func Render(path string) (out string) {
 	return app.Render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
 }
 
+func getQueryParam(q url.Values, param string) (string, bool) {
+	if q == nil {
+		return "", false
+	}
+	value := q.Get(param)
+	if value == "" {
+		return "", false
+	}
+	return value, true
+}
+
+func hasQueryParam(q url.Values, param string) bool {
+	_, ok := getQueryParam(q, param)
+	return ok
+}
+
 func (*App) Render(path string) (out string) {
 	fullURL := std.CurrentRealm().PkgPath() + path
 	u, err := url.Parse(fullURL)
@@ -52,16 +68,14 @@ func (*App) Render(path string) (out string) {
 
 	event := registry.GetEvent(event_id)
 	switch {
-	case notEmpty(q.Get("session")):
+	case hasQueryParam(q, "session"):
 		return component.RenderComponent(path, event.GetSession(q.Get("session")))
-	case notEmpty(q.Get("location")):
+	case hasQueryParam(q, "location"):
 		return component.RenderComponent(path, event.GetLocation(q.Get("location")))
-	case notEmpty(q.Get("speaker")):
+	case hasQueryParam(q, "speaker"):
 		return component.RenderComponent(path, event.GetSpeaker(q.Get("speaker")))
 	default:
-		agenda := event.Agenda()
-		agenda.SetBanner(banner) // REVIEW: is there a better way to inject the banner?
-		return component.RenderComponent(path, agenda)
+		return component.RenderComponent(path, event.Agenda(banner))
 	}
 }
 
@@ -112,8 +126,8 @@ func (*App) SetPatchLevel(level int) {
 	registry.SetPatchLevel(level)
 }
 
-func (*App) RegisterEvent(evt *event.Event, opts *component.RenderOpts) string {
-	registry.SetRenderOpts(opts) // REVIEW: still needed?
+func (*App) RegisterEvent(evt *event.Event, opts map[string]interface{}) string {
+	registry.SetRenderOpts(opts)
 	id := registry.RegisterEvent(evt, opts)
 	registry.LiveEventId = id
 	return id

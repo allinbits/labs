@@ -8,13 +8,12 @@ import (
 	event "gno.land/r/buidlthefuture000/events/gnolandlaunch"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/proposal"
 )
 
 var api = &event.App{}
 
-// TODO: try out forms here
+// TODO: try out forms here - will need to URL decode form submissions
 
 // Header for your Call for Proposals Realm
 var ProposalsRealmHeader = "# BTF 2025 Call for Proposals\n\n"
@@ -86,11 +85,9 @@ var EventTopics = map[string]proposal.Topic{
 	},
 }
 
-var opts = &component.RenderOpts{
-	Location: true,
-	Svg:      false,
-	Schedule: true,
-	Speaker:  false,
+var opts = map[string]interface{}{
+    "Location": struct{}{},
+    "Schedule": struct{}{},
 }
 
 // Initial proposals

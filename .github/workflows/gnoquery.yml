@@ -1,0 +1,45 @@
+name: gnoquery
+
+on:
+  push:
+    paths:
+      - "projects/gnoquery/**"
+      - ".github/workflows/gnoquery.yml"
+  pull_request:
+    paths:
+      - "projects/gnoquery/**"
+      - ".github/workflows/gnoquery.yml"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/gnoquery
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: make test
+
+      - name: Build binary
+        run: make install

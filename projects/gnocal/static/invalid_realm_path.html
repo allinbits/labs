@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>gnocal :: Invalid Realm Path</title>
+  <link rel="stylesheet" href="/static/errors.css">
+</head>
+<body>
+  <div class="box">
+    <div class="error">✘ Invalid realm path</div>
+    <p>The path you entered doesn't match the required structure of a <code>gno.land</code> realm path.</p>
+
+    <div class="comparison">
+      <div class="column">
+        <h3>Your Input</h3>
+        <div class="example">{{.InputPath}}</div>
+      </div>
+      <div class="column">
+        <h3>Expected Format</h3>
+        <div class="example">gno.land/r/your_realm/your_module</div>
+      </div>
+    </div>
+
+    <p class="note">
+      A valid realm path must:
+      <ul>
+        <li>Start with <code>gno.land/</code></li>
+        <li>Include the <code>/r/</code> prefix to indicate a realm</li>
+        <li>Be followed by a valid path to a <code>.gno</code> file registered on the gno.land blockchain</li>
+        <li>That file should define a <code>func Render(path string) string</code> and <code>func RenderCal(path string) string</code> function</li>
+        <li>No slash ('/') at the end!</li>
+      </ul>
+    </p>
+
+    <p><a href="/">← Back to landing page</a></p>
+  </div>
+</body>
+</html>

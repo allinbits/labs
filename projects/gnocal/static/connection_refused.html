@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>gnocal :: Connection Refused</title>
+  <link rel="stylesheet" href="/static/errors.css">
+</head>
+<body>
+  <div class="box">
+    <div class="error">✘ Could not connect to the Gno RPC server</div>
+    <p>This usually means the server is down or you are pointing to the wrong URL.</p>
+    <p><span class="label">Current RPC URL:</span> <span class="value">{{.RpcUrl}}</span></p>
+    <p>Make sure this URL is reachable and your <code>gnoland</code> node is running and listening at this address.</p>
+    <p>Try checking:</p>
+    <ul>
+      <li>That <code>gnoland</code> is running</li>
+      <li>That you can open <code>{{.RpcUrl}}/abci_info</code> in your browser</li>
+    </ul>
+    <p><a href="/">← Back to landing page</a></p>
+  </div>
+</body>
+</html>

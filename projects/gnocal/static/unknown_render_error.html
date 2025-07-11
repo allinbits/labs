@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>gnocal :: Unknown Error</title>
+  <link rel="stylesheet" href="/static/errors.css">
+</head>
+<body>
+  <div class="box">
+    <div class="error">⚠ Unknown Error During Render</div>
+    <p>We encountered an unexpected error when trying to render this realm. This might be a new edge case or an unhandled issue in <code>gnocal</code>.</p>
+
+    <p>Please help us improve by reporting it on GitHub:</p>
+
+    <ul>
+      <li><a href="https://github.com/allinbits/labs/issues" target="_blank">Open a GitHub Issue →</a></li>
+    </ul>
+
+    <p>Include the following information:</p>
+    <div class="comparison">
+      <div class="column">
+        <h3>Your Input</h3>
+        <div class="example"><code>{{.InputPath}}</code></div>
+      </div>
+      <div class="column">
+        <h3>Error Message</h3>
+        <div class="example"><code>{{.ErrorMessage}}</code></div>
+      </div>
+    </div>
+
+    <p class="note">Tip: Take a screenshot of this page and upload it to the issue. It helps us triage faster.</p>
+
+    <p><a href="/">← Back to landing page</a></p>
+  </div>
+</body>
+</html>

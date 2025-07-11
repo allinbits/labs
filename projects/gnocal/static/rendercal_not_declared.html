@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>gnocal :: RenderCal Not Declared</title>
+  <link rel="stylesheet" href="/static/errors.css">
+</head>
+<body>
+  <div class="box">
+    <div class="error">✘ RenderCal not declared</div>
+    <p>The path you entered points to a valid Gno realm that implements <code>Render()</code>, but it does not define a <code>RenderCal()</code> function.</p>
+
+    <p>You can still view the regular web output from this realm here:</p>
+
+    <p>
+      <a href="https://{{.RealmPath}}" target="_blank" class="value">{{.RealmPath}}</a>
+    </p>
+
+    <p class="note">
+      If you're the developer, consider adding a <code>RenderCal(string)</code> function to support calendar views.
+    </p>
+
+    <p><a href="/">← Back to landing page</a></p>
+  </div>
+</body>
+</html>

@@ -8,6 +8,7 @@ import (
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/agenda"
+	"gno.land/p/eve000/event/calendar"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
@@ -174,6 +175,19 @@ func (evt *Event) Agenda(heading *component.Content) *agenda.Agenda {
 	a.SetBanner(heading)
 	a.SetRenderOpts(evt.renderOpts)
 	return a
+}
+
+func (evt *Event) Calendar() *calendar.Calendar {
+    c := &calendar.Calendar{
+        Name:        evt.Name,
+        Location:    evt.Location,
+        StartDate:   evt.StartDate,
+        EndDate:     evt.EndDate,
+        Description: evt.Description,
+        Sessions:    evt.Sessions,
+    }
+    c.SetRenderOpts(evt.renderOpts)
+    return c
 }
 
 func Pad3(s string) string {

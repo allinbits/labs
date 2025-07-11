@@ -26,7 +26,7 @@ type Session struct {
 }
 
 var (
-	_ component.Component = (*Session)(nil)
+	_ component.ICSComponent = (*Session)(nil)
 	f                     = ufmt.Sprintf
 )
 

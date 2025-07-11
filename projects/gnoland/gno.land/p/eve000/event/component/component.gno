@@ -21,6 +21,29 @@ type Component interface {
 	RenderOpts() map[string]interface{}
 }
 
+type ICSComponent interface {
+	ToAnchor() string
+	ToMarkdown(...Content) string
+	ToJson() string
+	ToSVG() string
+	ToSvgDataUrl() string
+	RenderOpts() map[string]interface{}
+    Render(path string) string
+    ToICS() string
+}
+
+// REVIEW: future components would be represented here
+type RSSComponent interface {
+    ToFeed(string) string // returns RSS feed as a string
+}
+
+// REVIEW: consider making all components editable
+// imagine this in the 'json' view - show svg, json + form => preview
+type EditableComponent interface {
+    ToForm(string) string // returns HTML form for editing the component
+    FromForm(string) error // populates the component from the form data
+}
+
 func RenderComponent(path string, c Component) (out string) {
 	var sb strings.Builder
 

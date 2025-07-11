@@ -1,19 +1,51 @@
 package calendar
 
 import (
-	"net/url"
-	"std"
-	"strconv"
-	"strings"
+	"time"
 
-	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event"
-	"gno.land/r/buidlthefuture000/events/gnolandlaunch"
+	"gno.land/p/eve000/event/component"
+	"gno.land/p/eve000/event/session"
 )
+// FIXME: compare with
+// https://github.com/allinbits/labs/blob/4d6b24beca8052cb763c2559444a688c78d3ccde/projects/gnoland/gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar/calendar.gno
 
-var f = ufmt.Sprintf
+type Calendar struct {
+	Name        string
+	StartDate   time.Time
+	EndDate     time.Time
+	Description string
+	Sessions    []*session.Session
+	renderOpts  map[string]interface{}
+}
 
-func ToICS() string {
+var _ component.IcsComponent = (*Calendar)(nil)
+
+func (c *Calendar) RenderOpts() map[string]interface{} {
+	return c.renderOpts
+}
+
+func (c *Calendar) SetRenderOpts(opts map[string]interface{}) {
+	c.renderOpts = opts
+}
+
+func (c *Calendar) ToJson() string {
+	json := "{\n"
+	json += "\"Name\":\"" + c.Name + "\",\n"
+	json += "\"StartDate\":\"" + c.StartDate.Format(component.DtFmt) + "\",\n"
+	json += "\"EndDate\":\"" + c.EndDate.Format(component.DtFmt) + "\",\n"
+	json += "\"Description\":\"" + c.Description + "\",\n"
+	json += "\"Sessions\":[\n"
+	for i, session := range c.Sessions {
+		json += session.ToJson()
+		if i < len(c.Sessions)-1 {
+			json += ",\n"
+		}
+	}
+	json += "\n]\n}"
+	return json
+}
+
+func (c *Calendar) ToICS() string {
 	var b strings.Builder
 	w := makeWriter(&b)
 
@@ -23,7 +55,7 @@ func ToICS() string {
 	w("PRODID:-//gno.land//Launch Calendar//EN")
 	w("METHOD:PUBLISH")
 
-	for _, s := range gnolandlaunch.LiveEvent().GetSessions() {
+	for _, s := c.Sessions {
 		b.WriteString(s.ToICSFragment())
 	}
 
@@ -35,15 +67,16 @@ func ToICSDataUrl() string {
 	return "data:text/calendar;charset=utf-8," + url.PathEscape(ToICS())
 }
 
-func ToMarkdown() string {
+func (c *Calendar) ToMarkdown(_ ...component.Content) string {
 	var b strings.Builder
-	for _, s := range gnolandlaunch.LiveEvent().GetSessions() {
+	for _, s := range c.Session {
 		b.WriteString(s.ToMarkdown())
 	}
 	return b.String()
 }
 
-func RenderCal(path string) string {
+///func RenderCal(path string) string {
+func (c *Calendar) Render(path string) string {
 	var b strings.Builder
 	w := makeWriter(&b)
 
@@ -58,7 +91,7 @@ func RenderCal(path string) string {
 	}
 	include := func(id string) bool { return useAll || allowed[id] }
 
-	sessions := gnolandlaunch.LiveEvent().GetSessions()
+	sessions := api.LiveEvent()
 
 	switch format {
 	case "json":

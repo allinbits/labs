@@ -6,9 +6,33 @@ import (
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
+	"gno.land/p/moul/txlink"
 )
 
+func init() {
+	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/patch")
+}
+
+func hasAllowedPrefix() bool {
+	currentRealm := std.CurrentRealm()
+	for _, callerPath := range realmAllowPrefix {
+		if strings.HasPrefix(currentRealm.PkgPath(), callerPath) {
+			return true
+		}
+	}
+	return false
+}
+
+// assertAccess is used to restrict access to certain functions intended to be used by patch-realm admins.
+func assertAccess() {
+	if !hasAllowedPrefix() {
+		panic("access denied: " + std.CurrentRealm().PkgPath() +
+			" realm must match an allowed prefix:[" + strings.Join(realmAllowPrefix, ",") + "]")
+	}
+}
+
 var (
+	acl          = &Acl{}
 	waitlist     *avl.Tree
 	organizers   *avl.Tree
 	speakers     *avl.Tree
@@ -18,6 +42,8 @@ var (
 	accessChecks map[string]func(string) bool
 	aclOverride  map[string]bool
 )
+
+type Acl struct{}
 
 const (
 	AssertIsOrganizerMsg            string = "error: The PreviousRealm Address must be in the organizer's group execute this function."
@@ -68,8 +94,8 @@ func init() {
 }
 
 // Use Admin access to set the role of an address.
-func AdminSetRole(role string, addr std.Address) {
-	AssertAdminAccess()
+func (*Acl) AdminSetRole(role string, addr std.Address) {
+	assertAccess()
 	switch role {
 	case "waitlist":
 		waitlist.Set(string(addr), struct{}{})
@@ -89,8 +115,8 @@ func AdminSetRole(role string, addr std.Address) {
 }
 
 // AdminRemoveRole removes the address from the specified role.
-func AdminRemoveRole(role string, addr std.Address) {
-	AssertAdminAccess()
+func (*Acl) AdminRemoveRole(role string, addr std.Address) {
+	assertAccess()
 	switch role {
 	case "waitlist":
 		waitlist.Remove(string(addr))
@@ -110,8 +136,8 @@ func AdminRemoveRole(role string, addr std.Address) {
 }
 
 // ResetRoles resets all roles to empty trees and re-initializes the accessChecks map.
-func ResetRoles() {
-	AssertAdminAccess()
+func (*Acl) ResetRoles() {
+	assertAccess()
 	waitlist = avl.NewTree()
 	organizers = avl.NewTree()
 	speakers = avl.NewTree()
@@ -130,49 +156,49 @@ func ResetRoles() {
 
 // JoinWaitlist sets the address of the previous realm as an waitlist attendee
 // for the event.
-func JoinWaitlist() {
+func (*Acl) JoinWaitlist() {
 	waitlist.Set(string(std.PreviousRealm().Address()), struct{}{})
 }
 
 // RemoveSelfFromWaitlist removes the address of the previous realm as a waitlist attendee
 // for the event.
-func RemoveSelfFromWaitlist() {
+func (*Acl) RemoveSelfFromWaitlist() {
 	waitlist.Remove(string(std.PreviousRealm().Address()))
 }
 
 // JoinAsAttendee sets the address of the previous realm as an attendee
 // for the event.
-func JoinAsAttendee() {
+func (*Acl) JoinAsAttendee() {
 	attendees.Set(string(std.PreviousRealm().Address()), struct{}{})
 }
 
 // RemoveSelfAsAttendee removes the address of the previous realm as an attendee
 // for the event.
-func RemoveSelfAsAttendee() {
+func (*Acl) RemoveSelfAsAttendee() {
 	attendees.Remove(string(std.PreviousRealm().Address()))
 }
 
 // AddSpeaker takes a std.Address and adds it to the speaker tree if the caller is an organizer.
-func AddSpeaker(addr std.Address) {
+func (*Acl) AddSpeaker(addr std.Address) {
 	assertIsOrganizer()
 	speakers.Set(string(addr), struct{}{})
 }
 
 // RemoveSpeaker takes an std.Address and removes it from the speaker tree if the call is an organizer.
-func RemoveSpeaker(addr std.Address) {
+func (*Acl) RemoveSpeaker(addr std.Address) {
 	assertIsOrganizer()
 	speakers.Remove(string(addr))
 }
 
 // AddOrganizer takes a std.Address and adds it to the speaker tree if the caller is an organizer.
-func AddOrganizer(addr std.Address) {
+func (*Acl) AddOrganizer(addr std.Address) {
 	assertIsOrganizer()
 	organizers.Set(string(addr), struct{}{})
 }
 
 // RemoveOrganizer takes an std.Address and removes it from the speaker tree if the call is an organizer and
 // the caller isn't trying to remove itself.
-func RemoveOrganizer(addr std.Address) {
+func (*Acl) RemoveOrganizer(addr std.Address) {
 	assertIsOrganizer()
 	if addr == std.PreviousRealm().Address() {
 		panic(AssertOrganizerNotRemoveSelfMsg)
@@ -188,29 +214,29 @@ func assertIsOrganizer() {
 }
 
 // Public API for organizers to manage proposers and reviewers
-func AddProposer(addr, sender std.Address) {
-	AssertAtLeastRole("organizer", sender)
+func (*Acl) AddProposer(addr, sender std.Address) {
+	acl.AssertAtLeastRole("organizer", sender)
 	proposers.Set(string(addr), struct{}{})
 }
 
-func RemoveProposer(addr, sender std.Address) {
-	AssertAtLeastRole("organizer", sender)
+func (*Acl) RemoveProposer(addr, sender std.Address) {
+	acl.AssertAtLeastRole("organizer", sender)
 	proposers.Remove(string(addr))
 }
 
-func AddReviewer(addr, sender std.Address) {
-	AssertAtLeastRole("organizer", sender)
+func (*Acl) AddReviewer(addr, sender std.Address) {
+	acl.AssertAtLeastRole("organizer", sender)
 	reviewers.Set(string(addr), struct{}{})
 }
 
-func RemoveReviewer(addr, sender std.Address) {
-	AssertAtLeastRole("organizer", sender)
+func (*Acl) RemoveReviewer(addr, sender std.Address) {
+	acl.AssertAtLeastRole("organizer", sender)
 	reviewers.Remove(string(addr))
 }
 
 // RoleExists takes a role and returns a boolean value that indicates whether or not
 // that role exists in the accessChecks map. It returns false if any other role type is requested.
-func RoleExists(role string) bool {
+func (*Acl) RoleExists(role string) bool {
 	if _, ok := accessChecks[role]; ok {
 		return true
 	}
@@ -218,9 +244,7 @@ func RoleExists(role string) bool {
 }
 
 // HasRole takes a role and an address and returns a boolean value that indicates whether or not
-// that address is a member of one of three supported roles, `attendee`, `speaker`, and `organizer`.
-// It returns false if any other role type is requested.
-func HasRole(role string, addr std.Address) bool {
+func (*Acl) HasRole(role string, addr std.Address) bool {
 	if fn, ok := accessChecks[role]; ok {
 		return fn(string(addr))
 	}
@@ -228,7 +252,7 @@ func HasRole(role string, addr std.Address) bool {
 }
 
 // ListRoles returns a slice of strings that contains all the roles in the accessChecks map.
-func ListRoles() []string {
+func (*Acl) ListRoles() []string {
 	roles := make([]string, 0)
 	for role := range accessChecks {
 		roles = append(roles, role)
@@ -237,29 +261,27 @@ func ListRoles() []string {
 }
 
 // SetRoleHandler takes a role and a function that takes an address and returns a boolean value.
-func SetRoleHandler(role string, fn func(string) bool) {
+func (*Acl) SetRoleHandler(role string, fn func(string) bool) {
 	aclOverride[role] = true
-	AssertAdminAccess()
+	assertAccess()
 	accessChecks[role] = fn
 }
 
 // UnsetRoleHandler takes a role and removes it from the accessChecks map.
-func UnsetRoleHandler(role string) {
-	AssertAdminAccess()
+func (*Acl) UnsetRoleHandler(role string) {
+	assertAccess()
 	delete(accessChecks, role)
 }
 
-func AssertAtLeastRole(role string, sender std.Address) {
-	if !HasRole(role, sender) {
+func (*Acl) AssertAtLeastRole(role string, sender std.Address) {
+	if !acl.HasRole(role, sender) {
 		panic(ufmt.Sprintf("address %s must have %s role or higher", sender, role))
 	}
 }
 
 // Render takes no arguments and displays a simple page showing up to 100
-// addresses per role group.
-/*
-func RenderAcl(path string) string {
-	id := getIdFromPath(path)
+func (*Acl) Render(path string) string {
+	id := registry.LiveEventId
 	evt := registry.GetEvent(id)
 	if evt.Name == "" {
 		panic(ufmt.Sprintf("error: event with id %d not found", id))
@@ -287,19 +309,18 @@ Note: This renderer will only display up to 100 addresses per group.
 		txlink.NewLink("JoinAsAttendee").URL(),
 		txlink.NewLink("RemoveSelfAsAttendee").URL()))
 
-    sb.WriteString("## Roles")
+	sb.WriteString("## Roles")
 	for role, _ := range accessChecks {
-		list := renderList(role)
+		list := acl.RenderList(role)
 		if list != "" {
-			sb.WriteString(ufmt.Sprintf("\n%s\n", renderList(role)))
+			sb.WriteString(ufmt.Sprintf("\n%s\n", acl.RenderList(role)))
 		}
 	}
 
 	return sb.String()
 }
-*/
 
-func renderList(role string) string {
+func (*Acl) RenderList(role string) string {
 	var sb strings.Builder
 	sb.WriteString(ufmt.Sprintf("\n### %s \n", role))
 	var addrs []std.Address

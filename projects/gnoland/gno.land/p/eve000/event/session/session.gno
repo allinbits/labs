@@ -20,7 +20,7 @@ type Session struct {
 	EndTime     time.Time
 	Location    *location.Location
 	Tags        []string
-	renderOpts  *component.RenderOpts
+	renderOpts  map[string]interface{}
 	Sequence    int
 	Cancelled   bool
 }
@@ -72,13 +72,13 @@ func (s *Session) ToAnchor() string {
 	return component.StringToAnchor(s.Title)
 }
 
-func (s *Session) ToMarkdown() string {
+func (s *Session) ToMarkdown(_ ...component.Content) string {
 	duration := s.EndTime.Sub(s.StartTime)
 	markdown := "### " + s.Title + "\n\n"
 	markdown += " " + s.StartTime.Format(time.Kitchen)
 	markdown += "-> " + s.EndTime.Format(time.Kitchen) + " | "
 	markdown += "[Speaker - " + s.Speaker.Name + "](" + s.Speaker.ToAnchor() + ")"
-	if s.RenderOpts().Location {
+	if _, ok := s.RenderOpts()["Location"]; ok && s.Location != nil {
 		markdown += " | [Location - " + s.Location.Name + "](" + component.StringToAnchor(s.Location.Name) + ")\n"
 	}
 
@@ -149,7 +149,7 @@ func (s *Session) ToSVGFragment(y *int) string {
 	leftY += 20
 	svg += ufmt.Sprintf(`<text x="20" y="%d" class="text">End Time: %s</text>`, leftY, s.EndTime.Format(time.Kitchen))
 	leftY += 20
-	if s.RenderOpts().Location {
+	if _, ok := s.RenderOpts()["Location"]; ok && s.Location != nil {
 		svg += ufmt.Sprintf(`<text x="20" y="%d" class="text">Location: %s</text>`, leftY, s.Location.Name)
 		leftY += 20
 	}
@@ -261,10 +261,10 @@ func (s *Session) ContainsTag(tag string) bool {
 	return false
 }
 
-func (s *Session) RenderOpts() *component.RenderOpts {
+func (s *Session) RenderOpts() map[string]interface{} {
 	return s.renderOpts
 }
 
-func (s *Session) SetRenderOpts(ro *component.RenderOpts) {
+func (s *Session) SetRenderOpts(ro map[string]interface{}) {
 	s.renderOpts = ro
 }

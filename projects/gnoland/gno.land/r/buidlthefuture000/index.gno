@@ -1,7 +1,7 @@
 package events
 
 func addBlock(key, body string) {
-	register(key, func(_ string) string {
+	api.Register(key, func(_ string) string {
 		return body
 	})
 	displayPaths = append(displayPaths, key)

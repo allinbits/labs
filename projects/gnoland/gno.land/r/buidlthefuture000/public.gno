@@ -8,29 +8,24 @@ import (
 )
 
 var (
-	registry         = avl.NewTree() // registry of ContentBlock functions
+	api              = &App{}
+	registry         = avl.NewTree()
 	displayPaths     []string
 	realmAllowPrefix []string
 )
 
 func init() {
-	allowPatchesFromSubRealms()
-}
-
-type ContentBlock = func(path string) string
-
-func allowPatchesFromSubRealms() {
 	realmAllowPrefix = append(realmAllowPrefix, std.CurrentRealm().PkgPath()+"/") // must be in realm sub-path
 }
 
 func hasAllowedPrefix() bool {
-	prevRealm := std.PreviousRealm()
+	prevRealm := std.PreviousRealm().PkgPath()
 	for _, callerPath := range realmAllowPrefix {
-		if strings.HasPrefix(prevRealm.PkgPath(), callerPath) {
+		if strings.HasPrefix(prevRealm, callerPath) {
 			return true
 		}
 	}
-	return false
+	return prevRealm == ""
 }
 
 func assertAccess() {
@@ -39,24 +34,32 @@ func assertAccess() {
 			" realm must match an allowed prefix:[" + strings.Join(realmAllowPrefix, ",") + "]")
 	}
 }
-func Register(key string, block ContentBlock) {
-	assertAccess()
-	register(key, block)
+
+func Render(path string) string {
+	return api.Render(path)
 }
 
-func register(key string, block ContentBlock) {
+// Register registers a ContentBlock function - use this to override the default rendering
+func Register(key string, block func(path string) string) {
+	api.Register(key, block)
+}
+
+type App struct{}
+
+func (*App) Register(key string, block func(path string) string) {
+	assertAccess()
 	if _, ok := registry.Get(key); ok {
 		// TODO emit update event
 	}
 	registry.Set(key, block)
 }
 
-func Render(path string) string {
+func (*App) Render(path string) string {
 	sb := strings.Builder{}
 	for _, key := range displayPaths {
 		if block, ok := registry.Get(key); ok {
 			sb.WriteString("### " + key + "\n")
-			sb.WriteString(block.(ContentBlock)(path))
+			sb.WriteString(block.(func(path string) string)(path))
 			// TODO: also render TermSet
 			sb.WriteString("\n")
 		}

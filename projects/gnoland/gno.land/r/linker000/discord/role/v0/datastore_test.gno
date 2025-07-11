@@ -10,7 +10,7 @@ import (
 // TestNewDatastore tests datastore creation
 func TestNewDatastore(t *testing.T) {
 	ds := newDatastore()
-	
+
 	if ds == nil {
 		t.Errorf("newDatastore should return a valid datastore")
 	}
@@ -50,7 +50,7 @@ func TestDatastoreSet(t *testing.T) {
 		roleName:         "admin",
 		realmPath:        "gno.land/r/demo/app",
 	}
-	
+
 	err = ds.set(claim1)
 	if err != nil {
 		t.Errorf("first claim should succeed: %v", err)
@@ -63,10 +63,10 @@ func TestDatastoreSet(t *testing.T) {
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role999",  // different role ID
 		addr:             bob,
-		roleName:         "admin",                // same role name
+		roleName:         "admin",               // same role name
 		realmPath:        "gno.land/r/demo/app", // same realm path
 	}
-	
+
 	err = ds.set(claim2)
 	if err == nil {
 		t.Errorf("should fail when linking same path-role-guild combination")
@@ -82,10 +82,10 @@ func TestDatastoreSet(t *testing.T) {
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role789",  // same role ID
 		addr:             bob,
-		roleName:         "moderator",             // different role name
+		roleName:         "moderator",            // different role name
 		realmPath:        "gno.land/r/demo/app2", // different realm path
 	}
-	
+
 	err = ds.set(claim3)
 	if err == nil {
 		t.Errorf("should fail when linking same guild-role combination")
@@ -101,10 +101,10 @@ func TestDatastoreSet(t *testing.T) {
 		discordGuildID:   "guild789", // different guild
 		discordRoleID:    "role123",  // different role ID
 		addr:             bob,
-		roleName:         "moderator",             // different role name
+		roleName:         "moderator",            // different role name
 		realmPath:        "gno.land/r/demo/app2", // different realm path
 	}
-	
+
 	err = ds.set(claim4)
 	if err != nil {
 		t.Errorf("claim with different path-role-guild and guild-role should succeed: %v", err)
@@ -150,7 +150,7 @@ func TestDatastoreGetByPathRoleGuild(t *testing.T) {
 	if result != nil {
 		t.Errorf("different role name should return nil, got: %v", result)
 	}
-	
+
 	result = ds.getByPathRoleGuild("gno.land/r/demo/app", "admin", "guild999")
 	if result != nil {
 		t.Errorf("different guild should return nil, got: %v", result)
@@ -196,7 +196,7 @@ func TestDatastoreGetByGuildRole(t *testing.T) {
 	if result != nil {
 		t.Errorf("different role ID should return nil, got: %v", result)
 	}
-	
+
 	result = ds.getByGuildRole("guild999", "role789")
 	if result != nil {
 		t.Errorf("different guild should return nil, got: %v", result)
@@ -333,7 +333,7 @@ func TestDatastoreListRolesByPathGuild(t *testing.T) {
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role123",
 		addr:             bob,
-		roleName:         "moderator",             // different role
+		roleName:         "moderator",           // different role
 		realmPath:        "gno.land/r/demo/app", // same realm
 	}
 	ds.set(claim1)
@@ -392,7 +392,7 @@ func TestDatastorePathGuildOperations(t *testing.T) {
 
 	// Add claim
 	ds.set(claim)
-	
+
 	// Verify role is tracked
 	roles := ds.listRolesByPathGuild("gno.land/r/demo/app", "guild456")
 	if len(roles) != 1 || roles[0] != "admin" {
@@ -401,7 +401,7 @@ func TestDatastorePathGuildOperations(t *testing.T) {
 
 	// Remove by path-role-guild
 	ds.removeByPathRoleGuild("gno.land/r/demo/app", "admin", "guild456")
-	
+
 	// Verify role is no longer tracked
 	roles = ds.listRolesByPathGuild("gno.land/r/demo/app", "guild456")
 	if len(roles) != 0 {

@@ -71,7 +71,7 @@ func TestGetLinkedDiscordRoleJSON(t *testing.T) {
 
 	result := GetLinkedDiscordRoleJSON("gno.land/r/demo/app", "admin", "987654321098765432")
 	expected := `{"RealmPath":"gno.land/r/demo/app","RealmRoleName":"admin","DiscordRoleID":"111222333444555666","DiscordGuildID":"987654321098765432"}`
-	
+
 	if result != expected {
 		t.Errorf("expected JSON '%v', got '%v'", expected, result)
 	}
@@ -79,7 +79,7 @@ func TestGetLinkedDiscordRoleJSON(t *testing.T) {
 	// Test empty result
 	emptyResult := GetLinkedDiscordRoleJSON("nonexistent", "role", "999999999999999999")
 	expectedEmpty := `{"RealmPath":"","RealmRoleName":"","DiscordRoleID":"","DiscordGuildID":""}`
-	
+
 	if emptyResult != expectedEmpty {
 		t.Errorf("expected empty JSON '%v', got '%v'", expectedEmpty, emptyResult)
 	}
@@ -145,7 +145,7 @@ func TestGetLinkedRealmRoleJSON(t *testing.T) {
 
 	result := GetLinkedRealmRoleJSON("987654321098765432", "111222333444555666")
 	expected := `{"RealmPath":"gno.land/r/demo/app","RealmRoleName":"admin","DiscordRoleID":"111222333444555666","DiscordGuildID":"987654321098765432"}`
-	
+
 	if result != expected {
 		t.Errorf("expected JSON '%v', got '%v'", expected, result)
 	}
@@ -153,7 +153,7 @@ func TestGetLinkedRealmRoleJSON(t *testing.T) {
 	// Test empty result
 	emptyResult := GetLinkedRealmRoleJSON("987654321098765432", "999999999999999999")
 	expectedEmpty := `{"RealmPath":"","RealmRoleName":"","DiscordRoleID":"","DiscordGuildID":""}`
-	
+
 	if emptyResult != expectedEmpty {
 		t.Errorf("expected empty JSON '%v', got '%v'", expectedEmpty, emptyResult)
 	}
@@ -261,12 +261,12 @@ func TestListLinkedRolesJSON(t *testing.T) {
 	ds.set(claim2)
 
 	result = ListLinkedRolesJSON("gno.land/r/demo/app", "987654321098765432")
-	
+
 	// Should be a valid JSON array
 	if result[0] != '[' || result[len(result)-1] != ']' {
 		t.Errorf("result should be wrapped in square brackets, got: %v", result)
 	}
-	
+
 	// Should contain both roles (order may vary)
 	if !containsString(result, "admin") {
 		t.Errorf("should contain admin role in JSON")
@@ -298,7 +298,7 @@ func TestRoleBusinessLogicConstraints(t *testing.T) {
 		roleName:         "admin",
 		realmPath:        "gno.land/r/demo/app",
 	}
-	
+
 	err := ds.set(claim1)
 	if err != nil {
 		t.Errorf("first claim should succeed: %v", err)
@@ -307,12 +307,12 @@ func TestRoleBusinessLogicConstraints(t *testing.T) {
 	claim2 := &Claim{
 		discordAccountID: "555666777888999000",
 		discordGuildID:   "987654321098765432", // same guild
-		discordRoleID:    "999888777666555444",  // different discord role
+		discordRoleID:    "999888777666555444", // different discord role
 		addr:             bob,
-		roleName:         "admin",                // same realm role name
+		roleName:         "admin",               // same realm role name
 		realmPath:        "gno.land/r/demo/app", // same realm path
 	}
-	
+
 	err = ds.set(claim2)
 	if err == nil {
 		t.Errorf("should fail when linking same realm-role-guild combination")
@@ -322,12 +322,12 @@ func TestRoleBusinessLogicConstraints(t *testing.T) {
 	claim3 := &Claim{
 		discordAccountID: "111222333444555666",
 		discordGuildID:   "987654321098765432", // same guild
-		discordRoleID:    "111222333444555666",  // same discord role
+		discordRoleID:    "111222333444555666", // same discord role
 		addr:             bob,
-		roleName:         "moderator",             // different realm role
+		roleName:         "moderator",            // different realm role
 		realmPath:        "gno.land/r/demo/app2", // different realm
 	}
-	
+
 	err = ds.set(claim3)
 	if err == nil {
 		t.Errorf("should fail when linking same guild-role combination")
@@ -337,12 +337,12 @@ func TestRoleBusinessLogicConstraints(t *testing.T) {
 	claim4 := &Claim{
 		discordAccountID: "555666777888999000",
 		discordGuildID:   "444333222111000999", // different guild
-		discordRoleID:    "333222111000999888",  // different discord role
+		discordRoleID:    "333222111000999888", // different discord role
 		addr:             bob,
-		roleName:         "moderator",             // different realm role
+		roleName:         "moderator",            // different realm role
 		realmPath:        "gno.land/r/demo/app2", // different realm
 	}
-	
+
 	err = ds.set(claim4)
 	if err != nil {
 		t.Errorf("different combination should succeed: %v", err)
@@ -373,7 +373,7 @@ func TestRoleDatastoreRemovalConsistency(t *testing.T) {
 		roleName:         "moderator",
 		realmPath:        "gno.land/r/demo/app",
 	}
-	
+
 	ds.set(claimAdmin)
 	ds.set(claimMod)
 

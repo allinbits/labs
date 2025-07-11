@@ -14,21 +14,11 @@ const DtFmt = "Mon Jan 2"
 
 type Component interface {
 	ToAnchor() string
-	ToMarkdown() string // REVIEW: should we allow filtering?
+	ToMarkdown(...Content) string
 	ToJson() string
 	ToSVG() string
 	ToSvgDataUrl() string
-	RenderOpts() *RenderOpts
-}
-
-// RenderOpts is a "feature flag" struct for controlling the rendering of components.
-// It allows for selective rendering of different parts of a component.
-// REVIEW: consider using a new set of render opts per event rather than 1-per-registry as it is now
-type RenderOpts struct {
-	Svg      bool
-	Schedule bool
-	Location bool
-	Speaker  bool
+	RenderOpts() map[string]interface{}
 }
 
 func RenderComponent(path string, c Component) (out string) {
@@ -46,13 +36,13 @@ func RenderComponent(path string, c Component) (out string) {
 	switch u.Query().Get("format") {
 	case "json":
 		sb.WriteString("```json\n" + c.ToJson() + "\n```")
-	case "frame":
-		sb.WriteString("```gnomark\n" + c.ToJson() + "\n```")
+	case "frame": // show same view as frame
+		sb.WriteString(c.ToJson())
 	default:
 		sb.WriteString(c.ToMarkdown())
 	}
 
-	if c.RenderOpts().Svg {
+	if _, ok := c.RenderOpts()["Svg"]; ok {
 		dataURL := c.ToSvgDataUrl()
 		anchor := c.ToAnchor()
 		sb.WriteString("\n[![" + anchor + "](" + dataURL + ")](" + anchor + ")\n\n---\n\n")
@@ -197,6 +187,7 @@ func TagToName(tag string) string {
 	return strings.Join(words, " ")
 }
 
+// FIXME: is this used or should it be replaced by query parameters?
 func IdFromPath(path string) int {
 	parts := strings.Split(path, ":")
 	if len(parts) < 2 {
@@ -209,6 +200,7 @@ func IdFromPath(path string) int {
 	return id
 }
 
+// REVIEW: consider using another library for HTML escaping if there is a better one
 func escapeHtml(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")
@@ -236,17 +228,7 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 	}
 
 	svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
-<defs>
-  <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
-    <feOffset in="blur" dx="2" dy="2" result="offsetBlur"/>
-    <feMerge>
-      <feMergeNode in="offsetBlur"/>
-      <feMergeNode in="SourceGraphic"/>
-    </feMerge>
-  </filter>
-</defs>
-<foreignObject x="16" y="-5" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `" filter="url(#dropShadow)">
+<foreignObject x="16" y="-5" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
   <body xmlns="http://www.w3.org/1999/xhtml">
     <button style="padding-left: 20px; font-size:` + strconv.Itoa(fontSize) + `px">
       ` + escapeHtml(label) + `

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"std"
 	"strconv"
 	"time"
 
@@ -12,6 +13,39 @@ import (
 	"gno.land/p/eve000/event/session"
 	"gno.land/p/eve000/event/speaker"
 )
+
+type Api interface {
+	AddOrganizer(addr std.Address)
+	AddProposer(addr, sender std.Address)
+	AddReviewer(addr, sender std.Address)
+	AddSpeaker(addr std.Address)
+	AdminRemoveRole(role string, addr std.Address)
+	AdminSetRole(role string, addr std.Address)
+	AssertAtLeastRole(role string, sender std.Address)
+	Destroy(markdown string)
+	HasRole(role string, addr std.Address) bool
+	JoinAsAttendee()
+	JoinWaitlist()
+	ListRoles() []string
+	Publish(markdown string)
+	RegisterEvent(evt *Event, opts map[string]interface{}) string
+	RemoveOrganizer(addr std.Address)
+	RemoveProposer(addr, sender std.Address)
+	RemoveReviewer(addr, sender std.Address)
+	RemoveSelfAsAttendee()
+	RemoveSelfFromWaitlist()
+	RemoveSpeaker(addr std.Address)
+	Render(path string) string
+	RenderAcl(path string) string
+	RenderList(role string) string
+	ResetRoles()
+	RoleExists(role string) bool
+	SetContent(key, markdown string)
+	SetPatchLevel(level int)
+	SetRoleHandler(role string, fn func(string) bool)
+	Unpublish(key string)
+	UnsetRoleHandler(role string)
+}
 
 var f = ufmt.Sprintf
 
@@ -28,7 +62,7 @@ type Event struct {
 	EndDate     time.Time
 	Description string
 	Sessions    []*session.Session
-	renderOpts  *component.RenderOpts
+	renderOpts  map[string]interface{}
 	storage     *Storage
 }
 
@@ -128,7 +162,7 @@ func (evt *Event) GetSessions() []*session.Session {
 	return sessions
 }
 
-func (evt *Event) Agenda() *agenda.Agenda {
+func (evt *Event) Agenda(heading *component.Content) *agenda.Agenda {
 	a := &agenda.Agenda{
 		Name:        evt.Name,
 		Location:    evt.Location,
@@ -137,6 +171,7 @@ func (evt *Event) Agenda() *agenda.Agenda {
 		Description: evt.Description,
 		Sessions:    evt.Sessions,
 	}
+	a.SetBanner(heading)
 	a.SetRenderOpts(evt.renderOpts)
 	return a
 }
@@ -154,11 +189,11 @@ func AvlKey(label string, id string) string {
 }
 
 // Event may not be a component (yet!) but it is where the render opts are stored.
-func (evt *Event) RenderOpts() *component.RenderOpts {
+func (evt *Event) RenderOpts() map[string]interface{} {
 	return evt.renderOpts
 }
 
-func (evt *Event) SetRenderOpts(opts *component.RenderOpts) {
+func (evt *Event) SetRenderOpts(opts map[string]interface{}) {
 	evt.renderOpts = opts
 }
 
@@ -166,29 +201,35 @@ func (evt *Event) ToAnchor() string {
 	return component.StringToAnchor(evt.Name)
 }
 
-func (evt *Event) ToMarkdown() string {
-	// REVIEW: will keynote block be rendered properly
-	return evt.Agenda().ToMarkdown()
+func (evt *Event) ToMarkdown(heading ...component.Content) string {
+    if len(heading) == 0 {
+        heading = append(heading, component.Content{ Published: false})
+    }
+	return evt.Agenda(&heading[0]).ToMarkdown()
 }
 
 func (evt *Event) ToSvgDataUrl() string {
-	return evt.Agenda().ToSvgDataUrl()
+    heading := &component.Content{ Published: false }
+	return evt.Agenda(heading).ToSvgDataUrl()
 }
 
 func (evt *Event) ToSVG() string {
-	return evt.Agenda().ToSVG()
+    heading := &component.Content{ Published: false }
+	return evt.Agenda(heading).ToSVG()
 }
+
+const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
 
 func (evt *Event) ToJson() string {
 	return `{
     "@context": "https://schema.org",
     "@type": "Event",
     "name": "` + ufmt.Sprintf("%s", evt.Name) + `",
-    "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format("2006-01-02T15:04:05-07:00")) + `",
-    "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format("2006-01-02T15:04:05-07:00")) + `",
-    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",
+    "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", // FIXME: make this a feature of the event
     "eventStatus": "https://schema.org/EventScheduled",
-    "location": {
+    "location": { // FIXME: make this conditional? or make sure virtual events are representable
         "@type": "Place",
         "name": "` + ufmt.Sprintf("%s", evt.Location.Name) + `"
     },

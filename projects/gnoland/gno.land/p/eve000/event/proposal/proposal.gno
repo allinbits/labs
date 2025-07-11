@@ -28,13 +28,13 @@ type Proposal interface {
 	SetSpeaker(speaker string)
 	GetOwner() string
 	GetState() State
-	SetRenderOpts(*component.RenderOpts)
+	SetRenderOpts(map[string]interface{})
 	ToAnchor() string
-	ToMarkdown() string
+	ToMarkdown(...component.Content) string
 	ToJson() string
 	ToSVG() string
 	ToSvgDataUrl() string
-	RenderOpts() *component.RenderOpts
+	RenderOpts() map[string]interface{}
 }
 
 type SubmittedProposal struct {
@@ -43,7 +43,7 @@ type SubmittedProposal struct {
 	Topic      Topic
 	Speaker    string
 	Owner      string
-	renderOpts *component.RenderOpts
+	renderOpts map[string]interface{}
 }
 
 type ReviewedProposal struct {
@@ -116,7 +116,7 @@ func (rp *ReviewedProposal) SetReviewer(reviewer string)     { rp.Reviewer = rev
 func (ap *ApprovedProposal) GetApprovedBy() string           { return ap.ApprovedBy }
 func (ap *ApprovedProposal) SetApprovedBy(approvedBy string) { ap.ApprovedBy = approvedBy }
 
-func (sp *SubmittedProposal) SetRenderOpts(opts *component.RenderOpts) { sp.renderOpts = opts }
+func (sp *SubmittedProposal) SetRenderOpts(opts map[string]interface{}) { sp.renderOpts = opts }
 
 func (sp *SubmittedProposal) GetState() State { return Submitted }
 func (rp *ReviewedProposal) GetState() State  { return Reviewed }
@@ -126,21 +126,21 @@ func (sp *SubmittedProposal) ToAnchor() string { return component.StringToAnchor
 func (rp *ReviewedProposal) ToAnchor() string  { return rp.SubmittedProposal.ToAnchor() }
 func (ap *ApprovedProposal) ToAnchor() string  { return ap.ReviewedProposal.ToAnchor() }
 
-func (sp *SubmittedProposal) ToMarkdown() string {
+func (sp *SubmittedProposal) ToMarkdown(_ ...component.Content) string {
 	return ufmt.Sprintf(
 		"### %s\n\n **Speaker:** %s\n\n **Topic:** %s\n\n **Abstract:** %s\n\n",
 		sp.Title, sp.Speaker, sp.GetTopic().Name, sp.Abstract,
 	)
 }
 
-func (rp *ReviewedProposal) ToMarkdown() string {
+func (rp *ReviewedProposal) ToMarkdown(_ ...component.Content) string {
 	md := rp.SubmittedProposal.ToMarkdown()
 	md += ufmt.Sprintf("**Comments:** %s\n\n**Score:** %d\n\n**Reviewer:** %s\n\n",
 		rp.Comments, rp.Score, rp.Reviewer)
 	return md
 }
 
-func (ap *ApprovedProposal) ToMarkdown() string {
+func (ap *ApprovedProposal) ToMarkdown(_ ...component.Content) string {
 	return ap.ReviewedProposal.ToMarkdown() + ufmt.Sprintf("**Approved by:** %s\n\n", ap.ApprovedBy)
 }
 
@@ -236,6 +236,6 @@ func (sp *SubmittedProposal) ToSvgDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(sp.ToSVG())
 }
 
-func (sp *SubmittedProposal) RenderOpts() *component.RenderOpts {
+func (sp *SubmittedProposal) RenderOpts() map[string]interface{} {
 	return sp.renderOpts
 }

@@ -18,10 +18,17 @@ type Agenda struct {
 	Banner      *component.Content
 	Description string
 	Sessions    []*session.Session
-	renderOpts  *component.RenderOpts
+	renderOpts  map[string]interface{}
 }
 
 var _ component.Component = (*Agenda)(nil)
+
+func FormatDate(date time.Time) string {
+	if date.IsZero() {
+		return ""
+	}
+	return date.Format(component.DtFmt)
+}
 
 func (a *Agenda) SetBanner(heading *component.Content) {
 	a.Banner = heading
@@ -31,16 +38,16 @@ func (a *Agenda) ToAnchor() string {
 	return component.StringToAnchor(a.Name)
 }
 
-func (a *Agenda) ToMarkdown() string {
+func (a *Agenda) ToMarkdown(_ ...component.Content) string {
 	markdown := "## " + a.Name + "\n\n"
 
-	if a.RenderOpts().Location {
+	if _, ok := a.RenderOpts()["Location"]; ok {
 		markdown += "### " + a.Location.Name + "\n\n"
 	}
-	if DateToString(a.StartDate) == DateToString(a.EndDate) {
-		markdown += DateToString(a.StartDate) + "\n\n"
+	if FormatDate(a.StartDate) == FormatDate(a.EndDate) {
+		markdown += FormatDate(a.StartDate) + "\n\n"
 	} else {
-		markdown += DateToString(a.StartDate) + " - " + DateToString(a.EndDate) + "\n\n"
+		markdown += FormatDate(a.StartDate) + " - " + FormatDate(a.EndDate) + "\n\n"
 	}
 	markdown += a.Description + "\n\n"
 
@@ -53,7 +60,7 @@ func (a *Agenda) ToMarkdown() string {
 	// Group sessions by date
 	sessionsByDate := make(map[string][]*session.Session)
 	for _, session := range a.Sessions {
-		date := session.StartTime.Format(component.DtFmt)
+		date := FormatDate(session.StartTime)
 		sessionsByDate[date] = append(sessionsByDate[date], session)
 	}
 
@@ -86,29 +93,22 @@ func (a *Agenda) ToMarkdown() string {
 		}
 	}
 
-	if a.RenderOpts().Speaker {
+	if _, ok := a.RenderOpts()["Speaker"]; ok {
 		markdown += "## Speakers\n\n" + speakersMarkdown
 	}
-	if a.RenderOpts().Location {
+	if _, ok := a.RenderOpts()["Location"]; ok {
 		markdown += "## Locations\n\n" + locationsMarkdown
 	}
 
 	return markdown
 }
 
-func DateToString(date time.Time) string {
-	if date.IsZero() {
-		return ""
-	}
-	return date.Format(component.DtFmt)
-}
-
 func (a *Agenda) ToJson() string {
 	json := "{\n"
 	json += "\"Name\":\"" + a.Name + "\",\n"
 	json += "\"Location\":" + a.Location.ToJson() + ",\n"
-	json += "\"StartDate\":\"" + DateToString(a.StartDate) + "\",\n"
-	json += "\"EndDate\":\"" + DateToString(a.EndDate) + "\",\n"
+	json += "\"StartDate\":\"" + FormatDate(a.StartDate) + "\",\n"
+	json += "\"EndDate\":\"" + FormatDate(a.EndDate) + "\",\n"
 	json += "\"Description\":\"" + a.Description + "\",\n"
 	json += "\"Sessions\":[\n"
 	for i, session := range a.Sessions {
@@ -134,10 +134,10 @@ func (a *Agenda) ToSVGFragment(y *int) string {
 	*y += 10
 	svg += component.RenderSVGLine(y, "subtitle", "", a.Location.Name)
 	*y += 10
-	if a.StartDate.Format(component.DtFmt) == a.EndDate.Format(component.DtFmt) {
-		svg += component.RenderSVGLine(y, "text", "", DateToString(a.StartDate))
+	if a.StartDate == a.EndDate {
+		svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate))
 	} else {
-		svg += component.RenderSVGLine(y, "text", "", DateToString(a.StartDate)+" - "+DateToString(a.EndDate))
+		svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate)+" - "+FormatDate(a.EndDate))
 	}
 	*y += 20
 	svg += component.RenderSVGLine(y, "text", "", a.Description)
@@ -153,11 +153,11 @@ func (a *Agenda) ToSvgDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(a.ToSVG())
 }
 
-func (a *Agenda) RenderOpts() *component.RenderOpts {
+func (a *Agenda) RenderOpts() map[string]interface{} {
 	return a.renderOpts
 }
 
-func (a *Agenda) SetRenderOpts(opts *component.RenderOpts) {
+func (a *Agenda) SetRenderOpts(opts map[string]interface{}) {
 	a.renderOpts = opts
 }
 

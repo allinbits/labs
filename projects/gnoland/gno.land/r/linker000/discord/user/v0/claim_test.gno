@@ -155,19 +155,19 @@ func TestVerifyTimestamp(t *testing.T) {
 
 		if test.shouldFail {
 			if err == nil {
-				t.Errorf("expected error for claimTime=%v, evalTime=%v, description: %v", 
+				t.Errorf("expected error for claimTime=%v, evalTime=%v, description: %v",
 					test.claimTime, test.evalTime, test.description)
 				continue
 			}
 			if err.Error() != test.expectedErr {
-				t.Errorf("expected error '%v', got '%v', description: %v", 
+				t.Errorf("expected error '%v', got '%v', description: %v",
 					test.expectedErr, err.Error(), test.description)
 			}
 			continue
 		}
 
 		if err != nil {
-			t.Errorf("unexpected error for claimTime=%v, evalTime=%v: %v, description: %v", 
+			t.Errorf("unexpected error for claimTime=%v, evalTime=%v: %v, description: %v",
 				test.claimTime, test.evalTime, err, test.description)
 		}
 	}
@@ -183,7 +183,7 @@ func TestVerifySignature(t *testing.T) {
 	// Test 1: Message too short should fail
 	shortMessage := make([]byte, 32) // Less than 64 bytes overhead
 	pubkey := make([]byte, 32)       // Ed25519 public key is 32 bytes
-	
+
 	payload, ok := verifySignature(shortMessage, pubkey)
 	if ok {
 		t.Errorf("short message should fail verification")
@@ -197,7 +197,7 @@ func TestVerifySignature(t *testing.T) {
 	for i := range longMessage {
 		longMessage[i] = byte(i % 256) // Fill with test data
 	}
-	
+
 	payload, ok = verifySignature(longMessage, pubkey)
 	if ok {
 		t.Errorf("invalid signature should fail verification")
@@ -214,7 +214,7 @@ func TestVerifySignature(t *testing.T) {
 func TestClaimStruct(t *testing.T) {
 	alice := testutils.TestAddress("alice")
 	timestamp := time.Unix(1704067200, 0)
-	
+
 	claim := &Claim{
 		timestamp: timestamp,
 		discordID: "123456789012345678",

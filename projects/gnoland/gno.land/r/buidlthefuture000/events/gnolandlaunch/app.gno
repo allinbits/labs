@@ -126,12 +126,18 @@ func (*App) SetPatchLevel(level int) {
 	registry.SetPatchLevel(level)
 }
 
+func (*App) LiveEvent() *event.Event {
+	// assertAccess() // REVIEW: should this be protected?
+	return registry.GetEvent(registry.LiveEventId)
+}
+
 func (*App) RegisterEvent(evt *event.Event, opts map[string]interface{}) string {
 	registry.SetRenderOpts(opts)
 	id := registry.RegisterEvent(evt, opts)
 	registry.LiveEventId = id
 	return id
 }
+
 func (*App) AdminSetRole(role string, addr std.Address) {
 	acl.AdminSetRole(role, addr)
 }

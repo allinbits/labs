@@ -1,0 +1,17 @@
+# fly.toml app configuration file generated for gnolinker-discord-stg on 2025-07-09T08:31:07-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'gnolinker-discord-stg'
+primary_region = 'dfw'
+
+[build]
+
+[processes]
+  app = 'discord'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

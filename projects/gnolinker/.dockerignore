@@ -1,0 +1,12 @@
+# flyctl launch added from .gitignore
+# env files
+**/.env
+**/.*.env
+# Note: .stg.env is committed for staging deployments
+
+# binaries
+**/gnolinker
+
+# runbook files for gnolinker
+**/runbook.*
+fly.toml

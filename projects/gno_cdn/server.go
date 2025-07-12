@@ -58,6 +58,11 @@ func NewCdnServer(config *ServerOptions) *Server {
 
 	// Routes setup
 	s.router.NotFound(s.handleNotFound)
+	s.router.Get("/gno.land/r/*", func(w http.ResponseWriter, r *http.Request) {
+		// Redirect to the new path
+		newPath := "/frame/r/" + chi.URLParam(r, "*")
+		http.Redirect(w, r, newPath, http.StatusMovedPermanently)
+	})
 	s.router.Get("/frame/r/*", s.handleFrame) // REVIEW: we could use this to limit which realms are allowed
 	s.router.Get("/gh/{user}/{repo}@{version}/*", s.handleProxyRequest)
 

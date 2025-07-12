@@ -30,10 +30,18 @@ This is a simple example of a Gnomark frame.
 - Use the frame: [/frame/r/frames000](http://127.0.0.1:8080/frame/r/frames000)
 
 ### How to Build Frames
+- You can build your own frames by implementing a public interface for your realm.
+` + "```\n" +
+`func RenderFrame(path string) string { // frame.gno.services calls this public function
+ 	return frame // json encoded frame
+ }` +
+"\n```" + `
+- The frame should return a JSON object with the following structure:
 
 ` + "```\n" + frame + "\n```" + `
-- You can build your own frames using GnoLand's Gnomark format.
-    - See the [README.md](/r/frames000/$source&file=README.md) for more information.
+- Check out our static files hosted by jsDeliver: [static](https://cdn.jsdelivr.net/gh/allinbits/gnoserve@frame/static/)
+### Learn More
+- See the [README.md](/r/frames000/$source&file=README.md) for more information.
 `
 
 func RenderFrame(path string) string {

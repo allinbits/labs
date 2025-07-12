@@ -127,14 +127,8 @@ func (frame *Frame) WriteHtml(w http.ResponseWriter) error {
 		return fmt.Errorf("error parsing template: %w", err)
 	}
 
-	// Get the view data
-	view := frame.View()
-	if view == nil {
-		return fmt.Errorf("error generating view data")
-	}
-
 	// Execute the template
-	if err := tmpl.Execute(w, view); err != nil {
+	if err := tmpl.Execute(w, frame.View()); err != nil {
 		return fmt.Errorf("error executing template: %w", err)
 	}
 

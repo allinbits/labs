@@ -159,12 +159,12 @@ func (s *Server) isValidCdnPath(user, repo, version string) bool {
 	stringToken, _, err := s.gnoClient.QEval(s.config.Realm, req)
 	if err != nil {
 		slog.Error("Error evaluating QEval for CDN path", slog.String("path", backendURL), slog.String("err", err.Error()))
-		if s.Cache != nil {
-			s.Cache.Add(cacheKey, false)
-		}
 		return false
 	}
 	isValid := stringToken == "(true bool)"
+	if isValid && s.Cache != nil {
+		s.Cache.Add(cacheKey, true)
+	}
 	if s.Cache != nil {
 		s.Cache.Add(cacheKey, isValid)
 	}

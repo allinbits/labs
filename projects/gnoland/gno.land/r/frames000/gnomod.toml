@@ -1,0 +1,3 @@
+module = "gno.land/r/frames000"
+gno = "0.9"
+private = true

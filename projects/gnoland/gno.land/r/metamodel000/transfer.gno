@@ -2,12 +2,23 @@ package metamodel
 
 import (
     "std"
+    "strconv"
 	mm "gno.land/p/metamodel000"
 )
+// TODO: make this form populate from URL http://127.0.0.1:8888/r/metamodel000?amount=3&toAddress=g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz
+
+var transferForm = `
+<gno-form>
+    <gno-input name="amount" placeholder="3" />
+    <gno-input name="toAddress" placeholder="g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz" />
+</gno-form>
+`
+
 
 func init() {
+    exampleModel := transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3)
 	register("transfer", func(_ string) string {
-		return transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3).ToMarkdown()
+		return transferForm + exampleModel.ToMarkdown()
 	})
 }
 
@@ -15,11 +26,11 @@ func init() {
 func transfer(toAddress string, action string, multiple int64) *mm.Model {
 	return &mm.Model{
 		Places: map[string]mm.Place{
-			"$wallet": {Offset: 0, Initial: mm.T(9), Capacity: mm.T(0), X: 20, Y: 100},
-			toAddress: {Offset: 0, Initial: mm.T(0), Capacity: mm.T(0), X: 270, Y: 100},
+			"$wallet": {Offset: 0, Initial: mm.T(9), Capacity: mm.T(0), X: 20, Y: 50},
+			toAddress: {Offset: 0, Initial: mm.T(0), Capacity: mm.T(0), X: 270, Y: 50},
 		},
 		Transitions: map[string]mm.Transition{
-			action: {X: 150, Y: 100},
+			action: {X: 150, Y: 50},
 		},
 		Arrows: []mm.Arrow{
 			{Source: "$wallet", Target: action, Weight: mm.T(multiple)},
@@ -32,6 +43,5 @@ func transfer(toAddress string, action string, multiple int64) *mm.Model {
 func Transfer(cur realm, toAddress string, amount int64) {
     m := transfer(toAddress, "PAY2ADDR", amount)
     _ = m
-    // m.Execute(cur) // FIXME - execute for the current realm
-    std.Emit("PAY2ADDR", "toAddress", toAddress, "amount", amount)
+    std.Emit("PAY2ADDR", "toAddress", toAddress, "amount", strconv.Itoa(int(amount)))
 }

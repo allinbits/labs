@@ -311,12 +311,12 @@ func (model *Model) LegendDataUrl() string {
 }
 
 func (model *Model) LegendSvg(scale ...float64) string {
-	scaleFactor := 4.0
+	scaleFactor := 1.0
 	if len(scale) > 0 && scale[0] > 0 {
 		scaleFactor = scale[0]
 	}
 	var sb strings.Builder
-	width, height := 900, 1800 // Fixed size for the legend
+	width, height := 700, 400 // FIXME: calculate based on content size
 	sb.WriteString(ufmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%v" height="%v" >\n`, width, height))
 
 	sb.WriteString(`<style>
@@ -410,9 +410,9 @@ func (model *Model) ToMarkdown() string {
 	sb.WriteString(model.ToDataUrl())
 	sb.WriteString(")\n\n")
 
-	sb.WriteString("<img src=\"")
+	sb.WriteString("![Legend](")
 	sb.WriteString(model.LegendDataUrl())
-	sb.WriteString("\" alt=\"Legend\" style=\"width: 200px; height: auto;\" />\n\n")
+	sb.WriteString(")\n\n")
 
 	return sb.String()
 }

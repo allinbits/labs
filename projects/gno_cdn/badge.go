@@ -15,7 +15,7 @@ type Badge struct {
 }
 
 const svgTemplate = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="50">
-<title>Visit realm {.Realm}</title>
+<title>Visit realm /r/{{.Realm}}</title>
 {{.Meta}}
 <style>
  .badge-text {
@@ -77,7 +77,8 @@ func (s *Server) handleBadge(w http.ResponseWriter, r *http.Request) {
 
 	badge.StructuredData = map[string]interface{}{
 		"@context":    "https://schema.org",
-		"@type":       "CreativeWork",
+		"@type":       "CreativeWork", // REVIEW: https://schema.org/CreativeWork
+		"accessMode":  []string{"textual"},
 		"name":        "Gno Realm",
 		"description": fmt.Sprintf("Gno.land realm %s", realm),
 		"url":         fmt.Sprintf("https://gno.land/r/%s", realm),

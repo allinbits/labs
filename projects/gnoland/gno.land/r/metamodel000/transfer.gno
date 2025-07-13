@@ -14,9 +14,9 @@ var transferForm = `
 </gno-form>
 `
 
-var exampleModel = transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3)
 
 func init() {
+    exampleModel := transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3)
 	register("transfer", func(_ string) string {
 		return transferForm + exampleModel.ToMarkdown()
 	})

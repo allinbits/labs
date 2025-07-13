@@ -178,7 +178,7 @@ func (s *Server) getFrameFromRequest(r *http.Request) (*Frame, error) {
 	var frame Frame
 	if err = json.Unmarshal([]byte(stringToken), &frame); err != nil {
 		slog.Error("Error unmarshalling frame", slog.String("realm", realm), slog.String("err", err.Error()))
-		return nil, fmt.Errorf("unmarshal error: %w", err)
+		return nil, fmt.Errorf("unmarshal error: %w %s", err, stringToken)
 	}
 
 	if frame.Gnomark == "" {

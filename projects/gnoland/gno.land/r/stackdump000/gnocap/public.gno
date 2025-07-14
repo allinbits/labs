@@ -54,8 +54,8 @@ func init() {
 	}
 }
 func RenderFrame(path string) string {
-    //return Grid(path)
-    return `{ "gnomark": "gno-frame", "frame": {
+	//return Grid(path)
+	return `{ "gnomark": "gno-frame", "frame": {
         "title": "Gnocap",
         "description": "Gnocap grid"
     }`

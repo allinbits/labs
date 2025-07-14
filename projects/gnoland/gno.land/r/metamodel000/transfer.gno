@@ -1,10 +1,12 @@
 package metamodel
 
 import (
-    "std"
-    "strconv"
+	"std"
+	"strconv"
+
 	mm "gno.land/p/metamodel000"
 )
+
 // TODO: make this form populate from URL http://127.0.0.1:8888/r/metamodel000?amount=3&toAddress=g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz
 
 var transferForm = `
@@ -14,9 +16,8 @@ var transferForm = `
 </gno-form>
 `
 
-
 func init() {
-    exampleModel := transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3)
+	exampleModel := transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3)
 	register("transfer", func(_ string) string {
 		return transferForm + exampleModel.ToMarkdown()
 	})
@@ -41,7 +42,7 @@ func transfer(toAddress string, action string, multiple int64) *mm.Model {
 
 // Transfer simulates a transfer of tokens from the current realm's wallet to a specified address.
 func Transfer(cur realm, toAddress string, amount int64) {
-    m := transfer(toAddress, "PAY2ADDR", amount)
-    _ = m
-    std.Emit("PAY2ADDR", "toAddress", toAddress, "amount", strconv.Itoa(int(amount)))
+	m := transfer(toAddress, "PAY2ADDR", amount)
+	_ = m // call m.Execute() to verify model action
+	std.Emit("PAY2ADDR", "toAddress", toAddress, "amount", strconv.Itoa(int(amount)))
 }

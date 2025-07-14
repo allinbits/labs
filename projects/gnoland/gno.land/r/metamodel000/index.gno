@@ -3,6 +3,7 @@ package metamodel
 import (
 	"std"
 	"strings"
+
 	"gno.land/p/demo/avl"
 )
 
@@ -44,9 +45,9 @@ func register(key string, block ContentBlock) {
 		// TODO emit update event
 	}
 	if strings.Contains(displayPaths, key) {
-        panic("Invalid Key, matches previous content block" + key)
-    }
-    displayPaths += key + "\n"
+		panic("Invalid Key, matches previous content block" + key)
+	}
+	displayPaths += key + "\n"
 	registry.Set(key, block)
 }
 
@@ -58,13 +59,13 @@ func Content(cur realm, key string, path string) string {
 }
 
 func upcaseWords(s string) string {
-    words := strings.Fields(s)
-    for i, word := range words {
-        if len(word) > 0 {
-            words[i] = strings.ToUpper(string(word[0])) + word[1:]
-        }
-    }
-    return strings.Join(words, " ")
+	words := strings.Fields(s)
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 func Render(path string) string {
@@ -73,7 +74,7 @@ func Render(path string) string {
 
 	for _, key := range keys {
 		if block, ok := registry.Get(key); ok {
-		    sb.WriteString("### "+upcaseWords(key)+"\n")
+			sb.WriteString("### " + upcaseWords(key) + "\n")
 			sb.WriteString(block.(ContentBlock)(path))
 			sb.WriteString("\n")
 		}

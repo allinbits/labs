@@ -18,7 +18,7 @@ var rss = &feed.Feed{
 }
 
 func frame(path string, data string) string {
-    format := "path" // TODO: support query params for format
+	format := "path" // TODO: support query params for format
 	return `{ "gnomark": "rss-feed", "format": "` + format + `", "feed": ` + data + `}`
 }
 
@@ -29,7 +29,7 @@ func getItems() (items []*feed.Item) {
 				Title:       key,
 				Link:        &feed.Link{Href: host + "r/stackdump000/bmp:" + key},
 				Description: item.Description(),
-				Content:     "", // TODO: raw image tags are still 'upgraded' as cache
+				Content:     "",         // TODO: raw image tags are still 'upgraded' as cache
 				PubDate:     time.Now(), // FIXME get this from the realm data
 			})
 		} else {

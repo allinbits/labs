@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  # MinIO - S3 compatible storage for local development
+  minio:
+    image: minio/minio:latest
+    container_name: gnolinker-minio
+    ports:
+      - "9000:9000" # MinIO API
+      - "9001:9001" # MinIO Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_DOMAIN: localhost
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - gnolinker-network
+
+  # GnoLinker Discord Bot
+  gnolinker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gnolinker-bot
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Override storage settings for local development
+      GNOLINKER__STORAGE_TYPE: s3
+      GNOLINKER__S3_ENDPOINT: http://minio:9000
+      GNOLINKER__S3_BUCKET: gnolinker-configs
+      GNOLINKER__S3_ACCESS_KEY_ID: minioadmin
+      GNOLINKER__S3_SECRET_ACCESS_KEY: minioadmin123
+      GNOLINKER__S3_REGION: us-east-1
+      GNOLINKER__S3_USE_SSL: false
+    networks:
+      - gnolinker-network
+    command: ["discord"]
+
+networks:
+  gnolinker-network:
+    driver: bridge
+
+volumes:
+  minio-data:
+    driver: local

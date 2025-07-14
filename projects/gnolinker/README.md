@@ -86,19 +86,28 @@ The bot supports multiple environment files for different deployment scenarios:
 
 Copy `.env.example` to your desired environment file and configure your values.
 
-#### Makefile Usage
+#### Docker Compose for Local Development
+
+For local development with S3-compatible storage, use Docker Compose with MinIO:
 
 ```bash
-make dev                    # Uses .env (default)
-make dev dotenv=.dev.env    # Uses .dev.env
-make dev dotenv=.stg.env    # Uses .stg.env
-make dev dotenv=.prod.env   # Uses .prod.env
+# Start development environment
+make dev
 
-# Other targets
-make build                  # Build binary
-make clean                  # Clean build artifacts
-make help                   # Show available options
+# Stop services (automatically done before dev)
+make down
+
+# Clean everything including data
+make clean
 ```
+
+This provides:
+- **MinIO** at `http://localhost:9000` (API) and `http://localhost:9001` (Console)
+- **S3-compatible storage** for testing multi-server architecture
+- **Credentials**: `minioadmin` / `minioadmin123`
+- **Persistent storage** in `./data/minio/` (gitignored)
+
+When you make code changes, just run `make dev` again - it automatically stops, rebuilds, and restarts everything.
 
 #### Manual Environment Variables
 

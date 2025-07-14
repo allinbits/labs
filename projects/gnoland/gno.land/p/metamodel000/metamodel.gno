@@ -114,20 +114,20 @@ func (model *Model) State() []TokenType {
 
 // Execute executes a callback if the model transformation is successful.
 func (model *Model) Execute(action string, onCommit func(newState []TokenType)) ([]TokenType, bool) {
-    if model == nil {
-        return nil, false // No model to execute.
-    }
+	if model == nil {
+		return nil, false // No model to execute.
+	}
 
-    state := model.State()
-    newState, ok := Execute(state, model, action)
-    if !ok {
-        panic("Failed to execute action: " + action + " on model: " + model.ToJson())
-    }
-    if onCommit != nil {
-        onCommit(newState) // Execute the callback if provided.
-    }
+	state := model.State()
+	newState, ok := Execute(state, model, action)
+	if !ok {
+		panic("Failed to execute action: " + action + " on model: " + model.ToJson())
+	}
+	if onCommit != nil {
+		onCommit(newState) // Execute the callback if provided.
+	}
 
-    return newState, true
+	return newState, true
 }
 
 // TODO: try this out w/ testing

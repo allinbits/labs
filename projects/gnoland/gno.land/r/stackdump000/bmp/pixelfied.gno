@@ -23,7 +23,6 @@ func (Dapp) Frame() string {
 	return `{ "gnomark": "pixelfied-dapp" }`
 }
 
-
 const dappInfo = `
 ### How to Use the JavaScript Widget for Pixelized Images
 

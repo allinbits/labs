@@ -115,7 +115,6 @@ Set environment variables directly or use command-line flags:
 
 ```bash
 export GNOLINKER__DISCORD_TOKEN="your-bot-token"
-export GNOLINKER__DISCORD_GUILD_ID="your-server-id"
 export GNOLINKER__DISCORD_ADMIN_ROLE_ID="admin-role-id"
 export GNOLINKER__DISCORD_VERIFIED_ROLE_ID="verified-role-id"
 export GNOLINKER__SIGNING_KEY="hex-encoded-signing-key"

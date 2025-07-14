@@ -45,8 +45,8 @@ func (p *DiscordPlatform) SendDirectMessage(userID, content string) error {
 }
 
 // HasRole checks if a user has a specific role
-func (p *DiscordPlatform) HasRole(userID, roleID string) (bool, error) {
-	member, err := p.session.GuildMember(p.config.GuildID, userID)
+func (p *DiscordPlatform) HasRole(guildID, userID, roleID string) (bool, error) {
+	member, err := p.session.GuildMember(guildID, userID)
 	if err != nil {
 		return false, fmt.Errorf("failed to get guild member: %w", err)
 	}
@@ -55,8 +55,8 @@ func (p *DiscordPlatform) HasRole(userID, roleID string) (bool, error) {
 }
 
 // AddRole adds a role to a user
-func (p *DiscordPlatform) AddRole(userID, roleID string) error {
-	err := p.session.GuildMemberRoleAdd(p.config.GuildID, userID, roleID)
+func (p *DiscordPlatform) AddRole(guildID, userID, roleID string) error {
+	err := p.session.GuildMemberRoleAdd(guildID, userID, roleID)
 	if err != nil {
 		return fmt.Errorf("failed to add role: %w", err)
 	}
@@ -64,8 +64,8 @@ func (p *DiscordPlatform) AddRole(userID, roleID string) error {
 }
 
 // RemoveRole removes a role from a user
-func (p *DiscordPlatform) RemoveRole(userID, roleID string) error {
-	err := p.session.GuildMemberRoleRemove(p.config.GuildID, userID, roleID)
+func (p *DiscordPlatform) RemoveRole(guildID, userID, roleID string) error {
+	err := p.session.GuildMemberRoleRemove(guildID, userID, roleID)
 	if err != nil {
 		return fmt.Errorf("failed to remove role: %w", err)
 	}
@@ -73,9 +73,9 @@ func (p *DiscordPlatform) RemoveRole(userID, roleID string) error {
 }
 
 // GetOrCreateRole gets an existing role or creates a new one
-func (p *DiscordPlatform) GetOrCreateRole(name string) (*core.PlatformRole, error) {
+func (p *DiscordPlatform) GetOrCreateRole(guildID, name string) (*core.PlatformRole, error) {
 	// Try to get existing role first
-	if role, err := p.getRoleByName(name); err == nil {
+	if role, err := p.getRoleByName(guildID, name); err == nil {
 		return &core.PlatformRole{
 			ID:   role.ID,
 			Name: role.Name,
@@ -89,7 +89,7 @@ func (p *DiscordPlatform) GetOrCreateRole(name string) (*core.PlatformRole, erro
 		Color: &defaultColor,
 	}
 	
-	role, err := p.session.GuildRoleCreate(p.config.GuildID, roleData)
+	role, err := p.session.GuildRoleCreate(guildID, roleData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create role: %w", err)
 	}
@@ -101,8 +101,8 @@ func (p *DiscordPlatform) GetOrCreateRole(name string) (*core.PlatformRole, erro
 }
 
 // GetRoleByID retrieves a role by its ID
-func (p *DiscordPlatform) GetRoleByID(roleID string) (*core.PlatformRole, error) {
-	roles, err := p.session.GuildRoles(p.config.GuildID)
+func (p *DiscordPlatform) GetRoleByID(guildID, roleID string) (*core.PlatformRole, error) {
+	roles, err := p.session.GuildRoles(guildID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get guild roles: %w", err)
 	}
@@ -119,20 +119,16 @@ func (p *DiscordPlatform) GetRoleByID(roleID string) (*core.PlatformRole, error)
 	return nil, fmt.Errorf("role not found: %s", roleID)
 }
 
-// GetServerID returns the Discord guild ID
-func (p *DiscordPlatform) GetServerID() string {
-	return p.config.GuildID
-}
 
 // IsAdmin checks if a user is an admin (has the admin role)
-func (p *DiscordPlatform) IsAdmin(userID string) (bool, error) {
-	return p.HasRole(userID, p.config.AdminRoleID)
+func (p *DiscordPlatform) IsAdmin(guildID, userID string) (bool, error) {
+	return p.HasRole(guildID, userID, p.config.AdminRoleID)
 }
 
 // Helper methods
 
-func (p *DiscordPlatform) getRoleByName(name string) (*discordgo.Role, error) {
-	roles, err := p.session.GuildRoles(p.config.GuildID)
+func (p *DiscordPlatform) getRoleByName(guildID, name string) (*discordgo.Role, error) {
+	roles, err := p.session.GuildRoles(guildID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get guild roles: %w", err)
 	}
@@ -149,11 +145,11 @@ func (p *DiscordPlatform) getRoleByName(name string) (*discordgo.Role, error) {
 // Discord-specific methods for the verified address role
 
 // AddVerifiedRole adds the verified address role to a user
-func (p *DiscordPlatform) AddVerifiedRole(userID string) error {
-	return p.AddRole(userID, p.config.VerifiedAddressRoleID)
+func (p *DiscordPlatform) AddVerifiedRole(guildID, userID string) error {
+	return p.AddRole(guildID, userID, p.config.VerifiedAddressRoleID)
 }
 
 // RemoveVerifiedRole removes the verified address role from a user
-func (p *DiscordPlatform) RemoveVerifiedRole(userID string) error {
-	return p.RemoveRole(userID, p.config.VerifiedAddressRoleID)
+func (p *DiscordPlatform) RemoveVerifiedRole(guildID, userID string) error {
+	return p.RemoveRole(guildID, userID, p.config.VerifiedAddressRoleID)
 }

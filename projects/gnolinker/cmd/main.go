@@ -64,14 +64,14 @@ Available commands:
   version      Show version information
 
 Examples:
-  gnolinker discord --token=... --guild=... --admin-role=...
+  gnolinker discord --token=... --admin-role=... --verified-role=...
   gnolinker discord --log-level=debug --token=...
   gnolinker discord --help
   gnolinker version
 
 Environment variables:
   All environment variables use the GNOLINKER__ prefix:
-  GNOLINKER__DISCORD_TOKEN, GNOLINKER__DISCORD_GUILD_ID, etc.
+  GNOLINKER__DISCORD_TOKEN, GNOLINKER__DISCORD_ADMIN_ROLE_ID, etc.
   GNOLINKER__GNOLAND_RPC_ENDPOINT, GNOLINKER__BASE_URL, etc.
   GNOLINKER__LOG_LEVEL (debug, info, warn, error)
 

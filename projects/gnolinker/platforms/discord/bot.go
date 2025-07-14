@@ -50,6 +50,7 @@ func NewBot(config Config,
 	
 	// Set up event handlers
 	session.AddHandler(bot.onReady)
+	session.AddHandler(bot.onGuildCreate)
 	session.AddHandler(bot.onMessageCreate)
 	session.AddHandler(bot.interactionHandlers.HandleInteraction)
 	
@@ -91,21 +92,27 @@ func (b *Bot) GetPlatform() platforms.Platform {
 
 func (b *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
 	s.UpdateGameStatus(0, "Linking gno.land addresses")
-	b.logger.Info("Bot is ready! Logged in", "username", event.User.Username)
+	b.logger.Info("Bot is ready! Logged in", "username", event.User.Username, "guilds", len(event.Guilds))
 	
-	// Cleanup old commands if requested
-	if b.config.CleanupOldCommands {
-		err := b.interactionHandlers.CleanupOldCommands(s, b.config.GuildID)
-		if err != nil {
-			b.logger.Error("Failed to cleanup old commands", "error", err)
+	// Register commands for all existing guilds on startup
+	for _, guild := range event.Guilds {
+		b.logger.Info("Registering commands for guild", "guild_id", guild.ID)
+		if err := b.interactionHandlers.RegisterSlashCommands(s, guild.ID); err != nil {
+			b.logger.Error("Failed to register commands for guild", "guild_id", guild.ID, "error", err)
 		}
 	}
+}
+
+func (b *Bot) onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
+	b.logger.Info("Bot joined new guild", "guild_name", event.Guild.Name, "guild_id", event.Guild.ID, "member_count", event.Guild.MemberCount)
 	
-	// Register slash commands
-	err := b.interactionHandlers.RegisterSlashCommands(s, b.config.GuildID)
-	if err != nil {
-		b.logger.Error("Failed to register slash commands", "error", err)
+	// Register slash commands for the new guild
+	if err := b.interactionHandlers.RegisterSlashCommands(s, event.Guild.ID); err != nil {
+		b.logger.Error("Failed to register commands for new guild", "guild_id", event.Guild.ID, "error", err)
+		return
 	}
+	
+	b.logger.Info("Successfully registered commands for new guild", "guild_id", event.Guild.ID)
 }
 
 func (b *Bot) onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {

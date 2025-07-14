@@ -5,9 +5,6 @@ type Config struct {
 	// Token is the Discord bot token
 	Token string
 	
-	// GuildID is the Discord server ID this bot manages
-	GuildID string
-	
 	// AdminRoleID is the role that can manage realm-role links
 	AdminRoleID string
 	

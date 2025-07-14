@@ -11,15 +11,14 @@ type Platform interface {
 	SendDirectMessage(userID, content string) error
 	
 	// Role management
-	HasRole(userID, roleID string) (bool, error)
-	AddRole(userID, roleID string) error
-	RemoveRole(userID, roleID string) error
-	GetOrCreateRole(name string) (*core.PlatformRole, error)
-	GetRoleByID(roleID string) (*core.PlatformRole, error)
+	HasRole(guildID, userID, roleID string) (bool, error)
+	AddRole(guildID, userID, roleID string) error
+	RemoveRole(guildID, userID, roleID string) error
+	GetOrCreateRole(guildID, name string) (*core.PlatformRole, error)
+	GetRoleByID(guildID, roleID string) (*core.PlatformRole, error)
 	
 	// Server management
-	GetServerID() string
-	IsAdmin(userID string) (bool, error)
+	IsAdmin(guildID, userID string) (bool, error)
 }
 
 // Message represents a platform-agnostic message

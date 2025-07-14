@@ -15,7 +15,6 @@ func Run() {
 	// Command line flags
 	var (
 		tokenFlag        = flag.String("token", "", "Discord bot token")
-		guildIDFlag      = flag.String("guild", "", "Discord guild ID")
 		adminRoleFlag    = flag.String("admin-role", "", "Admin role ID")
 		verifiedRoleFlag = flag.String("verified-role", "", "Verified address role ID")
 		signingKeyFlag   = flag.String("signing-key", "", "Hex encoded signing key")
@@ -37,7 +36,6 @@ func Run() {
 
 	// Load from environment if flags not provided
 	token := getEnvOrFlag("GNOLINKER__DISCORD_TOKEN", *tokenFlag)
-	guildID := getEnvOrFlag("GNOLINKER__DISCORD_GUILD_ID", *guildIDFlag)
 	adminRole := getEnvOrFlag("GNOLINKER__DISCORD_ADMIN_ROLE_ID", *adminRoleFlag)
 	verifiedRole := getEnvOrFlag("GNOLINKER__DISCORD_VERIFIED_ROLE_ID", *verifiedRoleFlag)
 	signingKeyStr := getEnvOrFlag("GNOLINKER__SIGNING_KEY", *signingKeyFlag)
@@ -49,10 +47,6 @@ func Run() {
 	// Validate required parameters
 	if token == "" {
 		logger.Error("Discord token is required (use -token flag or GNOLINKER__DISCORD_TOKEN env var)")
-		os.Exit(1)
-	}
-	if guildID == "" {
-		logger.Error("Discord guild ID is required (use -guild flag or GNOLINKER__DISCORD_GUILD_ID env var)")
 		os.Exit(1)
 	}
 	if adminRole == "" {
@@ -85,7 +79,6 @@ func Run() {
 	// Create Discord config
 	discordConfig := discord.Config{
 		Token:                 token,
-		GuildID:               guildID,
 		AdminRoleID:           adminRole,
 		VerifiedAddressRoleID: verifiedRole,
 		CleanupOldCommands:    *cleanupFlag,

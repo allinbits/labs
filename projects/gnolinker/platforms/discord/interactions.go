@@ -34,7 +34,7 @@ func NewInteractionHandlers(
 	}
 }
 
-// RegisterSlashCommands registers all slash commands with Discord
+// RegisterSlashCommands registers all slash commands with Discord for a specific guild
 func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildID string) error {
 	// Single command with all functionality as subcommands
 	gnolinkerCommand := &discordgo.ApplicationCommand{
@@ -153,6 +153,24 @@ func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildI
 					},
 				},
 			},
+			// Admin subcommand group
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+				Name:        "admin",
+				Description: "Administrative commands (Admin only)",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Name:        "refresh-commands",
+						Description: "Re-register slash commands for this guild",
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Name:        "info",
+						Description: "Show bot configuration information",
+					},
+				},
+			},
 			// Help subcommand
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -162,53 +180,37 @@ func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildI
 		},
 	}
 
-	// Register the command
+	// Register the command for the specific guild
 	_, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, gnolinkerCommand)
 	if err != nil {
 		return fmt.Errorf("cannot create gnolinker command: %w", err)
 	}
 
-	h.logger.Info("Registered gnolinker slash command")
+	h.logger.Info("Registered gnolinker slash command", "guild_id", guildID)
 	return nil
 }
 
-// CleanupOldCommands removes all existing slash commands (useful for cleanup)
+// CleanupOldCommands removes all existing slash commands for a specific guild
 func (h *InteractionHandlers) CleanupOldCommands(s *discordgo.Session, guildID string) error {
-	h.logger.Info("Cleaning up old slash commands...")
+	h.logger.Info("Cleaning up old slash commands...", "guild_id", guildID)
 	
-	// Get all existing guild commands
-	guildCommands, err := s.ApplicationCommands(s.State.User.ID, guildID)
+	// Get all existing commands for the guild
+	commands, err := s.ApplicationCommands(s.State.User.ID, guildID)
 	if err != nil {
-		return fmt.Errorf("failed to get guild commands: %w", err)
+		return fmt.Errorf("failed to get commands: %w", err)
 	}
 	
-	// Delete all guild commands
-	for _, cmd := range guildCommands {
+	// Delete all commands for the guild
+	for _, cmd := range commands {
 		err := s.ApplicationCommandDelete(s.State.User.ID, guildID, cmd.ID)
 		if err != nil {
-			h.logger.Error("Failed to delete guild command", "command", cmd.Name, "error", err)
+			h.logger.Error("Failed to delete command", "command", cmd.Name, "error", err)
 		} else {
-			h.logger.Info("Deleted guild command", "command", cmd.Name)
+			h.logger.Info("Deleted command", "command", cmd.Name)
 		}
 	}
 	
-	// Get all existing global commands
-	globalCommands, err := s.ApplicationCommands(s.State.User.ID, "")
-	if err != nil {
-		return fmt.Errorf("failed to get global commands: %w", err)
-	}
-	
-	// Delete all global commands
-	for _, cmd := range globalCommands {
-		err := s.ApplicationCommandDelete(s.State.User.ID, "", cmd.ID)
-		if err != nil {
-			h.logger.Error("Failed to delete global command", "command", cmd.Name, "error", err)
-		} else {
-			h.logger.Info("Deleted global command", "command", cmd.Name)
-		}
-	}
-	
-	h.logger.Info("Cleanup completed", "guild_commands_deleted", len(guildCommands), "global_commands_deleted", len(globalCommands))
+	h.logger.Info("Cleanup completed", "commands_deleted", len(commands))
 	return nil
 }
 
@@ -274,6 +276,13 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 			case "user":
 				h.handleSyncUserCommand(s, i, subcommand.Options)
 			}
+		case "admin":
+			switch subcommand.Name {
+			case "refresh-commands":
+				h.handleAdminRefreshCommandsCommand(s, i)
+			case "info":
+				h.handleAdminInfoCommand(s, i)
+			}
 		}
 	}
 }
@@ -334,11 +343,23 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 	// Get user ID
 	userID := i.Member.User.ID
 
+	// Defer response to prevent timeout
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		h.logger.Error("Failed to defer response", "error", err, "user_id", userID)
+		return
+	}
+
 	// Get linked address
 	address, err := h.userLinkingFlow.GetLinkedAddress(userID)
 	if err != nil {
 		h.logger.Error("Failed to get linked address", "error", err, "user_id", userID)
-		h.respondError(s, i, "Failed to check linked address.")
+		h.followUpError(s, i, "Failed to check linked address.")
 		return
 	}
 
@@ -363,13 +384,12 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 		}
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Embeds: []*discordgo.MessageEmbed{embed},
-			Flags:  discordgo.MessageFlagsEphemeral,
-		},
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds: &[]*discordgo.MessageEmbed{embed},
 	})
+	if err != nil {
+		h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
+	}
 }
 
 func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -439,7 +459,7 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "📎 Link Commands",
-				Value: "`/gnolinker link address <address>` - Link your Discord to a gno.land address\n`/gnolinker link role <role> <realm>` - Link realm role to Discord role (Admin)",
+				Value: "`/gnolinker link address <address>` - Link your Discord to a gno.land address\n`/gnolinker link role <role> <realm>` - Link realm role to Discord role (Gno.land Admin)",
 			},
 			{
 				Name:  "✅ Verify Commands",
@@ -447,11 +467,19 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 			},
 			{
 				Name:  "🔄 Sync Commands",
-				Value: "`/gnolinker sync roles <realm>` - Sync your realm roles\n`/gnolinker sync user <realm> <user>` - Sync another user's roles (Admin)",
+				Value: "`/gnolinker sync roles <realm>` - Sync your realm roles\n`/gnolinker sync user <realm> <user>` - Sync another user's roles (Gno.land Admin)",
+			},
+			{
+				Name:  "⚙️ Guild Admin Commands",
+				Value: "`/gnolinker admin refresh-commands` - Re-register slash commands (Discord Admin)\n`/gnolinker admin info` - Show bot configuration (Discord Admin)",
+			},
+			{
+				Name:  "🔑 Permission Types",
+				Value: "**Gno.land Admin**: Requires configured admin role for realm management\n**Discord Admin**: Requires Administrator permission or server owner",
 			},
 			{
 				Name:  "ℹ️ How it works",
-				Value: "1. Link your Discord to gno.land address\n2. Admin links realm roles to Discord roles\n3. Sync your roles to get Discord permissions",
+				Value: "1. Link your Discord to gno.land address\n2. Gno.land admin links realm roles to Discord roles\n3. Sync your roles to get Discord permissions",
 			},
 		},
 		Color: 0x5865F2,
@@ -470,11 +498,11 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 }
 
 func (h *InteractionHandlers) handleLinkRoleCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
-	// Check admin permissions
+	// Check role admin permissions (for realm role management)
 	userID := i.Member.User.ID
-	isAdmin, err := h.hasRole(s, i.GuildID, userID, h.config.AdminRoleID)
-	if err != nil || !isAdmin {
-		h.respondError(s, i, "You need admin permissions to link roles.")
+	isRoleAdmin, err := h.hasRoleAdminPermission(s, i.GuildID, userID)
+	if err != nil || !isRoleAdmin {
+		h.respondError(s, i, "You need gno.land admin permissions to link realm roles. Contact a server admin to get the configured admin role.")
 		return
 	}
 
@@ -558,11 +586,11 @@ func (h *InteractionHandlers) handleVerifyRoleCommand(s *discordgo.Session, i *d
 }
 
 func (h *InteractionHandlers) handleSyncUserCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
-	// Check admin permissions
+	// Check role admin permissions (for managing other users' realm roles)
 	userID := i.Member.User.ID
-	isAdmin, err := h.hasRole(s, i.GuildID, userID, h.config.AdminRoleID)
-	if err != nil || !isAdmin {
-		h.respondError(s, i, "You need admin permissions to sync other users.")
+	isRoleAdmin, err := h.hasRoleAdminPermission(s, i.GuildID, userID)
+	if err != nil || !isRoleAdmin {
+		h.respondError(s, i, "You need gno.land admin permissions to sync other users' roles. Contact a server admin to get the configured admin role.")
 		return
 	}
 
@@ -763,8 +791,6 @@ func (h *InteractionHandlers) followUpError(s *discordgo.Session, i *discordgo.I
 	})
 }
 
-var adminPermission int64 = discordgo.PermissionAdministrator
-
 // Helper function to parse role link parameters
 func parseRoleLinkParams(params string) []string {
 	// Simple split by underscore for now
@@ -821,4 +847,122 @@ func (h *InteractionHandlers) hasRole(s *discordgo.Session, guildID, userID, rol
 	}
 	
 	return false, nil
+}
+
+// Check if user has role admin permissions (for gno.land realm management)
+func (h *InteractionHandlers) hasRoleAdminPermission(s *discordgo.Session, guildID, userID string) (bool, error) {
+	return h.hasRole(s, guildID, userID, h.config.AdminRoleID)
+}
+
+// Check if user has guild admin permissions (for Discord server management)
+func (h *InteractionHandlers) hasGuildAdminPermission(s *discordgo.Session, guildID, userID string) (bool, error) {
+	// First check if they're the guild owner
+	guild, err := s.Guild(guildID)
+	if err != nil {
+		return false, fmt.Errorf("failed to get guild: %w", err)
+	}
+	
+	if guild.OwnerID == userID {
+		return true, nil
+	}
+	
+	// Check if user has Administrator permission
+	permissions, err := s.UserChannelPermissions(userID, guildID)
+	if err != nil {
+		return false, fmt.Errorf("failed to get user permissions: %w", err)
+	}
+	
+	return (permissions & discordgo.PermissionAdministrator) != 0, nil
+}
+
+// Admin command handlers
+
+func (h *InteractionHandlers) handleAdminRefreshCommandsCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// Check guild admin permissions (for Discord server management)
+	userID := i.Member.User.ID
+	isGuildAdmin, err := h.hasGuildAdminPermission(s, i.GuildID, userID)
+	if err != nil || !isGuildAdmin {
+		h.respondError(s, i, "You need Discord admin permissions (Administrator role or server owner) to refresh commands.")
+		return
+	}
+
+	// Defer response
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		},
+	})
+
+	// Re-register slash commands for this guild
+	if err := h.RegisterSlashCommands(s, i.GuildID); err != nil {
+		h.logger.Error("Failed to refresh commands", "guild_id", i.GuildID, "error", err)
+		embed := &discordgo.MessageEmbed{
+			Title:       "Command Refresh Failed",
+			Description: "Failed to refresh slash commands. Please try again.",
+			Color:       0xff0000,
+		}
+		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Embeds: &[]*discordgo.MessageEmbed{embed},
+		})
+		return
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       "Commands Refreshed",
+		Description: "Successfully refreshed slash commands for this guild.",
+		Color:       0x00ff00,
+	}
+
+	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds: &[]*discordgo.MessageEmbed{embed},
+	})
+}
+
+func (h *InteractionHandlers) handleAdminInfoCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// Check guild admin permissions (for viewing Discord server bot info)
+	userID := i.Member.User.ID
+	isGuildAdmin, err := h.hasGuildAdminPermission(s, i.GuildID, userID)
+	if err != nil || !isGuildAdmin {
+		h.respondError(s, i, "You need Discord admin permissions (Administrator role or server owner) to view bot info.")
+		return
+	}
+
+	// Get guild info
+	guild, err := s.Guild(i.GuildID)
+	if err != nil {
+		h.respondError(s, i, "Failed to get guild information.")
+		return
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       "Bot Configuration",
+		Description: "Current bot configuration for this guild:",
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Guild Info",
+				Value:  fmt.Sprintf("Name: %s\nID: %s", guild.Name, guild.ID),
+				Inline: false,
+			},
+			{
+				Name:   "Admin Role ID",
+				Value:  h.config.AdminRoleID,
+				Inline: true,
+			},
+			{
+				Name:   "Verified Role ID",
+				Value:  h.config.VerifiedAddressRoleID,
+				Inline: true,
+			},
+		},
+		Color: 0x5865F2,
+	}
+
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{embed},
+			Flags:  discordgo.MessageFlagsEphemeral,
+		},
+	})
 }

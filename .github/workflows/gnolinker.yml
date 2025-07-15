@@ -18,8 +18,8 @@ defaults:
     working-directory: projects/gnolinker
 
 jobs:
-  test-and-build:
-    name: Test and Build
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -46,21 +46,60 @@ jobs:
       - name: Run tests
         run: go test ./... -v -race -coverprofile=coverage.out
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./projects/gnolinker/coverage.out
+          flags: unittests
+          name: codecov-umbrella
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24.2"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('projects/gnolinker/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
       - name: Build application
         run: go build -o gnolinker ./cmd/
 
       - name: Test Docker build
         run: docker build -t gnolinker:test .
 
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: ./...
+          args: projects/gnolinker/...
 
   deploy:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: test-and-build
+    needs: [test, build, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: gnolinker-stg
     steps:

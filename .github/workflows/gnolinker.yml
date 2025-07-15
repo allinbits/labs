@@ -1,0 +1,91 @@
+name: gnolinker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "projects/gnolinker/**"
+      - ".github/workflows/gnolinker.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "projects/gnolinker/**"
+      - ".github/workflows/gnolinker.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: projects/gnolinker
+
+jobs:
+  test-and-build:
+    name: Test and Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24.2"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('projects/gnolinker/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -v -race -coverprofile=coverage.out
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./projects/gnolinker/coverage.out
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Build application
+        run: go build -o gnolinker ./cmd/
+
+      - name: Test Docker build
+        run: docker build -t gnolinker:test .
+
+      - name: Run security scan
+        run: |
+          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+          gosec -no-fail -fmt sarif -out results.sarif ./...
+        continue-on-error: true
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: projects/gnolinker/results.sarif
+        if: always()
+
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: gnolinker-stg
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        working-directory: projects/gnolinker
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_GNOLINKER_DISCORD }}

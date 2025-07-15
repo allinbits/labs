@@ -2,10 +2,12 @@ name: gnoquery
 
 on:
   push:
+    branches: [main]
     paths:
       - "projects/gnoquery/**"
       - ".github/workflows/gnoquery.yml"
   pull_request:
+    branches: [main]
     paths:
       - "projects/gnoquery/**"
       - ".github/workflows/gnoquery.yml"

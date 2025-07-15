@@ -1,4 +1,4 @@
-name: Gnoland CI/CD
+name: gnoland
 
 on:
   push:

@@ -1,0 +1,16 @@
+# env files
+.env
+.*.env
+# Note: .stg.env is committed for staging deployments
+
+# binaries
+gnolinker
+
+# runbook files for gnolinker
+runbook.*
+
+# session scratch files and brainstorming
+SCRATCH_IDEAS.md
+
+# local development data
+/data/

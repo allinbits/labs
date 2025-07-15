@@ -1,0 +1,85 @@
+services:
+  # MinIO - S3 compatible storage for local development
+  minio:
+    image: minio/minio:latest
+    container_name: gnolinker-minio
+    ports:
+      - "9000:9000" # MinIO API
+      - "9001:9001" # MinIO Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_DOMAIN: localhost
+    volumes:
+      - ./data/minio:/data:rw
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - gnolinker-network
+
+  # MinIO bucket initialization
+  minio-setup:
+    image: minio/mc:latest
+    container_name: gnolinker-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      BUCKET_NAME: gnolinker-data
+    networks:
+      - gnolinker-network
+    entrypoint: |
+      /bin/sh -c "
+      echo 'Configuring MinIO client...'
+      mc alias set local http://minio:9000 minioadmin minioadmin123
+      echo 'Creating bucket if it does not exist...'
+      mc mb local/gnolinker-data --ignore-existing
+      echo 'Setting bucket policy to allow read/write...'
+      mc anonymous set public local/gnolinker-data
+      echo 'MinIO setup complete!'
+      "
+
+  # GnoLinker Discord Bot
+  gnolinker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gnolinker-bot
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      # Override storage settings for local development
+      GNOLINKER__STORAGE_TYPE: s3
+      GNOLINKER__STORAGE_BUCKET: gnolinker-data
+      # Distributed locking configuration
+      GNOLINKER__LOCK_TYPE: s3
+      GNOLINKER__LOCK_BUCKET: gnolinker-data
+      GNOLINKER__LOCK_DEFAULT_TTL: 30s
+      # AWS SDK standard environment variables
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin123
+      AWS_ENDPOINT_URL_S3: http://minio:9000
+    networks:
+      - gnolinker-network
+    command: ["discord"]
+
+networks:
+  gnolinker-network:
+    driver: bridge
+
+volumes:
+  minio-data:
+    driver: local

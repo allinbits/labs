@@ -109,7 +109,7 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: projects/gnolinker/...
+          args: ./...
 
   deploy:
     name: Deploy to Staging

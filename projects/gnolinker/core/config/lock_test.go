@@ -8,7 +8,6 @@ import (
 )
 
 func TestLoadLockConfig(t *testing.T) {
-	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"GNOLINKER__LOCK_TYPE":           os.Getenv("GNOLINKER__LOCK_TYPE"),
@@ -310,7 +309,6 @@ func TestGetLocalMemoryConfig(t *testing.T) {
 }
 
 func TestGetS3LockConfig(t *testing.T) {
-	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"GNOLINKER__LOCK_BUCKET":   os.Getenv("GNOLINKER__LOCK_BUCKET"),
@@ -406,7 +404,6 @@ func TestGetS3LockConfig(t *testing.T) {
 }
 
 func TestGetEnvIntWithDefault(t *testing.T) {
-	t.Parallel()
 	// Save original env var
 	originalValue := os.Getenv("TEST_INT_HELPER")
 	defer func() {

@@ -8,7 +8,6 @@ import (
 )
 
 func TestLoadStorageConfig(t *testing.T) {
-	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"GNOLINKER__STORAGE_TYPE":              os.Getenv("GNOLINKER__STORAGE_TYPE"),
@@ -310,7 +309,6 @@ func TestGetTigrisProductionConfig(t *testing.T) {
 }
 
 func TestGetEnvHelperFunctions(t *testing.T) {
-	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"TEST_STRING":    os.Getenv("TEST_STRING"),

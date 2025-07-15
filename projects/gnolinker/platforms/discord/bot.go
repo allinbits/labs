@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
+	"github.com/allinbits/labs/projects/gnolinker/core/config"
 	"github.com/allinbits/labs/projects/gnolinker/core/workflows"
 	"github.com/allinbits/labs/projects/gnolinker/platforms"
 	"github.com/bwmarrin/discordgo"
@@ -18,6 +19,7 @@ type Bot struct {
 	platform             platforms.Platform
 	interactionHandlers  *InteractionHandlers
 	config               Config
+	configManager        *config.ConfigManager
 	logger               core.Logger
 }
 
@@ -26,6 +28,7 @@ func NewBot(config Config,
 	userFlow workflows.UserLinkingWorkflow,
 	roleFlow workflows.RoleLinkingWorkflow,
 	syncFlow workflows.SyncWorkflow,
+	configManager *config.ConfigManager,
 	logger core.Logger) (*Bot, error) {
 	
 	// Create Discord session
@@ -34,17 +37,18 @@ func NewBot(config Config,
 		return nil, fmt.Errorf("failed to create Discord session: %w", err)
 	}
 	
-	// Create platform adapter
-	platform := NewDiscordPlatform(session, config)
+	// Create platform adapter with lock manager for safe role creation
+	platform := NewDiscordPlatform(session, config, configManager.GetLockManager(), logger)
 	
-	// Create interaction handlers
-	interactionHandlers := NewInteractionHandlers(userFlow, roleFlow, syncFlow, config, logger)
+	// Create interaction handlers with config manager
+	interactionHandlers := NewInteractionHandlers(userFlow, roleFlow, syncFlow, configManager, logger)
 	
 	bot := &Bot{
 		session:             session,
 		platform:            platform,
 		interactionHandlers: interactionHandlers,
 		config:              config,
+		configManager:       configManager,
 		logger:              logger,
 	}
 	
@@ -105,6 +109,19 @@ func (b *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
 
 func (b *Bot) onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	b.logger.Info("Bot joined new guild", "guild_name", event.Guild.Name, "guild_id", event.Guild.ID, "member_count", event.Guild.MemberCount)
+	
+	// Ensure guild configuration exists and is properly set up
+	guildConfig, err := b.configManager.EnsureGuildConfig(s, event.Guild.ID)
+	if err != nil {
+		b.logger.Error("Failed to ensure guild config", "guild_id", event.Guild.ID, "error", err)
+		// Continue anyway - we can still register commands
+	} else {
+		b.logger.Info("Guild configuration ensured", 
+			"guild_id", event.Guild.ID,
+			"admin_role_id", guildConfig.AdminRoleID,
+			"verified_role_id", guildConfig.VerifiedRoleID,
+		)
+	}
 	
 	// Register slash commands for the new guild
 	if err := b.interactionHandlers.RegisterSlashCommands(s, event.Guild.ID); err != nil {

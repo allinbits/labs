@@ -6,21 +6,24 @@ import (
 	"slices"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
+	"github.com/allinbits/labs/projects/gnolinker/core/lock"
 	"github.com/allinbits/labs/projects/gnolinker/platforms"
 	"github.com/bwmarrin/discordgo"
 )
 
 // DiscordPlatform implements the Platform interface for Discord
 type DiscordPlatform struct {
-	session *discordgo.Session
-	config  Config
+	session     *discordgo.Session
+	config      Config
+	roleManager *RoleManager
 }
 
 // NewDiscordPlatform creates a new Discord platform adapter
-func NewDiscordPlatform(session *discordgo.Session, config Config) platforms.Platform {
+func NewDiscordPlatform(session *discordgo.Session, config Config, lockManager lock.LockManager, logger core.Logger) platforms.Platform {
 	return &DiscordPlatform{
-		session: session,
-		config:  config,
+		session:     session,
+		config:      config,
+		roleManager: NewRoleManager(session, lockManager, logger),
 	}
 }
 
@@ -72,32 +75,9 @@ func (p *DiscordPlatform) RemoveRole(guildID, userID, roleID string) error {
 	return nil
 }
 
-// GetOrCreateRole gets an existing role or creates a new one
+// GetOrCreateRole gets an existing role or creates a new one using distributed locking
 func (p *DiscordPlatform) GetOrCreateRole(guildID, name string) (*core.PlatformRole, error) {
-	// Try to get existing role first
-	if role, err := p.getRoleByName(guildID, name); err == nil {
-		return &core.PlatformRole{
-			ID:   role.ID,
-			Name: role.Name,
-		}, nil
-	}
-	
-	// Create new role
-	defaultColor := 7506394
-	roleData := &discordgo.RoleParams{
-		Name:  name,
-		Color: &defaultColor,
-	}
-	
-	role, err := p.session.GuildRoleCreate(guildID, roleData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create role: %w", err)
-	}
-	
-	return &core.PlatformRole{
-		ID:   role.ID,
-		Name: role.Name,
-	}, nil
+	return p.roleManager.GetOrCreateRole(guildID, name, nil)
 }
 
 // GetRoleByID retrieves a role by its ID
@@ -121,8 +101,11 @@ func (p *DiscordPlatform) GetRoleByID(guildID, roleID string) (*core.PlatformRol
 
 
 // IsAdmin checks if a user is an admin (has the admin role)
+// DEPRECATED: Use ConfigManager.EnsureGuildConfig() and check AdminRoleID dynamically
 func (p *DiscordPlatform) IsAdmin(guildID, userID string) (bool, error) {
-	return p.HasRole(guildID, userID, p.config.AdminRoleID)
+	// This method is deprecated - admin roles are now managed per-guild
+	// For backward compatibility, return false
+	return false, nil
 }
 
 // Helper methods
@@ -145,11 +128,15 @@ func (p *DiscordPlatform) getRoleByName(guildID, name string) (*discordgo.Role, 
 // Discord-specific methods for the verified address role
 
 // AddVerifiedRole adds the verified address role to a user
+// DEPRECATED: Use ConfigManager.EnsureGuildConfig() and manage VerifiedRoleID dynamically
 func (p *DiscordPlatform) AddVerifiedRole(guildID, userID string) error {
-	return p.AddRole(guildID, userID, p.config.VerifiedAddressRoleID)
+	// This method is deprecated - verified roles are now managed per-guild
+	return nil
 }
 
 // RemoveVerifiedRole removes the verified address role from a user
+// DEPRECATED: Use ConfigManager.EnsureGuildConfig() and manage VerifiedRoleID dynamically
 func (p *DiscordPlatform) RemoveVerifiedRole(guildID, userID string) error {
-	return p.RemoveRole(guildID, userID, p.config.VerifiedAddressRoleID)
+	// This method is deprecated - verified roles are now managed per-guild
+	return nil
 }

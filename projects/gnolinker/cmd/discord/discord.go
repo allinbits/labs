@@ -1,11 +1,13 @@
 package discord
 
 import (
+	"context"
 	"encoding/hex"
 	"flag"
 	"os"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
+	"github.com/allinbits/labs/projects/gnolinker/core/config"
 	"github.com/allinbits/labs/projects/gnolinker/core/contracts"
 	"github.com/allinbits/labs/projects/gnolinker/core/workflows"
 	"github.com/allinbits/labs/projects/gnolinker/platforms/discord"
@@ -34,6 +36,14 @@ func Run() {
 	logger := core.NewLoggerFromLevel(logLevel)
 	logger.Info("Starting gnolinker Discord bot", "log_level", logLevel)
 
+	// Initialize configuration manager (includes storage and lock manager)
+	ctx := context.Background()
+	configManager, err := config.InitializeConfigManager(ctx, logger)
+	if err != nil {
+		logger.Error("Failed to initialize configuration manager", "error", err)
+		os.Exit(1)
+	}
+
 	// Load from environment if flags not provided
 	token := getEnvOrFlag("GNOLINKER__DISCORD_TOKEN", *tokenFlag)
 	adminRole := getEnvOrFlag("GNOLINKER__DISCORD_ADMIN_ROLE_ID", *adminRoleFlag)
@@ -49,17 +59,22 @@ func Run() {
 		logger.Error("Discord token is required (use -token flag or GNOLINKER__DISCORD_TOKEN env var)")
 		os.Exit(1)
 	}
-	if adminRole == "" {
-		logger.Error("Admin role ID is required (use -admin-role flag or GNOLINKER__DISCORD_ADMIN_ROLE_ID env var)")
-		os.Exit(1)
-	}
-	if verifiedRole == "" {
-		logger.Error("Verified role ID is required (use -verified-role flag or GNOLINKER__DISCORD_VERIFIED_ROLE_ID env var)")
-		os.Exit(1)
-	}
 	if signingKeyStr == "" {
 		logger.Error("Signing key is required (use -signing-key flag or GNOLINKER__SIGNING_KEY env var)")
 		os.Exit(1)
+	}
+
+	// Admin and verified roles are now optional - they will be auto-detected/created by ConfigManager
+	storageConfig := configManager.GetStorageConfig()
+	if adminRole != "" {
+		logger.Info("Using provided admin role", "admin_role_id", adminRole)
+	} else {
+		logger.Info("Admin role will be auto-detected from Discord permissions")
+	}
+	if verifiedRole != "" {
+		logger.Info("Using provided verified role", "verified_role_id", verifiedRole)
+	} else {
+		logger.Info("Verified role will be auto-created", "default_name", storageConfig.DefaultVerifiedRoleName)
 	}
 
 	// Decode signing key
@@ -76,12 +91,11 @@ func Run() {
 	var signingKey [64]byte
 	copy(signingKey[:], signingKeyBytes)
 
-	// Create Discord config
+	// Create Discord config - roles are now managed by ConfigManager
 	discordConfig := discord.Config{
-		Token:                 token,
-		AdminRoleID:           adminRole,
-		VerifiedAddressRoleID: verifiedRole,
-		CleanupOldCommands:    *cleanupFlag,
+		Token:              token,
+		CleanupOldCommands: *cleanupFlag,
+		// Remove hard-coded roles - these will be managed dynamically per guild
 	}
 
 	// Create Gno client
@@ -110,8 +124,8 @@ func Run() {
 	roleFlow := workflows.NewRoleLinkingWorkflow(gnoClient, workflowConfig)
 	syncFlow := workflows.NewSyncWorkflow(gnoClient, workflowConfig)
 
-	// Create and start bot
-	bot, err := discord.NewBot(discordConfig, userFlow, roleFlow, syncFlow, logger)
+	// Create and start bot with config manager
+	bot, err := discord.NewBot(discordConfig, userFlow, roleFlow, syncFlow, configManager, logger)
 	if err != nil {
 		logger.Error("Failed to create Discord bot", "error", err)
 		os.Exit(1)

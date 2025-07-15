@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
+	"github.com/allinbits/labs/projects/gnolinker/core/config"
 	"github.com/allinbits/labs/projects/gnolinker/core/workflows"
 	"github.com/bwmarrin/discordgo"
 )
@@ -13,7 +14,7 @@ type InteractionHandlers struct {
 	userLinkingFlow workflows.UserLinkingWorkflow
 	roleLinkingFlow workflows.RoleLinkingWorkflow
 	syncFlow        workflows.SyncWorkflow
-	config          Config
+	configManager   *config.ConfigManager
 	logger          core.Logger
 }
 
@@ -22,14 +23,14 @@ func NewInteractionHandlers(
 	userFlow workflows.UserLinkingWorkflow,
 	roleFlow workflows.RoleLinkingWorkflow,
 	syncFlow workflows.SyncWorkflow,
-	config Config,
+	configManager *config.ConfigManager,
 	logger core.Logger,
 ) *InteractionHandlers {
 	return &InteractionHandlers{
 		userLinkingFlow: userFlow,
 		roleLinkingFlow: roleFlow,
 		syncFlow:        syncFlow,
-		config:          config,
+		configManager:   configManager,
 		logger:          logger,
 	}
 }
@@ -355,6 +356,14 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 		return
 	}
 
+	// Get guild configuration
+	guildConfig, err := h.configManager.EnsureGuildConfig(s, i.GuildID)
+	if err != nil {
+		h.logger.Error("Failed to get guild config", "error", err, "guild_id", i.GuildID)
+		h.followUpError(s, i, "Failed to get guild configuration.")
+		return
+	}
+
 	// Get linked address
 	address, err := h.userLinkingFlow.GetLinkedAddress(userID)
 	if err != nil {
@@ -365,8 +374,10 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 
 	var embed *discordgo.MessageEmbed
 	if address == "" {
-		// Remove verified role if no address is linked
-		s.GuildMemberRoleRemove(i.GuildID, userID, h.config.VerifiedAddressRoleID)
+		// Remove verified role if no address is linked and role is configured
+		if guildConfig.HasVerifiedRole() {
+			s.GuildMemberRoleRemove(i.GuildID, userID, guildConfig.VerifiedRoleID)
+		}
 		
 		embed = &discordgo.MessageEmbed{
 			Title:       "No Linked Address",
@@ -374,8 +385,10 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 			Color:       0xff0000,
 		}
 	} else {
-		// Add verified role if address is linked
-		s.GuildMemberRoleAdd(i.GuildID, userID, h.config.VerifiedAddressRoleID)
+		// Add verified role if address is linked and role is configured
+		if guildConfig.HasVerifiedRole() {
+			s.GuildMemberRoleAdd(i.GuildID, userID, guildConfig.VerifiedRoleID)
+		}
 		
 		embed = &discordgo.MessageEmbed{
 			Title:       "Address Verified ✅",
@@ -703,28 +716,15 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 		},
 	})
 	
-	// Create or get the Discord role
+	// Create or get the Discord role using safe role creation
 	discordRoleName := roleName + "-" + realmPath
-	platformRole, err := h.getRoleByName(s, i.GuildID, discordRoleName)
+	platformRole, err := h.getOrCreateRole(s, i.GuildID, discordRoleName)
 	if err != nil {
-		// Create new role
-		roleData := &discordgo.RoleParams{
-			Name:  discordRoleName,
-			Color: &[]int{7506394}[0], // Default color
-		}
-		
-		role, err := s.GuildRoleCreate(i.GuildID, roleData)
-		if err != nil {
-			h.logger.Error("Failed to create role", "error", err, "discord_role_name", discordRoleName)
-			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Content: &[]string{"❌ Failed to create Discord role."}[0],
-			})
-			return
-		}
-		platformRole = &core.PlatformRole{
-			ID:   role.ID,
-			Name: role.Name,
-		}
+		h.logger.Error("Failed to create role", "error", err, "discord_role_name", discordRoleName)
+		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: &[]string{"❌ Failed to create Discord role."}[0],
+		})
+		return
 	}
 	
 	// Generate claim
@@ -833,6 +833,22 @@ func (h *InteractionHandlers) getRoleByName(s *discordgo.Session, guildID, name 
 	return nil, fmt.Errorf("role not found")
 }
 
+// getOrCreateRole gets an existing role or creates a new one with distributed locking
+func (h *InteractionHandlers) getOrCreateRole(s *discordgo.Session, guildID, name string) (*core.PlatformRole, error) {
+	// First try to find existing role
+	if role, err := h.getRoleByName(s, guildID, name); err == nil {
+		return role, nil
+	}
+
+	// Create a temporary role manager for this operation
+	lockManager := h.configManager.GetLockManager()
+	roleManager := NewRoleManager(s, lockManager, h.logger)
+	
+	// Use the role manager to safely create the role
+	defaultColor := 7506394
+	return roleManager.GetOrCreateRole(guildID, name, &defaultColor)
+}
+
 // Helper function to check if user has a role
 func (h *InteractionHandlers) hasRole(s *discordgo.Session, guildID, userID, roleID string) (bool, error) {
 	member, err := s.GuildMember(guildID, userID)
@@ -851,7 +867,20 @@ func (h *InteractionHandlers) hasRole(s *discordgo.Session, guildID, userID, rol
 
 // Check if user has role admin permissions (for gno.land realm management)
 func (h *InteractionHandlers) hasRoleAdminPermission(s *discordgo.Session, guildID, userID string) (bool, error) {
-	return h.hasRole(s, guildID, userID, h.config.AdminRoleID)
+	// Get guild configuration
+	guildConfig, err := h.configManager.GetGuildConfig(guildID)
+	if err != nil {
+		// If no config exists, fall back to Discord permissions
+		return h.hasGuildAdminPermission(s, guildID, userID)
+	}
+
+	// If admin role is configured, check it
+	if guildConfig.HasAdminRole() {
+		return h.hasRole(s, guildID, userID, guildConfig.AdminRoleID)
+	}
+
+	// If no admin role configured, fall back to Discord permissions
+	return h.hasGuildAdminPermission(s, guildID, userID)
 }
 
 // Check if user has guild admin permissions (for Discord server management)
@@ -935,27 +964,72 @@ func (h *InteractionHandlers) handleAdminInfoCommand(s *discordgo.Session, i *di
 		return
 	}
 
+	// Get guild configuration
+	guildConfig, err := h.configManager.EnsureGuildConfig(s, i.GuildID)
+	if err != nil {
+		h.respondError(s, i, "Failed to get guild configuration.")
+		return
+	}
+
+	// Build configuration fields
+	fields := []*discordgo.MessageEmbedField{
+		{
+			Name:   "Guild Info",
+			Value:  fmt.Sprintf("Name: %s\nID: %s", guild.Name, guild.ID),
+			Inline: false,
+		},
+	}
+
+	// Admin role info
+	if guildConfig.HasAdminRole() {
+		adminRoleName := "Unknown"
+		if role, err := s.State.Role(i.GuildID, guildConfig.AdminRoleID); err == nil {
+			adminRoleName = role.Name
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Admin Role",
+			Value:  fmt.Sprintf("%s\n`%s`", adminRoleName, guildConfig.AdminRoleID),
+			Inline: true,
+		})
+	} else {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Admin Role",
+			Value:  "Auto-detected from Discord permissions",
+			Inline: true,
+		})
+	}
+
+	// Verified role info
+	if guildConfig.HasVerifiedRole() {
+		verifiedRoleName := "Unknown"
+		if role, err := s.State.Role(i.GuildID, guildConfig.VerifiedRoleID); err == nil {
+			verifiedRoleName = role.Name
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Verified Role",
+			Value:  fmt.Sprintf("%s\n`%s`", verifiedRoleName, guildConfig.VerifiedRoleID),
+			Inline: true,
+		})
+	} else {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Verified Role",
+			Value:  "Not configured",
+			Inline: true,
+		})
+	}
+
+	// Storage info
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:   "Storage",
+		Value:  "Multi-guild configuration enabled",
+		Inline: false,
+	})
+
 	embed := &discordgo.MessageEmbed{
 		Title:       "Bot Configuration",
 		Description: "Current bot configuration for this guild:",
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Guild Info",
-				Value:  fmt.Sprintf("Name: %s\nID: %s", guild.Name, guild.ID),
-				Inline: false,
-			},
-			{
-				Name:   "Admin Role ID",
-				Value:  h.config.AdminRoleID,
-				Inline: true,
-			},
-			{
-				Name:   "Verified Role ID",
-				Value:  h.config.VerifiedAddressRoleID,
-				Inline: true,
-			},
-		},
-		Color: 0x5865F2,
+		Fields:      fields,
+		Color:       0x5865F2,
 	}
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

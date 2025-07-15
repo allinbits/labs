@@ -64,16 +64,31 @@ Available commands:
   version      Show version information
 
 Examples:
-  gnolinker discord --token=... --admin-role=... --verified-role=...
-  gnolinker discord --log-level=debug --token=...
+  gnolinker discord --token=...
+  gnolinker discord --log-level=debug --token=... --admin-role=... --verified-role=...
   gnolinker discord --help
   gnolinker version
 
 Environment variables:
-  All environment variables use the GNOLINKER__ prefix:
-  GNOLINKER__DISCORD_TOKEN, GNOLINKER__DISCORD_ADMIN_ROLE_ID, etc.
-  GNOLINKER__GNOLAND_RPC_ENDPOINT, GNOLINKER__BASE_URL, etc.
-  GNOLINKER__LOG_LEVEL (debug, info, warn, error)
+  Bot configuration (GNOLINKER__ prefix):
+    GNOLINKER__DISCORD_TOKEN, GNOLINKER__SIGNING_KEY
+    GNOLINKER__GNOLAND_RPC_ENDPOINT, GNOLINKER__BASE_URL
+    GNOLINKER__LOG_LEVEL (debug, info, warn, error)
+  
+  Storage configuration (GNOLINKER__ prefix):
+    GNOLINKER__STORAGE_TYPE (memory, s3)
+    GNOLINKER__STORAGE_BUCKET, GNOLINKER__STORAGE_PREFIX
+  
+  Distributed locking (GNOLINKER__ prefix):
+    GNOLINKER__LOCK_TYPE (s3, memory, none)
+    GNOLINKER__LOCK_BUCKET, GNOLINKER__LOCK_PREFIX, GNOLINKER__LOCK_DEFAULT_TTL
+  
+  AWS SDK standard variables (for S3 storage/locking):
+    AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+    AWS_ENDPOINT_URL_S3, AWS_ENDPOINT_URL (for S3-compatible services)
+  
+Note: Admin and verified roles are now auto-detected/created per guild.
+Use --admin-role and --verified-role flags only to override defaults.
 
 For platform-specific help:
   gnolinker discord --help

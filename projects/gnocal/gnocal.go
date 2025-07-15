@@ -140,6 +140,7 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 	if removedRParen, cutSuffix := strings.CutSuffix(out, `" string)`); cutSuffix {
 		out = removedRParen
 	}
+	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Write([]byte(strings.ReplaceAll(out, `\n`, "\n")))
 }
 

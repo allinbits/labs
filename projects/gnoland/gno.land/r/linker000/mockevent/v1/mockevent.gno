@@ -34,34 +34,34 @@ func init() {
 
 // JoinAsAttendee sets the address of the previous realm as an attendee
 // for the event.
-func JoinAsAttendee() {
+func JoinAsAttendee(cur realm) {
 	//
 	attendees.Set(string(std.PreviousRealm().Address()), struct{}{})
 }
 
 // RemoveSelfAsAttendee removes the address of the previous realm as an attendee
 // for the event.
-func RemoveSelfAsAttendee() {
+func RemoveSelfAsAttendee(cur realm) {
 	//
 	attendees.Remove(string(std.PreviousRealm().Address()))
 }
 
 // AddSpeaker takes a std.Address and adds it to the speaker tree if the caller is an organizer.
-func AddSpeaker(addr std.Address) {
+func AddSpeaker(cur realm, addr std.Address) {
 	//
 	assertIsOrganizer()
 	speakers.Set(string(addr), struct{}{})
 }
 
 // RemoveSpeaker takes an std.Address and removes it from the speaker tree if the call is an organizer.
-func RemoveSpeaker(addr std.Address) {
+func RemoveSpeaker(cur realm, addr std.Address) {
 	//
 	assertIsOrganizer()
 	speakers.Remove(string(addr))
 }
 
 // AddOrganizer takes a std.Address and adds it to the speaker tree if the caller is an organizer.
-func AddOrganizer(addr std.Address) {
+func AddOrganizer(cur realm, addr std.Address) {
 	//
 	assertIsOrganizer()
 	organizers.Set(string(addr), struct{}{})
@@ -69,7 +69,7 @@ func AddOrganizer(addr std.Address) {
 
 // RemoveOrganizer takes an std.Address and removes it from the speaker tree if the call is an organizer and
 // the caller isn't trying to remove itself.
-func RemoveOrganizer(addr std.Address) {
+func RemoveOrganizer(cur realm, addr std.Address) {
 	//
 	assertIsOrganizer()
 	if addr == std.PreviousRealm().Address() {

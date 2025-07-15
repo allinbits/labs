@@ -9,6 +9,7 @@ import (
 )
 
 func TestNewMemoryLockManager(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		config LockConfig
@@ -63,6 +64,7 @@ func TestNewMemoryLockManager(t *testing.T) {
 }
 
 func TestMemoryLockManager_AcquireLock(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(LockConfig{
 		DefaultTTL:    30 * time.Second,
 		RetryInterval: 10 * time.Millisecond,
@@ -142,6 +144,7 @@ func TestMemoryLockManager_AcquireLock(t *testing.T) {
 }
 
 func TestMemoryLockManager_AcquireLockConflict(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(LockConfig{
 		DefaultTTL:    30 * time.Second,
 		RetryInterval: 10 * time.Millisecond,
@@ -189,6 +192,7 @@ func TestMemoryLockManager_AcquireLockConflict(t *testing.T) {
 }
 
 func TestMemoryLockManager_ReleaseLock(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(DefaultLockConfig())
 	ctx := context.Background()
 
@@ -252,6 +256,7 @@ func TestMemoryLockManager_ReleaseLock(t *testing.T) {
 }
 
 func TestMemoryLockManager_IsLocked(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(DefaultLockConfig())
 	ctx := context.Background()
 	key := "test-key"
@@ -300,6 +305,7 @@ func TestMemoryLockManager_IsLocked(t *testing.T) {
 }
 
 func TestMemoryLockManager_GetLock(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(DefaultLockConfig())
 	ctx := context.Background()
 	key := "test-key"
@@ -356,6 +362,7 @@ func TestMemoryLockManager_GetLock(t *testing.T) {
 }
 
 func TestMemoryLockManager_ExpiredLocks(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(LockConfig{
 		DefaultTTL:    10 * time.Millisecond,
 		RetryInterval: 5 * time.Millisecond,
@@ -410,6 +417,7 @@ func TestMemoryLockManager_ExpiredLocks(t *testing.T) {
 }
 
 func TestMemoryLockManager_CleanupExpiredLocks(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(DefaultLockConfig())
 	ctx := context.Background()
 
@@ -448,6 +456,7 @@ func TestMemoryLockManager_CleanupExpiredLocks(t *testing.T) {
 }
 
 func TestMemoryLockManager_StartCleanupTask(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(DefaultLockConfig())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -476,6 +485,7 @@ func TestMemoryLockManager_StartCleanupTask(t *testing.T) {
 }
 
 func TestMemoryLockManager_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(LockConfig{
 		DefaultTTL:    30 * time.Second,
 		RetryInterval: 50 * time.Millisecond,
@@ -567,6 +577,7 @@ func TestMemoryLockManager_ConcurrentAcquire(t *testing.T) {
 }
 
 func TestMemoryLockManager_ConcurrentDifferentKeys(t *testing.T) {
+	t.Parallel()
 	manager := NewMemoryLockManager(DefaultLockConfig())
 	ctx := context.Background()
 	numGoroutines := 50
@@ -614,6 +625,7 @@ func TestMemoryLockManager_ConcurrentDifferentKeys(t *testing.T) {
 }
 
 func TestMemoryLockManager_Interface(t *testing.T) {
+	t.Parallel()
 	// Verify that MemoryLockManager implements LockManager interface
 	var _ LockManager = &MemoryLockManager{}
 	var _ LockManager = NewMemoryLockManager(DefaultLockConfig())

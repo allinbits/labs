@@ -20,17 +20,29 @@ type DiscordSession interface {
 
 // RoleManager handles Discord role creation with distributed locking
 type RoleManager struct {
-	session     DiscordSession
-	lockManager lock.LockManager
-	logger      core.Logger
+	session             DiscordSession
+	lockManager         lock.LockManager
+	logger              core.Logger
+	lockFailureRetryDelay time.Duration
 }
 
 // NewRoleManager creates a new role manager
 func NewRoleManager(session DiscordSession, lockManager lock.LockManager, logger core.Logger) *RoleManager {
 	return &RoleManager{
-		session:     session,
-		lockManager: lockManager,
-		logger:      logger,
+		session:               session,
+		lockManager:           lockManager,
+		logger:                logger,
+		lockFailureRetryDelay: 2 * time.Second, // Default to 2 seconds
+	}
+}
+
+// NewRoleManagerWithConfig creates a new role manager with custom configuration
+func NewRoleManagerWithConfig(session DiscordSession, lockManager lock.LockManager, logger core.Logger, lockFailureRetryDelay time.Duration) *RoleManager {
+	return &RoleManager{
+		session:               session,
+		lockManager:           lockManager,
+		logger:                logger,
+		lockFailureRetryDelay: lockFailureRetryDelay,
 	}
 }
 
@@ -64,7 +76,7 @@ func (rm *RoleManager) createRoleWithLock(guildID, name string, color *int) (*co
 	if err != nil {
 		// Failed to get lock, wait and re-check if role was created
 		rm.logger.Warn("Failed to acquire lock for role creation, retrying", "guild_id", guildID, "role_name", name, "error", err)
-		time.Sleep(2 * time.Second)
+		time.Sleep(rm.lockFailureRetryDelay)
 		
 		// Check if role was created by another instance
 		if role, err := rm.getRoleByName(guildID, name); err == nil {

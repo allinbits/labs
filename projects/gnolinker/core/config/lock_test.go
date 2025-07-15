@@ -8,6 +8,7 @@ import (
 )
 
 func TestLoadLockConfig(t *testing.T) {
+	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"GNOLINKER__LOCK_TYPE":           os.Getenv("GNOLINKER__LOCK_TYPE"),
@@ -197,6 +198,7 @@ func TestLoadLockConfig(t *testing.T) {
 }
 
 func TestLockConfig_CreateLockManager(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -290,6 +292,7 @@ func TestLockConfig_CreateLockManager(t *testing.T) {
 }
 
 func TestGetLocalMemoryConfig(t *testing.T) {
+	t.Parallel()
 	config := GetLocalMemoryConfig()
 
 	if config.Type != "memory" {
@@ -307,6 +310,7 @@ func TestGetLocalMemoryConfig(t *testing.T) {
 }
 
 func TestGetS3LockConfig(t *testing.T) {
+	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"GNOLINKER__LOCK_BUCKET":   os.Getenv("GNOLINKER__LOCK_BUCKET"),
@@ -402,6 +406,7 @@ func TestGetS3LockConfig(t *testing.T) {
 }
 
 func TestGetEnvIntWithDefault(t *testing.T) {
+	t.Parallel()
 	// Save original env var
 	originalValue := os.Getenv("TEST_INT_HELPER")
 	defer func() {
@@ -440,6 +445,7 @@ func TestGetEnvIntWithDefault(t *testing.T) {
 }
 
 func TestLockConfig_S3Integration(t *testing.T) {
+	t.Parallel()
 	// This test verifies the S3 lock configuration would be created correctly
 	// We don't actually create S3 locks since that requires AWS credentials
 	ctx := context.Background()

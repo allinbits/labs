@@ -8,6 +8,7 @@ import (
 )
 
 func TestNewNoOpLockManager(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 	
 	if manager == nil {
@@ -22,6 +23,7 @@ func TestNewNoOpLockManager(t *testing.T) {
 }
 
 func TestNoOpLockManager_AcquireLock(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 	ctx := context.Background()
 
@@ -110,6 +112,7 @@ func TestNoOpLockManager_AcquireLock(t *testing.T) {
 }
 
 func TestNoOpLockManager_AcquireLockMultiple(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 	ctx := context.Background()
 	key := "shared-key"
@@ -136,6 +139,7 @@ func TestNoOpLockManager_AcquireLockMultiple(t *testing.T) {
 }
 
 func TestNoOpLockManager_ReleaseLock(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 	ctx := context.Background()
 
@@ -172,6 +176,7 @@ func TestNoOpLockManager_ReleaseLock(t *testing.T) {
 }
 
 func TestNoOpLockManager_IsLocked(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 	ctx := context.Background()
 
@@ -198,6 +203,7 @@ func TestNoOpLockManager_IsLocked(t *testing.T) {
 }
 
 func TestNoOpLockManager_GetLock(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 	ctx := context.Background()
 
@@ -228,6 +234,7 @@ func TestNoOpLockManager_GetLock(t *testing.T) {
 }
 
 func TestNoOpLockManager_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 
 	// Test with cancelled context
@@ -269,6 +276,7 @@ func TestNoOpLockManager_ContextCancellation(t *testing.T) {
 }
 
 func TestNoOpLockManager_Timeout(t *testing.T) {
+	t.Parallel()
 	manager := NewNoOpLockManager()
 
 	// Test with timeout context
@@ -327,6 +335,7 @@ func TestNoOpLockManager_Concurrent(t *testing.T) {
 }
 
 func TestNoOpLockManager_Interface(t *testing.T) {
+	t.Parallel()
 	// Verify that NoOpLockManager implements LockManager interface
 	var _ LockManager = &NoOpLockManager{}
 	var _ LockManager = NewNoOpLockManager()

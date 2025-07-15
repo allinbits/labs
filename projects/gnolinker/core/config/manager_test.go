@@ -165,6 +165,7 @@ func contains(s, substr string) bool {
 }
 
 func TestNewConfigManager(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{
 		Type:                    "memory",
@@ -198,6 +199,7 @@ func TestNewConfigManager(t *testing.T) {
 }
 
 func TestConfigManager_EnsureGuildConfig_NewGuild(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{
 		Type:                    "memory",
@@ -253,6 +255,7 @@ func TestConfigManager_EnsureGuildConfig_NewGuild(t *testing.T) {
 }
 
 func TestConfigManager_EnsureGuildConfig_ExistingGuild(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{
 		Type:                    "memory",
@@ -306,6 +309,7 @@ func TestConfigManager_EnsureGuildConfig_ExistingGuild(t *testing.T) {
 }
 
 func TestConfigManager_EnsureGuildConfig_RepairMissingRoles(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{
 		Type:                    "memory",
@@ -355,6 +359,7 @@ func TestConfigManager_EnsureGuildConfig_RepairMissingRoles(t *testing.T) {
 }
 
 func TestConfigManager_GetGuildConfig(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{}
 	lockManager := lock.NewNoOpLockManager()
@@ -388,6 +393,7 @@ func TestConfigManager_GetGuildConfig(t *testing.T) {
 }
 
 func TestConfigManager_UpdateGuildConfig(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{}
 	lockManager := lock.NewNoOpLockManager()
@@ -415,6 +421,7 @@ func TestConfigManager_UpdateGuildConfig(t *testing.T) {
 }
 
 func TestConfigManager_DeleteGuildConfig(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{}
 	lockManager := lock.NewNoOpLockManager()
@@ -444,6 +451,7 @@ func TestConfigManager_DeleteGuildConfig(t *testing.T) {
 }
 
 func TestConfigManager_GetStorageConfig(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{
 		Type:        "memory",
@@ -460,6 +468,7 @@ func TestConfigManager_GetStorageConfig(t *testing.T) {
 }
 
 func TestConfigManager_GetLockManager(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{}
 	lockManager := lock.NewNoOpLockManager()
@@ -473,6 +482,7 @@ func TestConfigManager_GetLockManager(t *testing.T) {
 }
 
 func TestConfigManager_DetectAdminRole(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{}
 	lockManager := lock.NewNoOpLockManager()
@@ -570,6 +580,7 @@ func TestConfigManager_DetectAdminRole(t *testing.T) {
 }
 
 func TestConfigManager_RoleExists(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{}
 	lockManager := lock.NewNoOpLockManager()
@@ -597,6 +608,7 @@ func TestConfigManager_RoleExists(t *testing.T) {
 }
 
 func TestConfigManager_FindRoleByName(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{}
 	lockManager := lock.NewNoOpLockManager()
@@ -636,6 +648,7 @@ func TestConfigManager_FindRoleByName(t *testing.T) {
 }
 
 func TestConfigManager_GuildRolesError(t *testing.T) {
+	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{
 		AutoCreateRoles: false, // Disable auto-create to avoid role creation attempts

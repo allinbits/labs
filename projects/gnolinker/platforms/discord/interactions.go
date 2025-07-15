@@ -330,14 +330,16 @@ func (h *InteractionHandlers) handleLinkAddressCommand(s *discordgo.Session, i *
 		},
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Embeds:     []*discordgo.MessageEmbed{embed},
 			Components: components,
 			Flags:      discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to respond to interaction", "error", err)
+	}
 }
 
 func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -376,7 +378,9 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 	if address == "" {
 		// Remove verified role if no address is linked and role is configured
 		if guildConfig.HasVerifiedRole() {
-			s.GuildMemberRoleRemove(i.GuildID, userID, guildConfig.VerifiedRoleID)
+			if err := s.GuildMemberRoleRemove(i.GuildID, userID, guildConfig.VerifiedRoleID); err != nil {
+				h.logger.Error("Failed to remove verified role", "error", err, "user_id", userID, "role_id", guildConfig.VerifiedRoleID)
+			}
 		}
 		
 		embed = &discordgo.MessageEmbed{
@@ -387,7 +391,9 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 	} else {
 		// Add verified role if address is linked and role is configured
 		if guildConfig.HasVerifiedRole() {
-			s.GuildMemberRoleAdd(i.GuildID, userID, guildConfig.VerifiedRoleID)
+			if err := s.GuildMemberRoleAdd(i.GuildID, userID, guildConfig.VerifiedRoleID); err != nil {
+				h.logger.Error("Failed to add verified role", "error", err, "user_id", userID, "role_id", guildConfig.VerifiedRoleID)
+			}
 		}
 		
 		embed = &discordgo.MessageEmbed{
@@ -410,12 +416,15 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 	userID := i.Member.User.ID
 
 	// Defer response as sync might take time
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Flags: discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to defer interaction response", "error", err)
+		return
+	}
 
 	// Sync roles
 	statuses, err := h.syncFlow.SyncUserRoles(userID, realmPath, i.GuildID)
@@ -460,9 +469,11 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 		})
 	}
 
-	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{embed},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to edit interaction response", "error", err)
+	}
 }
 
 func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -501,13 +512,15 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 		},
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{embed},
 			Flags:  discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to respond to interaction", "error", err)
+	}
 }
 
 func (h *InteractionHandlers) handleLinkRoleCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -523,12 +536,15 @@ func (h *InteractionHandlers) handleLinkRoleCommand(s *discordgo.Session, i *dis
 	realmPath := options[1].StringValue()
 
 	// Defer response
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Flags: discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to defer interaction response", "error", err)
+		return
+	}
 
 	// Create confirmation embed
 	embed := &discordgo.MessageEmbed{
@@ -554,10 +570,12 @@ func (h *InteractionHandlers) handleLinkRoleCommand(s *discordgo.Session, i *dis
 		},
 	}
 
-	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Embeds:     &[]*discordgo.MessageEmbed{embed},
 		Components: &components,
-	})
+	}); err != nil {
+		h.logger.Error("Failed to edit interaction response", "error", err)
+	}
 }
 
 func (h *InteractionHandlers) handleVerifyRoleCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -589,13 +607,15 @@ func (h *InteractionHandlers) handleVerifyRoleCommand(s *discordgo.Session, i *d
 		Color: 0x00ff00,
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{embed},
 			Flags:  discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to respond to interaction", "error", err)
+	}
 }
 
 func (h *InteractionHandlers) handleSyncUserCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
@@ -611,12 +631,15 @@ func (h *InteractionHandlers) handleSyncUserCommand(s *discordgo.Session, i *dis
 	targetUser := options[1].UserValue(s)
 
 	// Defer response
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Flags: discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to defer interaction response", "error", err)
+		return
+	}
 
 	// Sync roles
 	statuses, err := h.syncFlow.SyncUserRoles(targetUser.ID, realmPath, i.GuildID)
@@ -661,23 +684,27 @@ func (h *InteractionHandlers) handleSyncUserCommand(s *discordgo.Session, i *dis
 		})
 	}
 
-	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{embed},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to edit interaction response", "error", err)
+	}
 }
 
 func (h *InteractionHandlers) handleComponent(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	customID := i.MessageComponentData().CustomID
 
 	if customID == "cancel_link" {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseUpdateMessage,
 			Data: &discordgo.InteractionResponseData{
 				Content:    "❌ Operation cancelled.",
 				Components: []discordgo.MessageComponent{},
 				Embeds:     []*discordgo.MessageEmbed{},
 			},
-		})
+		}); err != nil {
+			h.logger.Error("Failed to respond to interaction", "error", err)
+		}
 		return
 	}
 
@@ -691,14 +718,16 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 	// Parse roleName and realmPath from params
 	parts := parseRoleLinkParams(params)
 	if len(parts) < 2 {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseUpdateMessage,
 			Data: &discordgo.InteractionResponseData{
 				Content:    "❌ Invalid parameters.",
 				Components: []discordgo.MessageComponent{},
 				Embeds:     []*discordgo.MessageEmbed{},
 			},
-		})
+		}); err != nil {
+			h.logger.Error("Failed to respond to interaction", "error", err)
+		}
 		return
 	}
 	
@@ -707,23 +736,28 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 	userID := i.Member.User.ID
 	
 	// Update to show processing
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseUpdateMessage,
 		Data: &discordgo.InteractionResponseData{
 			Content:    "⏳ Creating role link...",
 			Components: []discordgo.MessageComponent{},
 			Embeds:     []*discordgo.MessageEmbed{},
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to respond to interaction", "error", err)
+		return
+	}
 	
 	// Create or get the Discord role using safe role creation
 	discordRoleName := roleName + "-" + realmPath
 	platformRole, err := h.getOrCreateRole(s, i.GuildID, discordRoleName)
 	if err != nil {
 		h.logger.Error("Failed to create role", "error", err, "discord_role_name", discordRoleName)
-		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Content: &[]string{"❌ Failed to create Discord role."}[0],
-		})
+		}); err != nil {
+			h.logger.Error("Failed to edit interaction response", "error", err)
+		}
 		return
 	}
 	
@@ -731,9 +765,11 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 	claim, err := h.roleLinkingFlow.GenerateClaim(userID, i.GuildID, platformRole.ID, roleName, realmPath)
 	if err != nil {
 		h.logger.Error("Failed to generate role claim", "error", err, "user_id", userID, "role_name", roleName, "realm_path", realmPath)
-		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Content: &[]string{"❌ Failed to generate claim."}[0],
-		})
+		}); err != nil {
+			h.logger.Error("Failed to edit interaction response", "error", err)
+		}
 		return
 	}
 	
@@ -766,29 +802,35 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 		},
 	}
 	
-	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Content:    &[]string{""}[0],
 		Embeds:     &[]*discordgo.MessageEmbed{embed},
 		Components: &components,
-	})
+	}); err != nil {
+		h.logger.Error("Failed to edit interaction response", "error", err)
+	}
 }
 
 // Helper functions
 
 func (h *InteractionHandlers) respondError(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: fmt.Sprintf("❌ %s", message),
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to respond with error message", "error", err, "message", message)
+	}
 }
 
 func (h *InteractionHandlers) followUpError(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
-	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Content: &message,
-	})
+	}); err != nil {
+		h.logger.Error("Failed to edit interaction response with error", "error", err, "message", message)
+	}
 }
 
 // Helper function to parse role link parameters
@@ -916,12 +958,15 @@ func (h *InteractionHandlers) handleAdminRefreshCommandsCommand(s *discordgo.Ses
 	}
 
 	// Defer response
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Flags: discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to defer interaction response", "error", err)
+		return
+	}
 
 	// Re-register slash commands for this guild
 	if err := h.RegisterSlashCommands(s, i.GuildID); err != nil {
@@ -931,9 +976,11 @@ func (h *InteractionHandlers) handleAdminRefreshCommandsCommand(s *discordgo.Ses
 			Description: "Failed to refresh slash commands. Please try again.",
 			Color:       0xff0000,
 		}
-		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Embeds: &[]*discordgo.MessageEmbed{embed},
-		})
+		}); err != nil {
+			h.logger.Error("Failed to edit interaction response", "error", err)
+		}
 		return
 	}
 
@@ -943,9 +990,11 @@ func (h *InteractionHandlers) handleAdminRefreshCommandsCommand(s *discordgo.Ses
 		Color:       0x00ff00,
 	}
 
-	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{embed},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to edit interaction response", "error", err)
+	}
 }
 
 func (h *InteractionHandlers) handleAdminInfoCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -1032,11 +1081,13 @@ func (h *InteractionHandlers) handleAdminInfoCommand(s *discordgo.Session, i *di
 		Color:       0x5865F2,
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{embed},
 			Flags:  discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}); err != nil {
+		h.logger.Error("Failed to respond to interaction", "error", err)
+	}
 }

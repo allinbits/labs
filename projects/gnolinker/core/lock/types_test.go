@@ -6,6 +6,7 @@ import (
 )
 
 func TestLock_IsExpired(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	
 	tests := []struct {
@@ -54,6 +55,7 @@ func TestLock_IsExpired(t *testing.T) {
 }
 
 func TestLock_RemainingTTL(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	
 	tests := []struct {
@@ -113,6 +115,7 @@ func TestLock_RemainingTTL(t *testing.T) {
 }
 
 func TestDefaultLockConfig(t *testing.T) {
+	t.Parallel()
 	config := DefaultLockConfig()
 
 	// Test default values
@@ -135,6 +138,7 @@ func TestDefaultLockConfig(t *testing.T) {
 }
 
 func TestLockConfig_Validation(t *testing.T) {
+	t.Parallel()
 	// Test that we can create reasonable configurations
 	tests := []struct {
 		name   string
@@ -192,6 +196,7 @@ func TestLockConfig_Validation(t *testing.T) {
 }
 
 func TestLock_Fields(t *testing.T) {
+	t.Parallel()
 	// Test that Lock struct holds all required fields correctly
 	now := time.Now()
 	expiresAt := now.Add(30 * time.Second)
@@ -231,6 +236,7 @@ func TestLock_Fields(t *testing.T) {
 }
 
 func TestLock_TimeRelatedMethods(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	
 	// Create a lock that expires in 1 minute
@@ -272,6 +278,7 @@ func TestLock_TimeRelatedMethods(t *testing.T) {
 }
 
 func TestLockErrors(t *testing.T) {
+	t.Parallel()
 	// Test that our error constants are defined and different
 	errors := []error{
 		ErrLockAcquisitionFailed,

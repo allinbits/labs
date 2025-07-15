@@ -1,4 +1,4 @@
-.PHONY: dev clean down test
+.PHONY: dev clean down test security
 
 clean: down
 	docker-compose down -v --remove-orphans
@@ -12,3 +12,7 @@ down:
 
 test:
 	go test ./... -v
+
+security-scan:
+	@which gosec > /dev/null || (echo "Installing gosec..." && go install github.com/securego/gosec/v2/cmd/gosec@latest)
+	gosec ./...

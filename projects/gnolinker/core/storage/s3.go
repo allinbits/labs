@@ -225,7 +225,9 @@ func (s *S3ConfigStore) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("read test failed: %w", err)
 	}
-	result.Body.Close()
+	if err := result.Body.Close(); err != nil {
+		return fmt.Errorf("failed to close response body: %w", err)
+	}
 
 	// Test delete
 	_, err = s.client.DeleteObject(ctx, &s3.DeleteObjectInput{

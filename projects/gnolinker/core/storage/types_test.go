@@ -7,6 +7,7 @@ import (
 )
 
 func TestNewGuildConfig(t *testing.T) {
+	t.Parallel()
 	guildID := "123456789"
 	config := NewGuildConfig(guildID)
 
@@ -29,6 +30,7 @@ func TestNewGuildConfig(t *testing.T) {
 }
 
 func TestGuildConfig_GetSetString(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		key      string
@@ -73,6 +75,7 @@ func TestGuildConfig_GetSetString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			config := NewGuildConfig("12345")
 			oldTime := config.LastUpdated
 
@@ -94,6 +97,7 @@ func TestGuildConfig_GetSetString(t *testing.T) {
 }
 
 func TestGuildConfig_GetSetBool(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		key      string
@@ -138,6 +142,7 @@ func TestGuildConfig_GetSetBool(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			config := NewGuildConfig("12345")
 
 			if tt.setKey != "" {
@@ -153,7 +158,8 @@ func TestGuildConfig_GetSetBool(t *testing.T) {
 }
 
 func TestGuildConfig_GetSetInt(t *testing.T) {
-	tests := []struct {
+	t.Parallel()
+	tests := []struct{
 		name     string
 		key      string
 		setValue int
@@ -197,6 +203,7 @@ func TestGuildConfig_GetSetInt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			config := NewGuildConfig("12345")
 
 			if tt.setKey != "" {
@@ -212,6 +219,7 @@ func TestGuildConfig_GetSetInt(t *testing.T) {
 }
 
 func TestGuildConfig_GetSetDuration(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		key      string
@@ -248,6 +256,7 @@ func TestGuildConfig_GetSetDuration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			config := NewGuildConfig("12345")
 
 			if tt.setKey != "" {
@@ -263,6 +272,7 @@ func TestGuildConfig_GetSetDuration(t *testing.T) {
 }
 
 func TestGuildConfig_HasAdminRole(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		adminRoleID string
@@ -282,6 +292,7 @@ func TestGuildConfig_HasAdminRole(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			config := NewGuildConfig("12345")
 			config.AdminRoleID = tt.adminRoleID
 
@@ -294,6 +305,7 @@ func TestGuildConfig_HasAdminRole(t *testing.T) {
 }
 
 func TestGuildConfig_HasVerifiedRole(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		verifiedRoleID string
@@ -313,6 +325,7 @@ func TestGuildConfig_HasVerifiedRole(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			config := NewGuildConfig("12345")
 			config.VerifiedRoleID = tt.verifiedRoleID
 
@@ -325,6 +338,7 @@ func TestGuildConfig_HasVerifiedRole(t *testing.T) {
 }
 
 func TestGuildConfig_JSONSerialization(t *testing.T) {
+	t.Parallel()
 	// Create a config with various data types
 	original := NewGuildConfig("test-guild-123")
 	original.AdminRoleID = "admin-role-456"
@@ -383,6 +397,7 @@ func TestGuildConfig_JSONSerialization(t *testing.T) {
 }
 
 func TestGuildConfig_BoolParsing(t *testing.T) {
+	t.Parallel()
 	config := NewGuildConfig("12345")
 
 	// Test various bool string representations that strconv.ParseBool accepts
@@ -399,6 +414,7 @@ func TestGuildConfig_BoolParsing(t *testing.T) {
 
 	for strVal, expectedBool := range validBoolValues {
 		t.Run("parse_"+strVal, func(t *testing.T) {
+			t.Parallel()
 			// Manually set the string value to test parsing
 			config.Settings["test_bool"] = strVal
 
@@ -411,6 +427,7 @@ func TestGuildConfig_BoolParsing(t *testing.T) {
 
 	// Test invalid bool value falls back to default
 	t.Run("invalid_bool_fallback", func(t *testing.T) {
+		t.Parallel()
 		config.Settings["invalid_bool"] = "not_a_bool"
 		got := config.GetBool("invalid_bool", true)
 		if got != true {
@@ -420,6 +437,7 @@ func TestGuildConfig_BoolParsing(t *testing.T) {
 }
 
 func TestGuildConfig_IntParsing(t *testing.T) {
+	t.Parallel()
 	config := NewGuildConfig("12345")
 
 	// Test various int string representations
@@ -432,6 +450,7 @@ func TestGuildConfig_IntParsing(t *testing.T) {
 
 	for strVal, expectedInt := range validIntValues {
 		t.Run("parse_"+strVal, func(t *testing.T) {
+			t.Parallel()
 			// Manually set the string value to test parsing
 			config.Settings["test_int"] = strVal
 
@@ -444,6 +463,7 @@ func TestGuildConfig_IntParsing(t *testing.T) {
 
 	// Test invalid int value falls back to default
 	t.Run("invalid_int_fallback", func(t *testing.T) {
+		t.Parallel()
 		config.Settings["invalid_int"] = "not_a_number"
 		got := config.GetInt("invalid_int", 999)
 		if got != 999 {

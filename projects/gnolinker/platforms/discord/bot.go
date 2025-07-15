@@ -95,7 +95,9 @@ func (b *Bot) GetPlatform() platforms.Platform {
 // Event handlers
 
 func (b *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
-	s.UpdateGameStatus(0, "Linking gno.land addresses")
+	if err := s.UpdateGameStatus(0, "Linking gno.land addresses"); err != nil {
+		b.logger.Error("Failed to update game status", "error", err)
+	}
 	b.logger.Info("Bot is ready! Logged in", "username", event.User.Username, "guilds", len(event.Guilds))
 	
 	// Register commands for all existing guilds on startup

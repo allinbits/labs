@@ -14,6 +14,7 @@ import (
 )
 
 func TestNewRoleManager(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -39,6 +40,7 @@ func TestNewRoleManager(t *testing.T) {
 }
 
 func TestRoleManager_GetOrCreateRole_ExistingRole(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -79,6 +81,7 @@ func TestRoleManager_GetOrCreateRole_ExistingRole(t *testing.T) {
 }
 
 func TestRoleManager_GetOrCreateRole_CreateNew(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -127,6 +130,7 @@ func TestRoleManager_GetOrCreateRole_CreateNew(t *testing.T) {
 }
 
 func TestRoleManager_GetOrCreateRole_NoLockManager(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	logger := NewMockLogger()
 	rm := NewRoleManager(session, nil, logger) // No lock manager
@@ -150,6 +154,7 @@ func TestRoleManager_GetOrCreateRole_NoLockManager(t *testing.T) {
 }
 
 func TestRoleManager_GetOrCreateRole_LockAcquisitionFails(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewMemoryLockManager(lock.LockConfig{
 		DefaultTTL:    30 * time.Second,
@@ -157,7 +162,7 @@ func TestRoleManager_GetOrCreateRole_LockAcquisitionFails(t *testing.T) {
 		MaxRetries:    0, // Fail immediately
 	})
 	logger := NewMockLogger()
-	rm := NewRoleManager(session, lockManager, logger)
+	rm := NewRoleManagerWithConfig(session, lockManager, logger, 10*time.Millisecond) // Use fast timeout for tests
 
 	guildID := "test-guild-lock-fail"
 	roleName := "LockedRole"
@@ -187,6 +192,7 @@ func TestRoleManager_GetOrCreateRole_LockAcquisitionFails(t *testing.T) {
 }
 
 func TestRoleManager_GetOrCreateRole_RoleCreatedByOtherInstance(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewMemoryLockManager(lock.LockConfig{
 		DefaultTTL:    30 * time.Second,
@@ -194,7 +200,7 @@ func TestRoleManager_GetOrCreateRole_RoleCreatedByOtherInstance(t *testing.T) {
 		MaxRetries:    0, // Fail immediately
 	})
 	logger := NewMockLogger()
-	rm := NewRoleManager(session, lockManager, logger)
+	rm := NewRoleManagerWithConfig(session, lockManager, logger, 10*time.Millisecond) // Use fast timeout for tests
 
 	guildID := "test-guild-race"
 	roleName := "RaceRole"
@@ -209,7 +215,7 @@ func TestRoleManager_GetOrCreateRole_RoleCreatedByOtherInstance(t *testing.T) {
 
 	// Simulate another instance creating the role while locked
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond) // Must be less than the 10ms timeout
 		session.AddRole(guildID, &discordgo.Role{
 			ID:   "race-role-123",
 			Name: roleName,
@@ -239,6 +245,7 @@ func TestRoleManager_GetOrCreateRole_RoleCreatedByOtherInstance(t *testing.T) {
 }
 
 func TestRoleManager_GetOrCreateRole_DoubleCheckAfterLock(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewMemoryLockManager(lock.DefaultLockConfig())
 	logger := NewMockLogger()
@@ -281,6 +288,7 @@ func TestRoleManager_GetOrCreateRole_DoubleCheckAfterLock(t *testing.T) {
 }
 
 func TestRoleManager_CreateRole_DefaultColor(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -315,6 +323,7 @@ func TestRoleManager_CreateRole_DefaultColor(t *testing.T) {
 }
 
 func TestRoleManager_CreateRole_DiscordError(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -343,6 +352,7 @@ func TestRoleManager_CreateRole_DiscordError(t *testing.T) {
 }
 
 func TestRoleManager_DeleteRole(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -382,6 +392,7 @@ func TestRoleManager_DeleteRole(t *testing.T) {
 }
 
 func TestRoleManager_DeleteRole_Error(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -406,6 +417,7 @@ func TestRoleManager_DeleteRole_Error(t *testing.T) {
 }
 
 func TestRoleManager_GetRoleByName_CaseInsensitive(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -431,6 +443,7 @@ func TestRoleManager_GetRoleByName_CaseInsensitive(t *testing.T) {
 }
 
 func TestRoleManager_GetRoleByName_GuildRolesError_WithLocking(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewMemoryLockManager(lock.DefaultLockConfig())
 	logger := NewMockLogger()
@@ -465,6 +478,7 @@ func TestRoleManager_GetRoleByName_GuildRolesError_WithLocking(t *testing.T) {
 }
 
 func TestRoleManager_GetRoleByName_GuildRolesError_NoLocking(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
@@ -494,6 +508,7 @@ func TestRoleManager_GetRoleByName_GuildRolesError_NoLocking(t *testing.T) {
 }
 
 func TestRoleManager_ConcurrentRoleCreation(t *testing.T) {
+	t.Parallel()
 	session := NewMockDiscordSession()
 	lockManager := lock.NewMemoryLockManager(lock.DefaultLockConfig())
 	logger := NewMockLogger()

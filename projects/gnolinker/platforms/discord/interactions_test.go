@@ -209,6 +209,7 @@ func setupInteractionHandlers() (*InteractionHandlers, *MockDiscordSession, *Moc
 }
 
 func TestNewInteractionHandlers_Basic(t *testing.T) {
+	t.Parallel()
 	handlers, _, _, _, _, configManager, logger := setupInteractionHandlers()
 	
 	if handlers == nil {
@@ -229,6 +230,7 @@ func TestNewInteractionHandlers_Basic(t *testing.T) {
 // the helper functions and logic that can be tested independently.
 
 func TestParseRoleLinkParams(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input    string
 		expected []string
@@ -279,6 +281,7 @@ func TestParseRoleLinkParams(t *testing.T) {
 // testing task, we focus on testing the core logic that can be tested independently.
 
 func TestInteractionHandlers_CoreFunctionality(t *testing.T) {
+	t.Parallel()
 	// Basic constructor test
 	handlers, _, _, _, _, configManager, logger := setupInteractionHandlers()
 	

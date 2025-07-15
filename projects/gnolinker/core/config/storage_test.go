@@ -8,6 +8,7 @@ import (
 )
 
 func TestLoadStorageConfig(t *testing.T) {
+	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"GNOLINKER__STORAGE_TYPE":              os.Getenv("GNOLINKER__STORAGE_TYPE"),
@@ -166,6 +167,7 @@ func TestLoadStorageConfig(t *testing.T) {
 }
 
 func TestStorageConfig_CreateConfigStore(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -234,6 +236,7 @@ func TestStorageConfig_CreateConfigStore(t *testing.T) {
 }
 
 func TestGetMinioLocalConfig(t *testing.T) {
+	t.Parallel()
 	config := GetMinioLocalConfig()
 
 	if config.Type != "s3" {
@@ -263,6 +266,7 @@ func TestGetMinioLocalConfig(t *testing.T) {
 }
 
 func TestGetTigrisProductionConfig(t *testing.T) {
+	t.Parallel()
 	// Save original env var
 	originalBucket := os.Getenv("GNOLINKER__STORAGE_BUCKET")
 	defer func() {
@@ -306,6 +310,7 @@ func TestGetTigrisProductionConfig(t *testing.T) {
 }
 
 func TestGetEnvHelperFunctions(t *testing.T) {
+	t.Parallel()
 	// Save original env vars
 	originalEnvs := map[string]string{
 		"TEST_STRING":    os.Getenv("TEST_STRING"),

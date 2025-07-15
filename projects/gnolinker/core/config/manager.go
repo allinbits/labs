@@ -20,19 +20,32 @@ type DiscordSession interface {
 
 // ConfigManager handles guild configuration management with smart role detection
 type ConfigManager struct {
-	store           storage.ConfigStore
-	storageConfig   *StorageConfig
-	lockManager     lock.LockManager
-	logger          core.Logger
+	store                 storage.ConfigStore
+	storageConfig         *StorageConfig
+	lockManager           lock.LockManager
+	logger                core.Logger
+	lockFailureRetryDelay time.Duration
 }
 
 // NewConfigManager creates a new configuration manager
 func NewConfigManager(store storage.ConfigStore, storageConfig *StorageConfig, lockManager lock.LockManager, logger core.Logger) *ConfigManager {
 	return &ConfigManager{
-		store:         store,
-		storageConfig: storageConfig,
-		lockManager:   lockManager,
-		logger:        logger,
+		store:                 store,
+		storageConfig:         storageConfig,
+		lockManager:           lockManager,
+		logger:                logger,
+		lockFailureRetryDelay: 2 * time.Second, // Default to 2 seconds
+	}
+}
+
+// NewConfigManagerWithConfig creates a new configuration manager with custom configuration
+func NewConfigManagerWithConfig(store storage.ConfigStore, storageConfig *StorageConfig, lockManager lock.LockManager, logger core.Logger, lockFailureRetryDelay time.Duration) *ConfigManager {
+	return &ConfigManager{
+		store:                 store,
+		storageConfig:         storageConfig,
+		lockManager:           lockManager,
+		logger:                logger,
+		lockFailureRetryDelay: lockFailureRetryDelay,
 	}
 }
 
@@ -222,7 +235,7 @@ func (m *ConfigManager) ensureVerifiedRoleWithLock(session DiscordSession, confi
 	if err != nil {
 		// Failed to get lock, wait and re-check if role was created
 		m.logger.Warn("Failed to acquire lock for role creation, retrying", "guild_id", config.GuildID, "error", err)
-		time.Sleep(2 * time.Second)
+		time.Sleep(m.lockFailureRetryDelay)
 		
 		// Check if role was created by another instance
 		if roleID := m.findRoleByName(session, config.GuildID, m.storageConfig.DefaultVerifiedRoleName); roleID != "" {

@@ -8,6 +8,7 @@ import (
 )
 
 func TestNewMemoryConfigStore(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 
 	if store == nil {
@@ -27,6 +28,7 @@ func TestNewMemoryConfigStore(t *testing.T) {
 }
 
 func TestMemoryConfigStore_SetAndGet(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 	guildID := "test-guild-123"
 
@@ -67,6 +69,7 @@ func TestMemoryConfigStore_SetAndGet(t *testing.T) {
 }
 
 func TestMemoryConfigStore_GetNotFound(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 
 	// Try to get a config that doesn't exist
@@ -82,6 +85,7 @@ func TestMemoryConfigStore_GetNotFound(t *testing.T) {
 }
 
 func TestMemoryConfigStore_Update(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 	guildID := "test-guild-456"
 
@@ -126,6 +130,7 @@ func TestMemoryConfigStore_Update(t *testing.T) {
 }
 
 func TestMemoryConfigStore_Delete(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 	guildID := "test-guild-789"
 
@@ -160,6 +165,7 @@ func TestMemoryConfigStore_Delete(t *testing.T) {
 }
 
 func TestMemoryConfigStore_DeleteNonexistent(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 
 	// Try to delete a config that doesn't exist
@@ -170,6 +176,7 @@ func TestMemoryConfigStore_DeleteNonexistent(t *testing.T) {
 }
 
 func TestMemoryConfigStore_SetNilConfig(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 
 	// Try to set a nil config
@@ -185,6 +192,7 @@ func TestMemoryConfigStore_SetNilConfig(t *testing.T) {
 }
 
 func TestMemoryConfigStore_MultipleGuilds(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 
 	// Create configs for multiple guilds
@@ -407,6 +415,7 @@ func TestMemoryConfigStore_ConcurrentDeletes(t *testing.T) {
 }
 
 func TestMemoryConfigStore_DataIsolation(t *testing.T) {
+	t.Parallel()
 	store := NewMemoryConfigStore()
 	guildID := "isolation-test"
 

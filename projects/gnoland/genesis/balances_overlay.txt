@@ -7,6 +7,8 @@ g1j39fhg29uehm7twwnhvnpz3ggrm6tprhq65t0t=10000000000000ugnot # n2p5 (Nathan Toup
 g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz=10000000000000ugnot # Matthew York
 g140pp6d0wnmpjdrwk2npsz5ay4pwc0374vdvdyt=10000000000000ugnot # Mason
 
+g13lcs6h7emmdqze78qtw5p4xkxyzc53f6pu5mfw=10000000000000ugnot # Tr
+g18cwpdpsqd8mywj8skpsqsg9tn9hudkkpa6ycpe=10000000000000ugnot # JT
 
 # from gnoland/gno
 

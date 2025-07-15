@@ -1,10 +1,10 @@
-# Gnolinker - Multi-Platform Discord Bot
+# Gnolinker - Chat Bot
 
-A modular Discord bot that links chat identities to Gno blockchain addresses and manages role-based permissions.
+A chat bot that links chat identities to Gno blockchain addresses and manages role-based permissions with distributed locking and persistent storage. Currently implements Discord, with support for additional platforms planned.
 
 ## Architecture
 
-The refactored gnolinker is built with a modular, workflow-centric architecture:
+The gnolinker is built with a modular, workflow-centric architecture:
 
 ### CLI Structure
 
@@ -22,14 +22,17 @@ Available platforms:
 
 ### Code Structure
 
-```
+```shell
 gnolinker/
 ├── core/                    # Platform-agnostic business logic
 │   ├── workflows/           # Core workflows (user linking, role linking, sync)
 │   ├── contracts/           # Gno contract client
+│   ├── storage/             # Persistent storage implementations (memory, S3)
+│   ├── lock/                # Distributed locking (memory, S3, no-op)
+│   ├── config/              # Configuration management with auto-role detection
 │   └── models.go            # Domain models
 ├── platforms/               # Platform-specific implementations
-│   ├── discord/             # Discord bot implementation
+│   ├── discord/             # Discord bot implementation with role management
 │   └── platform.go         # Platform interface
 ├── cmd/                     # Entry points
 │   ├── discord/             # Discord bot CLI
@@ -54,22 +57,30 @@ gnolinker/
 ### Platform Abstraction
 
 - Clean separation between business logic and platform-specific code
-- Discord is the first implementation, designed to support additional platforms
+- Discord is the first platform implementation, designed to support additional chat platforms
 - Workflow-centric command handling
 
 ### Automatic Role Management
 
-- **Multi-Server Support**: Roles are now managed per-guild automatically
-- **Admin Role Auto-Detection**: Bot automatically detects admin roles based on Discord permissions
+- **Multi-Server Support**: Roles are managed per-guild automatically (Discord implementation)
+- **Admin Role Auto-Detection**: Bot automatically detects admin roles based on platform permissions
 - **Verified Role Auto-Creation**: Creates "Gno-Verified" role automatically when needed
 - **No Manual Configuration**: No need to specify role IDs in environment variables
+- **Distributed Role Creation**: Safe concurrent role creation across multiple bot instances
+
+### Scalable Architecture
+
+- **Distributed Locking**: Prevents race conditions across multiple bot instances
+- **Persistent Storage**: S3-compatible storage for configurations and state
+- **Horizontal Scaling**: Multiple bot instances can run safely with shared storage
+- **Memory & S3 Backends**: Configurable storage backends for different deployment scenarios
 
 ## Quick Start
 
 ### Prerequisites
 
 - Go 1.24+
-- Discord bot token
+- Discord bot token (for Discord platform)
 - Gno network access
 
 ### Installation
@@ -82,51 +93,14 @@ go build -o gnolinker ./cmd/
 
 ### Configuration
 
-#### Environment Files
-
-The bot supports multiple environment files for different deployment scenarios:
-
-- `.env` - Local development (default, gitignored)
-- `.dev.env` - Development environment (gitignored)
-- `.stg.env` - Staging environment (committed)
-- `.prod.env` - Production environment (gitignored)
-
-Copy `.env.example` to your desired environment file and configure your values.
-
-#### Docker Compose for Local Development
-
-For local development with S3-compatible storage, use Docker Compose with MinIO:
+Copy `.env.example` to `.env` and configure your values:
 
 ```bash
-# Start development environment
-make dev
-
-# Stop services (automatically done before dev)
-make down
-
-# Clean everything including data
-make clean
-```
-
-This provides:
-- **MinIO** at `http://localhost:9000` (API) and `http://localhost:9001` (Console)
-- **S3-compatible storage** for testing multi-server architecture
-- **Credentials**: `minioadmin` / `minioadmin123`
-- **Persistent storage** in `./data/minio/` (gitignored)
-
-When you make code changes, just run `make dev` again - it automatically stops, rebuilds, and restarts everything.
-
-#### Manual Environment Variables
-
-Set environment variables directly or use command-line flags:
-
-```bash
-export GNOLINKER__DISCORD_TOKEN="your-bot-token"
-export GNOLINKER__SIGNING_KEY="hex-encoded-signing-key"
-export GNOLINKER__GNOLAND_RPC_ENDPOINT="https://rpc.gno.land:443"
-export GNOLINKER__BASE_URL="https://gno.land"
-export GNOLINKER__USER_CONTRACT="gno.land/r/linker000/discord/user/v0"
-export GNOLINKER__ROLE_CONTRACT="gno.land/r/linker000/discord/role/v0"
+GNOLINKER__SIGNING_KEY={SIGNING_KEY} # in secrets store
+GNOLINKER__GNOLAND_RPC_ENDPOINT=127.0.0.1:26657
+#GNOLINKER__GNOLAND_RPC_ENDPOINT=https://aiblabs.net:8443 #if none local
+GNOLINKER__DISCORD_TOKEN={DEV_TOKEN} # in secrets store
+#GNOLINKER__BASE_URL=https://aiblabs.net
 ```
 
 ### Running
@@ -153,34 +127,37 @@ export GNOLINKER__ROLE_CONTRACT="gno.land/r/linker000/discord/role/v0"
 
 ### Commands
 
-The bot uses modern Discord slash commands under `/gnolinker`. All responses are private (ephemeral) to you in channels. See [SLASH_COMMANDS.md](SLASH_COMMANDS.md) for complete documentation.
+The Discord implementation uses modern slash commands under `/gnolinker`. All responses are private (ephemeral) to you in channels. See [SLASH_COMMANDS.md](SLASH_COMMANDS.md) for complete documentation.
 
 #### User Commands
 
-- `/gnolinker link address <address>` - Generate claim to link Discord ID to Gno address
+- `/gnolinker link address <address>` - Generate claim to link chat ID to Gno address
 - `/gnolinker verify address` - Verify and update address linking status
 - `/gnolinker sync roles <realm>` - Sync all roles for a realm
 - `/gnolinker help` - Show all available commands
 
 #### Admin Commands
 
-- `/gnolinker link role <role> <realm>` - Link realm role to Discord role
+- `/gnolinker link role <role> <realm>` - Link realm role to chat platform role
 - `/gnolinker verify role <role> <realm>` - Verify role linking and update membership
 - `/gnolinker sync user <realm> <user>` - Sync roles for another user
 
 ### Example Workflow
 
 1. **User links their address:**
+
    ```
    /gnolinker link address g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5
    ```
 
 2. **Admin links a realm role:**
+
    ```
    /gnolinker link role member gno.land/r/demo/events
    ```
 
 3. **User verifies and syncs their roles:**
+
    ```
    /gnolinker verify address
    /gnolinker sync roles gno.land/r/demo/events
@@ -188,10 +165,27 @@ The bot uses modern Discord slash commands under `/gnolinker`. All responses are
 
 ## Development
 
+### Local Development
+
+```bash
+# Start development environment with MinIO
+make dev
+
+# Stop services
+make down
+
+# Clean everything including data
+make clean
+```
+
 ### Testing
 
 ```bash
-go test ./...
+# Run all tests
+make test
+
+# Run security scanning
+make security-scan
 ```
 
 ### Adding New Platforms
@@ -201,32 +195,15 @@ go test ./...
 3. Create platform-specific bot implementation
 4. Add entry point in `cmd/newplatform/`
 
-### Adding New Networks
-
-Update `config/networks.go` with new network configuration:
-
-```go
-{
-    Name:    "newnetwork",
-    RPCURL:  "https://rpc.newnetwork.example.com",
-    ChainID: "newnetwork",
-    Contracts: core.NetworkContracts{
-        UserLinker: "gno.land/r/linker/user",
-        RoleLinker: "gno.land/r/linker/role",
-    },
-}
-```
-
 ## Design Decisions
 
-### Single-Server Model
+### Distributed Architecture
 
-Each bot instance manages one chat server to:
+The bot is designed to run in distributed environments:
 
-- Maintain clear trust boundaries
-- Simplify permission models
-- Encourage community ownership of bot instances
-- Avoid cross-server role conflicts
+- **Distributed Locking**: Uses S3 or memory-based locking to coordinate multiple instances
+- **Shared Storage**: Configuration and state stored in S3-compatible storage
+- **Horizontal Scaling**: Multiple instances can run safely without conflicts
 
 ### Workflow-Centric Architecture
 
@@ -251,19 +228,10 @@ Allows single bot to work with multiple Gno networks:
 - Local development environments
 - Custom network deployments
 
-## Migration from Legacy
-
-The legacy `gnolinker.go` remains functional during transition. The new architecture provides:
-
-- Better separation of concerns
-- Improved testability
-- Platform extensibility
-- Multi-network support
-- Cleaner command handling
-
 ## Contributing
 
 1. Follow the existing architecture patterns
 2. Add tests for new workflows
 3. Document any new configuration options
 4. Consider platform-agnostic design for new features
+5. Run `make test` and `make security-scan` before submitting PRs

@@ -1,4 +1,4 @@
-.PHONY: dev clean down test security
+.PHONY: dev clean down test security-scan
 
 clean: down
 	docker-compose down -v --remove-orphans

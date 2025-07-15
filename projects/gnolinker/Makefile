@@ -11,7 +11,7 @@ down:
 	docker-compose down --remove-orphans
 
 test:
-	go test ./... -v
+	go test ./... -v -race
 
 security-scan:
 	@which gosec > /dev/null || (echo "Installing gosec..." && go install github.com/securego/gosec/v2/cmd/gosec@latest)

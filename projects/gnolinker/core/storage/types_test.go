@@ -398,7 +398,6 @@ func TestGuildConfig_JSONSerialization(t *testing.T) {
 
 func TestGuildConfig_BoolParsing(t *testing.T) {
 	t.Parallel()
-	config := NewGuildConfig("12345")
 
 	// Test various bool string representations that strconv.ParseBool accepts
 	validBoolValues := map[string]bool{
@@ -415,6 +414,8 @@ func TestGuildConfig_BoolParsing(t *testing.T) {
 	for strVal, expectedBool := range validBoolValues {
 		t.Run("parse_"+strVal, func(t *testing.T) {
 			t.Parallel()
+			// Create a new config instance for each subtest to avoid data races
+			config := NewGuildConfig("12345")
 			// Manually set the string value to test parsing
 			config.Settings["test_bool"] = strVal
 
@@ -428,6 +429,8 @@ func TestGuildConfig_BoolParsing(t *testing.T) {
 	// Test invalid bool value falls back to default
 	t.Run("invalid_bool_fallback", func(t *testing.T) {
 		t.Parallel()
+		// Create a new config instance for this subtest to avoid data races
+		config := NewGuildConfig("12345")
 		config.Settings["invalid_bool"] = "not_a_bool"
 		got := config.GetBool("invalid_bool", true)
 		if got != true {
@@ -438,7 +441,6 @@ func TestGuildConfig_BoolParsing(t *testing.T) {
 
 func TestGuildConfig_IntParsing(t *testing.T) {
 	t.Parallel()
-	config := NewGuildConfig("12345")
 
 	// Test various int string representations
 	validIntValues := map[string]int{
@@ -451,6 +453,8 @@ func TestGuildConfig_IntParsing(t *testing.T) {
 	for strVal, expectedInt := range validIntValues {
 		t.Run("parse_"+strVal, func(t *testing.T) {
 			t.Parallel()
+			// Create a new config instance for each subtest to avoid data races
+			config := NewGuildConfig("12345")
 			// Manually set the string value to test parsing
 			config.Settings["test_int"] = strVal
 
@@ -464,6 +468,8 @@ func TestGuildConfig_IntParsing(t *testing.T) {
 	// Test invalid int value falls back to default
 	t.Run("invalid_int_fallback", func(t *testing.T) {
 		t.Parallel()
+		// Create a new config instance for this subtest to avoid data races
+		config := NewGuildConfig("12345")
 		config.Settings["invalid_int"] = "not_a_number"
 		got := config.GetInt("invalid_int", 999)
 		if got != 999 {

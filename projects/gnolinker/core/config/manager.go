@@ -12,6 +12,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// DiscordSession interface for ConfigManager testing
+type DiscordSession interface {
+	GuildRoles(guildID string, options ...discordgo.RequestOption) ([]*discordgo.Role, error)
+	GuildRoleCreate(guildID string, data *discordgo.RoleParams, options ...discordgo.RequestOption) (*discordgo.Role, error)
+}
+
 // ConfigManager handles guild configuration management with smart role detection
 type ConfigManager struct {
 	store           storage.ConfigStore
@@ -31,7 +37,7 @@ func NewConfigManager(store storage.ConfigStore, storageConfig *StorageConfig, l
 }
 
 // EnsureGuildConfig ensures a guild has a valid configuration, creating one if needed
-func (m *ConfigManager) EnsureGuildConfig(session *discordgo.Session, guildID string) (*storage.GuildConfig, error) {
+func (m *ConfigManager) EnsureGuildConfig(session DiscordSession, guildID string) (*storage.GuildConfig, error) {
 	// Try to get existing config
 	config, err := m.store.Get(guildID)
 	if err == nil {
@@ -84,7 +90,7 @@ func (m *ConfigManager) DeleteGuildConfig(guildID string) error {
 }
 
 // validateAndRepairConfig validates an existing config and repairs issues
-func (m *ConfigManager) validateAndRepairConfig(session *discordgo.Session, config *storage.GuildConfig) (*storage.GuildConfig, error) {
+func (m *ConfigManager) validateAndRepairConfig(session DiscordSession, config *storage.GuildConfig) (*storage.GuildConfig, error) {
 	needsUpdate := false
 
 	// Validate admin role
@@ -134,7 +140,7 @@ func (m *ConfigManager) validateAndRepairConfig(session *discordgo.Session, conf
 }
 
 // setupGuildRoles sets up roles for a new guild configuration
-func (m *ConfigManager) setupGuildRoles(session *discordgo.Session, config *storage.GuildConfig) error {
+func (m *ConfigManager) setupGuildRoles(session DiscordSession, config *storage.GuildConfig) error {
 	// Try to detect admin role
 	if adminRoleID := m.detectAdminRole(session, config.GuildID); adminRoleID != "" {
 		config.AdminRoleID = adminRoleID
@@ -152,7 +158,7 @@ func (m *ConfigManager) setupGuildRoles(session *discordgo.Session, config *stor
 }
 
 // detectAdminRole attempts to find a suitable admin role in the guild
-func (m *ConfigManager) detectAdminRole(session *discordgo.Session, guildID string) string {
+func (m *ConfigManager) detectAdminRole(session DiscordSession, guildID string) string {
 	roles, err := session.GuildRoles(guildID)
 	if err != nil {
 		m.logger.Error("Failed to get guild roles for admin detection", "error", err, "guild_id", guildID)
@@ -173,11 +179,14 @@ func (m *ConfigManager) detectAdminRole(session *discordgo.Session, guildID stri
 	// Look for roles with common admin names
 	adminRoleNames := []string{"admin", "administrator", "mod", "moderator", "staff", "gno admin", "gnolinker admin"}
 	for _, role := range roles {
-		roleName := strings.ToLower(role.Name)
-		for _, adminName := range adminRoleNames {
-			if strings.Contains(roleName, adminName) {
-				m.logger.Info("Found admin role by name", "guild_id", guildID, "role_name", role.Name, "role_id", role.ID)
-				return role.ID
+		// Skip @everyone role and bot roles
+		if role.Name != "@everyone" && !role.Managed {
+			roleName := strings.ToLower(role.Name)
+			for _, adminName := range adminRoleNames {
+				if strings.Contains(roleName, adminName) {
+					m.logger.Info("Found admin role by name", "guild_id", guildID, "role_name", role.Name, "role_id", role.ID)
+					return role.ID
+				}
 			}
 		}
 	}
@@ -186,7 +195,7 @@ func (m *ConfigManager) detectAdminRole(session *discordgo.Session, guildID stri
 }
 
 // ensureVerifiedRole creates or finds the verified role with distributed locking
-func (m *ConfigManager) ensureVerifiedRole(session *discordgo.Session, config *storage.GuildConfig) error {
+func (m *ConfigManager) ensureVerifiedRole(session DiscordSession, config *storage.GuildConfig) error {
 	// First try to find existing role by name
 	if roleID := m.findRoleByName(session, config.GuildID, m.storageConfig.DefaultVerifiedRoleName); roleID != "" {
 		config.VerifiedRoleID = roleID
@@ -204,7 +213,7 @@ func (m *ConfigManager) ensureVerifiedRole(session *discordgo.Session, config *s
 }
 
 // ensureVerifiedRoleWithLock creates a verified role using distributed locking
-func (m *ConfigManager) ensureVerifiedRoleWithLock(session *discordgo.Session, config *storage.GuildConfig) error {
+func (m *ConfigManager) ensureVerifiedRoleWithLock(session DiscordSession, config *storage.GuildConfig) error {
 	ctx := context.Background()
 	lockKey := fmt.Sprintf("role:create:%s:verified", config.GuildID)
 	
@@ -244,7 +253,7 @@ func (m *ConfigManager) ensureVerifiedRoleWithLock(session *discordgo.Session, c
 }
 
 // createVerifiedRole creates a new verified role
-func (m *ConfigManager) createVerifiedRole(session *discordgo.Session, config *storage.GuildConfig) error {
+func (m *ConfigManager) createVerifiedRole(session DiscordSession, config *storage.GuildConfig) error {
 	roleData := &discordgo.RoleParams{
 		Name:  m.storageConfig.DefaultVerifiedRoleName,
 		Color: &[]int{0x00ff00}[0], // Green color
@@ -261,7 +270,7 @@ func (m *ConfigManager) createVerifiedRole(session *discordgo.Session, config *s
 }
 
 // findRoleByName finds a role by name in the guild
-func (m *ConfigManager) findRoleByName(session *discordgo.Session, guildID, roleName string) string {
+func (m *ConfigManager) findRoleByName(session DiscordSession, guildID, roleName string) string {
 	roles, err := session.GuildRoles(guildID)
 	if err != nil {
 		return ""
@@ -277,7 +286,7 @@ func (m *ConfigManager) findRoleByName(session *discordgo.Session, guildID, role
 }
 
 // roleExists checks if a role exists in the guild
-func (m *ConfigManager) roleExists(session *discordgo.Session, guildID, roleID string) bool {
+func (m *ConfigManager) roleExists(session DiscordSession, guildID, roleID string) bool {
 	roles, err := session.GuildRoles(guildID)
 	if err != nil {
 		return false
@@ -293,7 +302,7 @@ func (m *ConfigManager) roleExists(session *discordgo.Session, guildID, roleID s
 }
 
 // RefreshGuildConfig forces a refresh of guild configuration from storage
-func (m *ConfigManager) RefreshGuildConfig(session *discordgo.Session, guildID string) (*storage.GuildConfig, error) {
+func (m *ConfigManager) RefreshGuildConfig(session DiscordSession, guildID string) (*storage.GuildConfig, error) {
 	// If using cached store, invalidate cache first
 	if cachedStore, ok := m.store.(*storage.CachedConfigStore); ok {
 		cachedStore.InvalidateCache(guildID)

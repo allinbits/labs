@@ -26,7 +26,7 @@ func (s *MemoryConfigStore) Get(guildID string) (*GuildConfig, error) {
 	
 	config, exists := s.configs[guildID]
 	if !exists {
-		return nil, errors.New("guild config not found")
+		return nil, ErrGuildConfigNotFound
 	}
 	
 	// Return a copy to prevent external modification

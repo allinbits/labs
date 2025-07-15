@@ -16,11 +16,12 @@ func NewNoOpLockManager() *NoOpLockManager {
 
 // AcquireLock always succeeds immediately
 func (m *NoOpLockManager) AcquireLock(ctx context.Context, key string, ttl time.Duration) (*Lock, error) {
+	now := time.Now()
 	return &Lock{
 		Key:        key,
 		HolderID:   "noop",
-		AcquiredAt: time.Now(),
-		ExpiresAt:  time.Now().Add(ttl),
+		AcquiredAt: now,
+		ExpiresAt:  now.Add(ttl),
 		Token:      "noop-token",
 	}, nil
 }

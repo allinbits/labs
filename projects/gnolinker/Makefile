@@ -1,4 +1,4 @@
-.PHONY: dev clean down
+.PHONY: dev clean down test
 
 clean: down
 	docker-compose down -v --remove-orphans
@@ -9,3 +9,6 @@ dev: down
 
 down:
 	docker-compose down --remove-orphans
+
+test:
+	go test ./... -v

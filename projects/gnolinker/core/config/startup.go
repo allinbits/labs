@@ -135,13 +135,7 @@ func performStorageHealthCheck(ctx context.Context, store storage.ConfigStore, c
 		if s3Store != nil {
 			logger.Info("Running S3 health checks...", "bucket", config.S3Bucket, "endpoint", config.S3Endpoint)
 			
-			// Ensure bucket exists
-			if err := s3Store.EnsureBucket(ctx); err != nil {
-				return fmt.Errorf("bucket verification failed: %w", err)
-			}
-			logger.Info("Bucket verified", "bucket", config.S3Bucket)
-
-			// Run full health check
+			// Run health check to verify bucket access (without creating it)
 			if err := s3Store.HealthCheck(ctx); err != nil {
 				return fmt.Errorf("S3 health check failed: %w", err)
 			}

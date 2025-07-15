@@ -7,8 +7,16 @@ app = 'gnolinker-discord-stg'
 primary_region = 'dfw'
 
 [env]
-GNOLINKER__LOG_LEVEL = 'debug'
+GNOLINKER__GNOLAND_RPC_ENDPOINT = 'https://aiblabs.net:8443'
+GNOLINKER__BASE_URL = 'https://aiblabs.net'
+AWS_ENDPOINT_URL_S3 = 'https://fly.storage.tigris.dev'
+AWS_REGION = 'auto'
+GNOLINKER__STORAGE_TYPE = 's3'
+GNOLINKER__LOCK_TYPE = 's3'
+GNOLINKER__LOCK_DEFAULT_TTL = '10s'
 
+
+GNOLINKER__LOG_LEVEL = 'debug'
 [build]
 
 [processes]

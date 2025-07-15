@@ -57,6 +57,13 @@ gnolinker/
 - Discord is the first implementation, designed to support additional platforms
 - Workflow-centric command handling
 
+### Automatic Role Management
+
+- **Multi-Server Support**: Roles are now managed per-guild automatically
+- **Admin Role Auto-Detection**: Bot automatically detects admin roles based on Discord permissions
+- **Verified Role Auto-Creation**: Creates "Gno-Verified" role automatically when needed
+- **No Manual Configuration**: No need to specify role IDs in environment variables
+
 ## Quick Start
 
 ### Prerequisites
@@ -115,8 +122,6 @@ Set environment variables directly or use command-line flags:
 
 ```bash
 export GNOLINKER__DISCORD_TOKEN="your-bot-token"
-export GNOLINKER__DISCORD_ADMIN_ROLE_ID="admin-role-id"
-export GNOLINKER__DISCORD_VERIFIED_ROLE_ID="verified-role-id"
 export GNOLINKER__SIGNING_KEY="hex-encoded-signing-key"
 export GNOLINKER__GNOLAND_RPC_ENDPOINT="https://rpc.gno.land:443"
 export GNOLINKER__BASE_URL="https://gno.land"
@@ -133,9 +138,6 @@ export GNOLINKER__ROLE_CONTRACT="gno.land/r/linker000/discord/role/v0"
 # Or using command-line flags
 ./gnolinker discord \
   -token="your-bot-token" \
-  -guild="your-server-id" \
-  -admin-role="admin-role-id" \
-  -verified-role="verified-role-id" \
   -signing-key="hex-key" \
   -rpc-url="https://rpc.gno.land:443" \
   -base-url="https://gno.land"

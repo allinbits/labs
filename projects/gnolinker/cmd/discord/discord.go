@@ -17,8 +17,6 @@ func Run() {
 	// Command line flags
 	var (
 		tokenFlag        = flag.String("token", "", "Discord bot token")
-		adminRoleFlag    = flag.String("admin-role", "", "Admin role ID")
-		verifiedRoleFlag = flag.String("verified-role", "", "Verified address role ID")
 		signingKeyFlag   = flag.String("signing-key", "", "Hex encoded signing key")
 		rpcURLFlag       = flag.String("rpc-url", "https://rpc.gno.land:443", "Gno RPC URL")
 		baseURLFlag      = flag.String("base-url", "https://gno.land", "Base URL for claim links")
@@ -46,8 +44,6 @@ func Run() {
 
 	// Load from environment if flags not provided
 	token := getEnvOrFlag("GNOLINKER__DISCORD_TOKEN", *tokenFlag)
-	adminRole := getEnvOrFlag("GNOLINKER__DISCORD_ADMIN_ROLE_ID", *adminRoleFlag)
-	verifiedRole := getEnvOrFlag("GNOLINKER__DISCORD_VERIFIED_ROLE_ID", *verifiedRoleFlag)
 	signingKeyStr := getEnvOrFlag("GNOLINKER__SIGNING_KEY", *signingKeyFlag)
 	rpcURL := getEnvOrFlag("GNOLINKER__GNOLAND_RPC_ENDPOINT", *rpcURLFlag)
 	baseURL := getEnvOrFlag("GNOLINKER__BASE_URL", *baseURLFlag)
@@ -64,18 +60,9 @@ func Run() {
 		os.Exit(1)
 	}
 
-	// Admin and verified roles are now optional - they will be auto-detected/created by ConfigManager
+	// Roles are now managed per-guild by ConfigManager
 	storageConfig := configManager.GetStorageConfig()
-	if adminRole != "" {
-		logger.Info("Using provided admin role", "admin_role_id", adminRole)
-	} else {
-		logger.Info("Admin role will be auto-detected from Discord permissions")
-	}
-	if verifiedRole != "" {
-		logger.Info("Using provided verified role", "verified_role_id", verifiedRole)
-	} else {
-		logger.Info("Verified role will be auto-created", "default_name", storageConfig.DefaultVerifiedRoleName)
-	}
+	logger.Info("Roles will be managed per-guild", "auto_create_roles", storageConfig.AutoCreateRoles, "default_verified_role_name", storageConfig.DefaultVerifiedRoleName)
 
 	// Decode signing key
 	signingKeyBytes, err := hex.DecodeString(signingKeyStr)

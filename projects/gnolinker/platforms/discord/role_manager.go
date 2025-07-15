@@ -11,15 +11,22 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// DiscordSession interface for testing
+type DiscordSession interface {
+	GuildRoles(guildID string, options ...discordgo.RequestOption) ([]*discordgo.Role, error)
+	GuildRoleCreate(guildID string, data *discordgo.RoleParams, options ...discordgo.RequestOption) (*discordgo.Role, error)
+	GuildRoleDelete(guildID, roleID string, options ...discordgo.RequestOption) error
+}
+
 // RoleManager handles Discord role creation with distributed locking
 type RoleManager struct {
-	session     *discordgo.Session
+	session     DiscordSession
 	lockManager lock.LockManager
 	logger      core.Logger
 }
 
 // NewRoleManager creates a new role manager
-func NewRoleManager(session *discordgo.Session, lockManager lock.LockManager, logger core.Logger) *RoleManager {
+func NewRoleManager(session DiscordSession, lockManager lock.LockManager, logger core.Logger) *RoleManager {
 	return &RoleManager{
 		session:     session,
 		lockManager: lockManager,

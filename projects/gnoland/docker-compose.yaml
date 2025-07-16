@@ -9,10 +9,19 @@ services:
     volumes:
       # For local package development - map your local directories to container
       # If you want the ability to hot-reload inside of the container, add your labs based namespace here
+      # p paths
       - ./gno.land/p/eve000:/gnoroot/examples/gno.land/p/eve000
-      - ./gno.land/r/linker000:/gnoroot/examples/gno.land/r/linker000
+      - ./gno.land/p/metamodel000:/gnoroot/examples/gno.land/p/metamodel000
+      - ./gno.land/p/rss000:/gnoroot/examples/gno.land/p/rss000
+      # r paths
       - ./gno.land/r/buidlthefuture000:/gnoroot/examples/gno.land/r/buidlthefuture000
+      - ./gno.land/r/cdn000:/gnoroot/examples/gno.land/r/cdn000
+      - ./gno.land/r/frames000:/gnoroot/examples/gno.land/r/frames000
       - ./gno.land/r/labs000:/gnoroot/examples/gno.land/r/labs000
+      - ./gno.land/r/linker000:/gnoroot/examples/gno.land/r/linker000
+      - ./gno.land/r/metamodel000:/gnoroot/examples/gno.land/r/metamodel000
+      - ./gno.land/r/stackdump000:/gnoroot/examples/gno.land/r/stackdump000
+
     environment:
       - GNO_HOME=/gnoroot
     command: ["dev"]

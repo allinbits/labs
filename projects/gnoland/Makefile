@@ -25,10 +25,3 @@ test: build-test
 	else \
 		docker run --rm gnoland-testrunner gno test -v /gnoroot/examples/$(path); \
 	fi
-
-# Add paths that you want tested here
-test-all: build-test
-	@make test path=gno.land/r/linker000/... && \
-	make test path=gno.land/p/eve000/... && \
-	make test path=gno.land/r/buidlthefuture000/... && \
-	make test path=gno.land/r/labs000/...

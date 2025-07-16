@@ -16,6 +16,5 @@ GNOROOT = '/gnoroot'
 app = "staging"
 
 [[vm]]
+size = 'performance-2x'
 memory = '4gb'
-cpu_kind = 'shared'
-cpus = 2

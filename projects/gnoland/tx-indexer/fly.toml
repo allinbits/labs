@@ -1,0 +1,22 @@
+# fly.toml app configuration file generated for labsnet-txindexer-3342 on 2025-07-16T15:21:46-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'labsnet-txindexer-3342'
+primary_region = 'dfw'
+
+[build]
+
+[processes]
+app = 'start -remote http://labsnet.internal:26657'
+
+[http_service]
+internal_port = 8546
+force_https = true
+auto_stop_machines = 'off'
+min_machines_running = 1
+processes = ['app']
+
+[[vm]]
+size = 'performance-1x'

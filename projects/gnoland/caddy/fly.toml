@@ -30,4 +30,4 @@ handlers = ["tls"]
 
 [[vm]]
 memory = '256mb'
-siz = 'shared-cpu-1x'
+size = 'shared-cpu-1x'

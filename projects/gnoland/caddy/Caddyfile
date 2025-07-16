@@ -47,6 +47,19 @@ Disallow: /`
     import block_crawlers
     import add_noindex_header
 
+    @invalid_paths {
+        not path_regexp ^/[a-z]/.*
+        not path /
+        not path /robots.txt
+        not path /favicon.ico
+        not path /public/*
+        not path /_events*
+    }
+    respond @invalid_paths 400 {
+        body "Bad Request"
+        close
+    }
+
     # Proxy to gnodev web
     reverse_proxy labsnet.internal:8888
 

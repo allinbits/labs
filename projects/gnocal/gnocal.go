@@ -21,7 +21,7 @@ var f = fmt.Sprintf
 //go:embed static/*
 var static embed.FS
 
-// Template pre-parsing
+// Templae pre-parsing
 var (
 	tmplConnectionRefused    = mustParseTemplate("connection_refused.html")
 	tmplInvalidRealmPath     = mustParseTemplate("invalid_realm_path.html")
@@ -117,7 +117,8 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 		out = removedRParen
 	}
 
-	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Disposition", "inline; filename=calendar.ics")
 	w.Write([]byte(strings.ReplaceAll(out, `\n`, "\n")))
 }
 

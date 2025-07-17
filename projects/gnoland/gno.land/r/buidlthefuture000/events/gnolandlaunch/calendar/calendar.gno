@@ -99,7 +99,7 @@ func RenderCal(path string) string {
 		w("VERSION:2.0")
 		w("CALSCALE:GREGORIAN")
 		w("PRODID:-//gno.land//Launch Calendar//EN")
-		w("METHOD:PUBLISH")
+		w("METHOD:PUBLISH\n")
 		for i, s := range sessions {
 			id := event.Pad3(strconv.Itoa(i))
 			if !include(id) {

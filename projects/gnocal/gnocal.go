@@ -21,6 +21,9 @@ var f = fmt.Sprintf
 //go:embed static/*
 var static embed.FS
 
+//go:embed templates/*
+var templates embed.FS
+
 // Templae pre-parsing
 var (
 	tmplConnectionRefused    = mustParseTemplate("connection_refused.html")
@@ -57,7 +60,7 @@ func NewGnocalServer(config *ServerOptions) *Server {
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.Recoverer)
 
-	s.router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	s.router.Handle("/static/*", http.FileServerFS(static))
 
 	s.router.Get("/", s.RenderLandingPage)
 	s.router.Get("/*", s.RenderCalFromRealm)
@@ -129,7 +132,7 @@ func (s *Server) RenderLandingPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func mustParseTemplate(filename string) *template.Template {
-	tmpl, err := template.ParseFS(static, "static/"+filename)
+	tmpl, err := template.ParseFS(templates, "templates/"+filename)
 	if err != nil {
 		panic("Template parsing failed: " + filename + " → " + err.Error())
 	}

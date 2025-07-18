@@ -26,7 +26,6 @@ func sampleAgenda() *Agenda {
 				StartTime:   time.Date(2025, 4, 3, 14, 0, 0, 0, time.UTC),
 				EndTime:     time.Date(2025, 4, 3, 15, 0, 0, 0, time.UTC),
 				Location:    &location.Location{Name: "Main Theater"},
-				Tags:        []string{"UNIX", "History"},
 				Opts: &component.RenderOpts{
 					Location: true,
 					Speaker:  true,

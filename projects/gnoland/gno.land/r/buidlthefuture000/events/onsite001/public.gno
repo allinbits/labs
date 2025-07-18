@@ -1,4 +1,4 @@
-package gnolandlaunch
+package onsite
 
 import (
 "gno.land/p/eve000/event"
@@ -6,8 +6,4 @@ import (
 
 func LiveEvent() *event.Event {
     return app.LiveEvent()
-}
-
-func JoinWaitlist() {
-    app.JoinWaitlist()
 }

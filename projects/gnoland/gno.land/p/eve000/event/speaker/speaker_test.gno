@@ -11,7 +11,6 @@ func sampleSpeaker() *Speaker {
 		Biography:   "Creators of UNIX and C",
 		Affiliation: "Bell Labs / Princeton",
 		PictureURL:  "https://example.com/ken-brian.png",
-		Tags:        []string{"UNIX", "Turing Award"},
 	}
 }
 
@@ -32,7 +31,6 @@ func TestSpeakerToMarkdown(t *testing.T) {
 	expected += "Creators of UNIX and C\n\n"
 	expected += "Affiliation: Bell Labs / Princeton\n\n"
 	expected += "![Picture](https://example.com/ken-brian.png)\n\n"
-	expected += "Tags: UNIX, Turing Award\n\n"
 
 	if md != expected {
 		t.Fatalf("Markdown output mismatch:\n\nExpected:\n%s\n\nGot:\n%s", expected, md)
@@ -78,28 +76,5 @@ func TestSpeakerToSvgDataUrl(t *testing.T) {
 	dataUrl := s.ToSvgDataUrl()
 	if !strings.HasPrefix(dataUrl, "data:image/svg+xml;utf8,") {
 		t.Fatalf("SVG Data URL missing expected prefix, got: %s", dataUrl[:60])
-	}
-}
-
-func TestSpeakerTagging(t *testing.T) {
-	s := sampleSpeaker()
-
-	// HasTag true
-	if !s.HasTag("UNIX") {
-		t.Fatal("expected HasTag('UNIX') to be true")
-	}
-
-	// HasTag false
-	if s.HasTag("Go") {
-		t.Fatal("expected HasTag('Go') to be false")
-	}
-
-	// AddTags adds unique tag
-	s.AddTags([]string{"Go", "Turing Award"})
-	if !s.HasTag("Go") {
-		t.Fatal("expected tag 'Go' to be added")
-	}
-	if len(s.Tags) != 3 {
-		t.Fatalf("expected 3 unique tags, got %d", len(s.Tags))
 	}
 }

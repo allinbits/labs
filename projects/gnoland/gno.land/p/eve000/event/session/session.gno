@@ -19,7 +19,6 @@ type Session struct {
 	StartTime   time.Time
 	EndTime     time.Time
 	Location    *location.Location
-	Tags        []string
 	renderOpts  map[string]interface{}
 	Sequence    int
 	Cancelled   bool
@@ -64,10 +63,6 @@ func (s *Session) SetCancelled(cancelled bool) {
 	s.Sequence++
 }
 
-func (s *Session) SetTags(tags []string) {
-	s.Tags = tags
-}
-
 func (s *Session) ToAnchor() string {
 	return component.StringToAnchor(s.Title)
 }
@@ -76,24 +71,16 @@ func (s *Session) ToMarkdown(_ ...component.Content) string {
 	duration := s.EndTime.Sub(s.StartTime)
 	markdown := "### " + s.Title + "\n\n"
 	markdown += " " + s.StartTime.Format(time.Kitchen)
-	markdown += "-> " + s.EndTime.Format(time.Kitchen) + " | "
-	markdown += "[Speaker - " + s.Speaker.Name + "](" + s.Speaker.ToAnchor() + ")"
+	markdown += "-> " + s.EndTime.Format(time.Kitchen)
+	if _, ok := s.RenderOpts()["Speaker"]; ok && s.Speaker != nil && s.Speaker.Name != "" {
+        markdown += " | [Speaker - " + s.Speaker.Name + "](" + s.Speaker.ToAnchor() + ")"
+    }
 	if _, ok := s.RenderOpts()["Location"]; ok && s.Location != nil {
 		markdown += " | [Location - " + s.Location.Name + "](" + component.StringToAnchor(s.Location.Name) + ")\n"
 	}
 
 	markdown += "\n\n" + s.Description + "\n\n"
 	markdown += "Duration: " + component.FormatDuration(duration) + "\n"
-	if len(s.Tags) > 0 {
-		markdown += "\nTags: "
-		for i, tag := range s.Tags {
-			if i > 0 {
-				markdown += ", "
-			}
-			markdown += component.LinkTag(tag)
-		}
-		markdown += "\n\n"
-	}
 	return markdown
 }
 
@@ -104,14 +91,6 @@ func (s *Session) ToJson() string {
 	json += "\"Description\":\"" + s.Description + "\",\n"
 	json += "\"StartTime\":\"" + s.StartTime.Format(time.RFC3339) + "\",\n"
 	json += "\"EndTime\":\"" + s.EndTime.Format(time.RFC3339) + "\",\n"
-	json += "\"Tags\":["
-	for i, tag := range s.Tags {
-		if i > 0 {
-			json += ","
-		}
-		json += "\"" + tag + "\""
-	}
-	json += "],\n"
 	json += "\"Speaker\":{\n"
 	json += "    \"Name\":\"" + s.Speaker.Name + "\",\n"
 	json += "    \"Biography\":\"" + s.Speaker.Biography + "\",\n"
@@ -119,14 +98,6 @@ func (s *Session) ToJson() string {
 	if s.Speaker.PictureURL != "" {
 		json += "    \"PictureURL\":\"" + s.Speaker.PictureURL + "\",\n"
 	}
-	json += "    \"Tags\":["
-	for i, tag := range s.Speaker.Tags {
-		if i > 0 {
-			json += ","
-		}
-		json += "\"" + tag + "\""
-	}
-	json += "]\n"  // tags
 	json += "}}\n" // speaker
 	return json
 }
@@ -228,37 +199,6 @@ func slugify(s string) string {
 	lower := strings.ToLower(s)
 	slug := re.ReplaceAllString(lower, "-")
 	return strings.Trim(slug, "-")
-}
-
-func (s *Session) HasTag(tag string) bool {
-	for _, t := range s.Tags {
-		if t == tag {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Session) AddTags(tags []string) {
-	for _, tag := range tags {
-		if !s.HasTag(tag) {
-			s.Tags = append(s.Tags, tag)
-		}
-	}
-}
-
-func (s *Session) ContainsTag(tag string) bool {
-	for _, t := range s.Tags {
-		if component.TagString(t) == tag {
-			return true
-		}
-	}
-	for _, t := range s.Speaker.Tags {
-		if component.TagString(t) == tag {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *Session) RenderOpts() map[string]interface{} {

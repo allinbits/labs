@@ -2,6 +2,7 @@ package location
 
 import (
 	"net/url"
+	"strings"
 
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
@@ -13,6 +14,7 @@ type Location struct {
 	Coordinates string
 	Description string
 	renderOpts  map[string]interface{}
+	// REVIEW: map here?
 }
 
 var _ component.Component = (*Location)(nil)
@@ -40,13 +42,14 @@ func (l *Location) ToAnchor() string {
 func (l *Location) ToMarkdown(_ ...component.Content) string {
 	md := "### " + l.Name + "\n"
 	if l.Address != "" {
-		md += l.Address + "\n"
+	    md += "\n [" + l.Address + "](https://www.google.com/maps/search/?api=1&query=" + url.QueryEscape(l.Address) + ")\n"
 	}
 	if l.Coordinates != "" {
-		md += l.Coordinates + "\n"
+	    coords :=  strings.ReplaceAll(l.Coordinates, " ", "")
+	    md += "\n [Coordinates " + coords + "](https://www.google.com/maps/?q=" + coords + ")\n"
 	}
 	if l.Description != "" {
-		md += l.Description + "\n"
+		md += "\n\n" + l.Description + "\n"
 	}
 	// REVIEW: would be nice to have a way to link to a location on a map
 	return md

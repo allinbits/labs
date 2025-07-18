@@ -51,7 +51,7 @@ func register(key string, block ContentBlock) {
 	registry.Set(key, block)
 }
 
-func Content(cur realm, key string, path string) string {
+func Content(key string, path string) string {
 	if block, ok := registry.Get(key); ok {
 		return block.(ContentBlock)(path)
 	}

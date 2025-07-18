@@ -37,3 +37,4 @@ FIXME: explain how this works
 - [Additive Invariants of Open Petri Nets](https://arxiv.org/pdf/2303.01643)
     - [Additive Invariants of Open Petri Nets (video)](https://www.youtube.com/watch?v=OOuK6fRY0KY)
 - [AlgebraicJulia/Petri.jl](https://github.com/AlgebraicJulia/Petri.jl)
+- [Compositional Distributional Model of Meaning](https://www.cs.ox.ac.uk/files/2879/LambekFestPlain.pdf)

@@ -41,7 +41,7 @@ func (a *Agenda) ToAnchor() string {
 func (a *Agenda) ToMarkdown(_ ...component.Content) string {
 	markdown := "## " + a.Name + "\n\n"
 
-	if _, ok := a.RenderOpts()["Location"]; ok {
+	if _, ok := a.RenderOpts()["Location"]; ok && a.Location != nil {
 		markdown += "### " + a.Location.Name + "\n\n"
 	}
 	if FormatDate(a.StartDate) == FormatDate(a.EndDate) {

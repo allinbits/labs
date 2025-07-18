@@ -18,7 +18,6 @@ func sampleSession() *Session {
 		StartTime:   time.Date(2025, 4, 3, 14, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 4, 3, 15, 0, 0, 0, time.UTC),
 		Location:    &location.Location{Name: "Main Theater"},
-		Tags:        []string{"Fireside Chat", "UNIX", "History"},
 		Opts:        &component.RenderOpts{Location: true},
 	}
 }
@@ -30,8 +29,7 @@ func TestSessionToMarkdown_ExpectedOutput(t *testing.T) {
 		"### Reviewed Proposals: Ken Thompson interviewed by Brian Kernighan\n\n" +
 		"2:00PM -> 3:00PM | [Speaker - Ken Thompson and Brian Kernighan](#ken-thompson-and-brian-kernighan)[Location - Main Theater](#main-theater)\n\n" +
 		"In the 1960s–1970s, Ken Thompson co-invented the UNIX operating system along with Dennis Ritchie at Bell Labs. He also worked on the language B, the operating system Plan 9, and the language Go. He and Ritchie won the Turing Award. He now works at Google. He’ll be interviewed by Brian Kernighan of “K&R” fame.\n\n" +
-		"Duration: 1h0m\n\n" +
-		"Tags: Fireside Chat, UNIX, History\n\n"
+		"Duration: 1h0m\n\n"
 	if md != expectedMarkdown {
 		t.Fatalf("Markdown output mismatch:\n\nExpected:\n%s\n\nGot:\n%s", expectedMarkdown, md)
 	}

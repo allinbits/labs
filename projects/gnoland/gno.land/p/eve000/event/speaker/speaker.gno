@@ -15,7 +15,6 @@ type Speaker struct {
 	Biography   string
 	Affiliation string
 	PictureURL  string
-	Tags        []string
 	renderOpts  map[string]interface{}
 }
 
@@ -37,12 +36,6 @@ func (s *Speaker) SetPictureURL(pictureURL string) {
 	s.PictureURL = pictureURL
 }
 
-func (s *Speaker) SetTags(tags []string) {
-	s.Tags = tags
-}
-
-// REVIEW do tags and renderOpts need setters?
-
 func (s *Speaker) ToAnchor() string {
 	return component.StringToAnchor(s.Name)
 }
@@ -58,16 +51,9 @@ func (s *Speaker) ToMarkdown(_ ...component.Content) string {
 	if s.PictureURL != "" {
 		markdown += "![Picture](" + s.PictureURL + ")\n\n"
 	}
-	if len(s.Tags) > 0 {
-		markdown += "Tags: "
-		for i, tag := range s.Tags {
-			if i > 0 {
-				markdown += ", "
-			}
-			markdown += component.LinkTag(tag)
-		}
-		markdown += "\n\n"
-	}
+	if s.Address != "" {
+        markdown += "Address: " + s.Address + "\n\n"
+    }
 	return markdown
 }
 
@@ -121,21 +107,4 @@ func (s *Speaker) RenderOpts() map[string]interface{} {
 
 func (s *Speaker) SetRenderOpts(ro map[string]interface{}) {
 	s.renderOpts = ro
-}
-
-func (s *Speaker) HasTag(tag string) bool {
-	for _, t := range s.Tags {
-		if t == tag {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Speaker) AddTags(tags []string) {
-	for _, t := range tags {
-		if !s.HasTag(t) {
-			s.Tags = append(s.Tags, t)
-		}
-	}
 }

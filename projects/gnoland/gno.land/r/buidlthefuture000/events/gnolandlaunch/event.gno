@@ -11,17 +11,17 @@ import (
 )
 
 func init() {
-	renderOpts := map[string]interface{}{
-		"Svg":      struct{}{},
-		"Schedule": struct{}{},
-	}
+    renderOpts := map[string]interface{}{
+        "Svg":       struct{}{},
+    }
 	app.RegisterEvent(gnolandlaunch, renderOpts)
+	// register app w/ /events api
 }
 
 // banner content block is shown in the top section of the event page
 var banner = &component.Content{
 	Published: true,
-	Markdown: "\n\n#### Status: Accepting Session Proposals\n #### expected dates: Aug 2025 \n\n" +
+	Markdown: "\n\n#### Status: Accepting Session Proposals\n #### expected dates: Sept 2025 \n\n" +
 		component.TxlinkButton("Join Waitlist", "JoinWaitlist"),
 }
 

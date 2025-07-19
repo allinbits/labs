@@ -17,4 +17,4 @@ app = "staging"
 
 [[vm]]
 size = 'performance-2x'
-memory = '4gb'
+memory = '8gb'

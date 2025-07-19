@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"flag"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
 	"github.com/allinbits/labs/projects/gnolinker/core/config"
@@ -16,14 +18,16 @@ import (
 func Run() {
 	// Command line flags
 	var (
-		tokenFlag        = flag.String("token", "", "Discord bot token")
-		signingKeyFlag   = flag.String("signing-key", "", "Hex encoded signing key")
-		rpcURLFlag       = flag.String("rpc-url", "https://rpc.gno.land:443", "Gno RPC URL")
-		baseURLFlag      = flag.String("base-url", "https://gno.land", "Base URL for claim links")
-		userContractFlag = flag.String("user-contract", "r/linker000/discord/user/v0", "User contract path")
-		roleContractFlag = flag.String("role-contract", "r/linker000/discord/role/v0", "Role contract path")
-		logLevelFlag     = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
-		cleanupFlag      = flag.Bool("cleanup-commands", false, "Remove all existing slash commands on startup")
+		tokenFlag              = flag.String("token", "", "Discord bot token")
+		signingKeyFlag         = flag.String("signing-key", "", "Hex encoded signing key")
+		rpcURLFlag             = flag.String("rpc-url", "https://rpc.gno.land:443", "Gno RPC URL")
+		baseURLFlag            = flag.String("base-url", "https://gno.land", "Base URL for claim links")
+		userContractFlag       = flag.String("user-contract", "r/linker000/discord/user/v0", "User contract path")
+		roleContractFlag       = flag.String("role-contract", "r/linker000/discord/role/v0", "Role contract path")
+		logLevelFlag           = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
+		cleanupFlag            = flag.Bool("cleanup-commands", false, "Remove all existing slash commands on startup")
+		graphqlEndpointFlag    = flag.String("graphql-endpoint", "", "GraphQL HTTP endpoint for event monitoring")
+		enableEventMonitorFlag = flag.Bool("enable-event-monitoring", false, "Enable real-time event monitoring")
 	)
 	flag.Parse()
 	
@@ -49,6 +53,8 @@ func Run() {
 	baseURL := getEnvOrFlag("GNOLINKER__BASE_URL", *baseURLFlag)
 	userContract := getEnvOrFlag("GNOLINKER__USER_CONTRACT", *userContractFlag)
 	roleContract := getEnvOrFlag("GNOLINKER__ROLE_CONTRACT", *roleContractFlag)
+	graphqlEndpoint := getEnvOrFlag("GNOLINKER__GRAPHQL_ENDPOINT", *graphqlEndpointFlag)
+	enableEventMonitoring := getEnvOrBool("GNOLINKER__ENABLE_EVENT_MONITORING", *enableEventMonitorFlag)
 
 	// Validate required parameters
 	if token == "" {
@@ -63,6 +69,15 @@ func Run() {
 	// Roles are now managed per-guild by ConfigManager
 	storageConfig := configManager.GetStorageConfig()
 	logger.Info("Roles will be managed per-guild", "auto_create_roles", storageConfig.AutoCreateRoles, "default_verified_role_name", storageConfig.DefaultVerifiedRoleName)
+	
+	// Log GraphQL event monitoring configuration
+	if enableEventMonitoring && graphqlEndpoint != "" {
+		logger.Info("GraphQL event monitoring enabled with polling", "endpoint", graphqlEndpoint)
+	} else if enableEventMonitoring && graphqlEndpoint == "" {
+		logger.Warn("Event monitoring enabled but no GraphQL endpoint specified")
+	} else {
+		logger.Info("GraphQL event monitoring disabled")
+	}
 
 	// Decode signing key
 	signingKeyBytes, err := hex.DecodeString(signingKeyStr)
@@ -80,8 +95,10 @@ func Run() {
 
 	// Create Discord config - roles are now managed by ConfigManager
 	discordConfig := discord.Config{
-		Token:              token,
-		CleanupOldCommands: *cleanupFlag,
+		Token:                 token,
+		CleanupOldCommands:    *cleanupFlag,
+		GraphQLEndpoint:       graphqlEndpoint,
+		EnableEventMonitoring: enableEventMonitoring,
 		// Remove hard-coded roles - these will be managed dynamically per guild
 	}
 
@@ -128,6 +145,24 @@ func Run() {
 func getEnvOrFlag(envVar, flagValue string) string {
 	if envValue := os.Getenv(envVar); envValue != "" {
 		return envValue
+	}
+	return flagValue
+}
+
+func getEnvOrBool(envVar string, flagValue bool) bool {
+	if envValue := os.Getenv(envVar); envValue != "" {
+		// Parse boolean from environment variable
+		switch strings.ToLower(envValue) {
+		case "true", "1", "yes", "on":
+			return true
+		case "false", "0", "no", "off":
+			return false
+		default:
+			// If invalid value, try to parse as boolean
+			if parsed, err := strconv.ParseBool(envValue); err == nil {
+				return parsed
+			}
+		}
 	}
 	return flagValue
 }

@@ -1,0 +1,278 @@
+package events
+
+import (
+	"context"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/allinbits/labs/projects/gnolinker/core"
+	"github.com/allinbits/labs/projects/gnolinker/core/graphql"
+	"github.com/allinbits/labs/projects/gnolinker/core/storage"
+)
+
+type PollingMonitor struct {
+	queryClient   *graphql.QueryClient
+	stateManager  *StateManager
+	handlers      map[EventType][]EventHandler
+	processedTxs  map[string]bool
+	mu            sync.RWMutex
+	logger        core.Logger
+	ctx           context.Context
+	cancel        context.CancelFunc
+	ticker        *time.Ticker
+	pollInterval  time.Duration
+}
+
+func NewPollingMonitor(graphqlQueryEndpoint string, store storage.ConfigStore, logger core.Logger) *PollingMonitor {
+	// Log URL conversion if needed
+	originalURL := graphqlQueryEndpoint
+	if strings.HasPrefix(graphqlQueryEndpoint, "wss://") {
+		graphqlQueryEndpoint = "https://" + graphqlQueryEndpoint[6:]
+		logger.Info("Converted WebSocket URL to HTTP for polling", "original", originalURL, "converted", graphqlQueryEndpoint)
+	} else if strings.HasPrefix(graphqlQueryEndpoint, "ws://") {
+		graphqlQueryEndpoint = "http://" + graphqlQueryEndpoint[5:]
+		logger.Info("Converted WebSocket URL to HTTP for polling", "original", originalURL, "converted", graphqlQueryEndpoint)
+	}
+	
+	return &PollingMonitor{
+		queryClient:   graphql.NewQueryClient(graphqlQueryEndpoint),
+		stateManager:  NewStateManager(store),
+		handlers:      make(map[EventType][]EventHandler),
+		processedTxs:  make(map[string]bool),
+		logger:        logger,
+		pollInterval:  5 * time.Second,
+	}
+}
+
+func (pm *PollingMonitor) AddHandler(eventType EventType, handler EventHandler) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	
+	pm.handlers[eventType] = append(pm.handlers[eventType], handler)
+}
+
+func (pm *PollingMonitor) Start(ctx context.Context) error {
+	pm.ctx, pm.cancel = context.WithCancel(ctx)
+	
+	pm.logger.Info("Starting polling monitor", "interval", pm.pollInterval)
+	
+	// Start polling
+	pm.ticker = time.NewTicker(pm.pollInterval)
+	go pm.pollLoop()
+	
+	return nil
+}
+
+func (pm *PollingMonitor) Stop() error {
+	if pm.cancel != nil {
+		pm.cancel()
+	}
+	
+	if pm.ticker != nil {
+		pm.ticker.Stop()
+	}
+	
+	pm.logger.Info("Polling monitor stopped")
+	return nil
+}
+
+func (pm *PollingMonitor) pollLoop() {
+	defer pm.ticker.Stop()
+	
+	// Do initial poll
+	pm.pollForEvents()
+	
+	for {
+		select {
+		case <-pm.ctx.Done():
+			return
+		case <-pm.ticker.C:
+			pm.pollForEvents()
+		}
+	}
+}
+
+func (pm *PollingMonitor) pollForEvents() {
+	// Get last processed block height
+	lastProcessedHeight, err := pm.stateManager.GetLastProcessedBlockHeight(pm.ctx)
+	if err != nil {
+		pm.logger.Error("Failed to get last processed block height", "error", err)
+		return
+	}
+	
+	pm.logger.Debug("Polling for events", "after_block_height", lastProcessedHeight)
+	
+	// Poll for UserLinked events
+	pm.pollForUserLinkedEvents(lastProcessedHeight)
+	
+	// Poll for UserUnlinked events
+	pm.pollForUserUnlinkedEvents(lastProcessedHeight)
+}
+
+func (pm *PollingMonitor) pollForUserLinkedEvents(afterBlockHeight int64) {
+	transactions, err := pm.queryClient.QueryUserLinkedEvents(pm.ctx, afterBlockHeight)
+	if err != nil {
+		pm.logger.Error("Failed to query UserLinked events", "error", err)
+		return
+	}
+	
+	if len(transactions) > 0 {
+		pm.logger.Info("Found UserLinked events", "count", len(transactions))
+		
+		for _, tx := range transactions {
+			pm.processTransactionForUserLinked(tx)
+		}
+	}
+}
+
+func (pm *PollingMonitor) pollForUserUnlinkedEvents(afterBlockHeight int64) {
+	transactions, err := pm.queryClient.QueryUserUnlinkedEvents(pm.ctx, afterBlockHeight)
+	if err != nil {
+		pm.logger.Error("Failed to query UserUnlinked events", "error", err)
+		return
+	}
+	
+	if len(transactions) > 0 {
+		pm.logger.Info("Found UserUnlinked events", "count", len(transactions))
+		
+		for _, tx := range transactions {
+			pm.processTransactionForUserUnlinked(tx)
+		}
+	}
+}
+
+func (pm *PollingMonitor) processTransactionForUserLinked(tx graphql.Transaction) {
+	pm.logger.Info("Processing UserLinked transaction", "hash", tx.Hash, "block_height", tx.BlockHeight, "events_count", len(tx.Response.Events))
+
+	if pm.isProcessed(tx.Hash) {
+		pm.logger.Debug("UserLinked transaction already processed, skipping", "hash", tx.Hash)
+		return
+	}
+
+	for i, event := range tx.Response.Events {
+		pm.logger.Info("Processing UserLinked event", "index", i, "type", event.Type, "attrs_count", len(event.Attrs))
+
+		// Log event attributes for debugging
+		for j, attr := range event.Attrs {
+			pm.logger.Debug("UserLinked event attribute", "event_type", event.Type, "attr_index", j, "key", attr.Key, "value", attr.Value)
+		}
+
+		if event.Type == "UserLinked" {
+			pm.logger.Info("Found UserLinked event", "tx_hash", tx.Hash)
+			if userLinked, err := graphql.ParseUserLinkedEvent(event); err == nil {
+				pm.logger.Info("Successfully parsed UserLinked event", "address", userLinked.Address, "discord_id", userLinked.DiscordID)
+				pm.handleEvent(Event{
+					Type:            UserLinkedEvent,
+					TransactionHash: tx.Hash,
+					BlockHeight:     tx.BlockHeight,
+					UserLinked:      userLinked,
+				})
+			} else {
+				pm.logger.Error("Failed to parse UserLinked event", "error", err)
+			}
+		} else {
+			pm.logger.Debug("Ignoring non-UserLinked event type", "type", event.Type)
+		}
+	}
+	
+	pm.markProcessed(tx.Hash)
+	pm.updateBlockHeight(tx.BlockHeight)
+}
+
+func (pm *PollingMonitor) processTransactionForUserUnlinked(tx graphql.Transaction) {
+	pm.logger.Info("Processing UserUnlinked transaction", "hash", tx.Hash, "block_height", tx.BlockHeight, "events_count", len(tx.Response.Events))
+
+	if pm.isProcessed(tx.Hash) {
+		pm.logger.Debug("UserUnlinked transaction already processed, skipping", "hash", tx.Hash)
+		return
+	}
+
+	for i, event := range tx.Response.Events {
+		pm.logger.Info("Processing UserUnlinked event", "index", i, "type", event.Type, "attrs_count", len(event.Attrs))
+
+		// Log event attributes for debugging
+		for j, attr := range event.Attrs {
+			pm.logger.Debug("UserUnlinked event attribute", "event_type", event.Type, "attr_index", j, "key", attr.Key, "value", attr.Value)
+		}
+
+		if event.Type == "UserUnlinked" {
+			pm.logger.Info("Found UserUnlinked event", "tx_hash", tx.Hash)
+			if userUnlinked, err := graphql.ParseUserUnlinkedEvent(event); err == nil {
+				pm.logger.Info("Successfully parsed UserUnlinked event", "address", userUnlinked.Address, "discord_id", userUnlinked.DiscordID, "triggered_by", userUnlinked.TriggeredBy)
+				pm.handleEvent(Event{
+					Type:            UserUnlinkedEvent,
+					TransactionHash: tx.Hash,
+					BlockHeight:     tx.BlockHeight,
+					UserUnlinked:    userUnlinked,
+				})
+			} else {
+				pm.logger.Error("Failed to parse UserUnlinked event", "error", err)
+			}
+		} else {
+			pm.logger.Debug("Ignoring non-UserUnlinked event type", "type", event.Type)
+		}
+	}
+	
+	pm.markProcessed(tx.Hash)
+	pm.updateBlockHeight(tx.BlockHeight)
+}
+
+func (pm *PollingMonitor) handleEvent(event Event) {
+	pm.mu.RLock()
+	handlers := pm.handlers[event.Type]
+	pm.mu.RUnlock()
+	
+	pm.logger.Info("Handling event", "event_type", event.Type, "tx_hash", event.TransactionHash, "handler_count", len(handlers))
+	
+	for i, handler := range handlers {
+		pm.logger.Debug("Calling event handler", "handler_index", i, "event_type", event.Type)
+		if err := handler(event); err != nil {
+			pm.logger.Error("Event handler error", 
+				"event_type", event.Type,
+				"tx_hash", event.TransactionHash,
+				"handler_index", i,
+				"error", err,
+			)
+		} else {
+			pm.logger.Info("Event handler completed successfully", "handler_index", i, "event_type", event.Type)
+		}
+	}
+}
+
+func (pm *PollingMonitor) isProcessed(txHash string) bool {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+	return pm.processedTxs[txHash]
+}
+
+func (pm *PollingMonitor) markProcessed(txHash string) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	pm.processedTxs[txHash] = true
+	
+	// Clean up old entries to prevent memory leak
+	if len(pm.processedTxs) > 10000 {
+		for hash := range pm.processedTxs {
+			delete(pm.processedTxs, hash)
+			if len(pm.processedTxs) <= 5000 {
+				break
+			}
+		}
+	}
+}
+
+func (pm *PollingMonitor) updateBlockHeight(blockHeight int64) {
+	if err := pm.stateManager.UpdateLastProcessedBlockHeight(pm.ctx, blockHeight); err != nil {
+		pm.logger.Error("Failed to update last processed block height", "height", blockHeight, "error", err)
+	}
+}
+
+func (pm *PollingMonitor) GetLastBlockHeight() int64 {
+	height, err := pm.stateManager.GetLastProcessedBlockHeight(pm.ctx)
+	if err != nil {
+		pm.logger.Error("Failed to get last processed block height", "error", err)
+		return 0
+	}
+	return height
+}

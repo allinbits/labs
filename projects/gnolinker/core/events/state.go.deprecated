@@ -1,0 +1,118 @@
+package events
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+
+	"github.com/allinbits/labs/projects/gnolinker/core"
+	"github.com/allinbits/labs/projects/gnolinker/core/abci"
+	"github.com/allinbits/labs/projects/gnolinker/core/storage"
+)
+
+const (
+	LastProcessedBlockHeightKey = "last_processed_block_height"
+)
+
+// StateManager handles persisting and retrieving event processing state
+type StateManager struct {
+	store      storage.ConfigStore
+	abciClient *abci.Client
+	logger     core.Logger
+}
+
+// NewStateManager creates a new state manager
+func NewStateManager(store storage.ConfigStore) *StateManager {
+	return &StateManager{
+		store: store,
+	}
+}
+
+// NewStateManagerWithABCI creates a new state manager with ABCI client for chain reset detection
+func NewStateManagerWithABCI(store storage.ConfigStore, abciClient *abci.Client, logger core.Logger) *StateManager {
+	return &StateManager{
+		store:      store,
+		abciClient: abciClient,
+		logger:     logger,
+	}
+}
+
+// GetLastProcessedBlockHeight retrieves the last processed block height
+// If current chain height < stored height, assumes chain was reset and returns 0
+func (sm *StateManager) GetLastProcessedBlockHeight(ctx context.Context) (int64, error) {
+	config, err := sm.store.Get(LastProcessedBlockHeightKey)
+	if err != nil {
+		// If not found, start from block 0
+		return 0, nil
+	}
+
+	if config.Settings == nil {
+		return 0, nil
+	}
+
+	// Look for the height in the settings
+	if heightStr, exists := config.Settings["height"]; exists {
+		if storedHeight, err := strconv.ParseInt(heightStr, 10, 64); err == nil {
+			// Check for chain reset if ABCI client is available
+			if sm.abciClient != nil && sm.logger != nil {
+				currentHeight, err := sm.abciClient.GetLatestBlockHeightWithRetry(ctx, 3)
+				if err != nil {
+					sm.logger.Warn("Failed to get current block height for chain reset check", "error", err)
+					return storedHeight, nil
+				}
+
+				// If current height < stored height, chain was reset
+				if currentHeight < storedHeight {
+					sm.logger.Warn("Chain appears to have been reset, restarting from block 0", 
+						"current_height", currentHeight, 
+						"stored_height", storedHeight)
+					
+					// Reset stored height to 0
+					if err := sm.SetLastProcessedBlockHeight(ctx, 0); err != nil {
+						sm.logger.Error("Failed to reset stored block height", "error", err)
+					}
+					
+					return 0, nil
+				}
+			}
+			
+			return storedHeight, nil
+		}
+	}
+
+	return 0, nil
+}
+
+// SetLastProcessedBlockHeight stores the last processed block height
+func (sm *StateManager) SetLastProcessedBlockHeight(ctx context.Context, height int64) error {
+	config := &storage.GuildConfig{
+		GuildID: LastProcessedBlockHeightKey,
+		Settings: map[string]string{
+			"height": strconv.FormatInt(height, 10),
+		},
+	}
+
+	return sm.store.Set(LastProcessedBlockHeightKey, config)
+}
+
+// UpdateLastProcessedBlockHeight updates the height if the new height is greater
+func (sm *StateManager) UpdateLastProcessedBlockHeight(ctx context.Context, newHeight int64) error {
+	currentHeight, err := sm.GetLastProcessedBlockHeight(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current height: %w", err)
+	}
+
+	if newHeight > currentHeight {
+		return sm.SetLastProcessedBlockHeight(ctx, newHeight)
+	}
+
+	return nil
+}
+
+// ResetToBlockZero resets the stored block height to 0 (useful for chain resets)
+func (sm *StateManager) ResetToBlockZero(ctx context.Context) error {
+	if sm.logger != nil {
+		sm.logger.Info("Manually resetting last processed block height to 0")
+	}
+	return sm.SetLastProcessedBlockHeight(ctx, 0)
+}

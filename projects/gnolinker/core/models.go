@@ -43,6 +43,8 @@ type Claim struct {
 type ClaimType string
 
 const (
-	ClaimTypeUserLink ClaimType = "user_link"
-	ClaimTypeRoleLink ClaimType = "role_link"
+	ClaimTypeUserLink   ClaimType = "user_link"
+	ClaimTypeUserUnlink ClaimType = "user_unlink" 
+	ClaimTypeRoleLink   ClaimType = "role_link"
+	ClaimTypeRoleUnlink ClaimType = "role_unlink"
 )

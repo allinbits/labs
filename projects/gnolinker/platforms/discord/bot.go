@@ -8,6 +8,7 @@ import (
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
 	"github.com/allinbits/labs/projects/gnolinker/core/config"
+	"github.com/allinbits/labs/projects/gnolinker/core/events"
 	"github.com/allinbits/labs/projects/gnolinker/core/workflows"
 	"github.com/allinbits/labs/projects/gnolinker/platforms"
 	"github.com/bwmarrin/discordgo"
@@ -21,6 +22,8 @@ type Bot struct {
 	config               Config
 	configManager        *config.ConfigManager
 	logger               core.Logger
+	queryProcessorManager *events.QueryProcessorManager
+	eventHandlers        *events.EventHandlers
 }
 
 // NewBot creates a new Discord bot
@@ -37,19 +40,28 @@ func NewBot(config Config,
 		return nil, fmt.Errorf("failed to create Discord session: %w", err)
 	}
 	
+	// Enable presence intents for activity tracking
+	session.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMembers | discordgo.IntentsGuildPresences
+	
 	// Create platform adapter with lock manager for safe role creation
 	platform := NewDiscordPlatform(session, config, configManager.GetLockManager(), logger)
 	
 	// Create interaction handlers with config manager
 	interactionHandlers := NewInteractionHandlers(userFlow, roleFlow, syncFlow, configManager, logger)
 	
+	// Event monitoring functionality has been removed
+	var queryProcessorManager *events.QueryProcessorManager
+	var eventHandlers *events.EventHandlers
+	
 	bot := &Bot{
-		session:             session,
-		platform:            platform,
-		interactionHandlers: interactionHandlers,
-		config:              config,
-		configManager:       configManager,
-		logger:              logger,
+		session:               session,
+		platform:              platform,
+		interactionHandlers:   interactionHandlers,
+		config:                config,
+		configManager:         configManager,
+		logger:                logger,
+		queryProcessorManager: queryProcessorManager,
+		eventHandlers:         eventHandlers,
 	}
 	
 	// Set up event handlers
@@ -57,6 +69,8 @@ func NewBot(config Config,
 	session.AddHandler(bot.onGuildCreate)
 	session.AddHandler(bot.onMessageCreate)
 	session.AddHandler(bot.interactionHandlers.HandleInteraction)
+	
+	// Presence tracking disabled - event monitoring removed
 	
 	return bot, nil
 }
@@ -71,6 +85,8 @@ func (b *Bot) Start() error {
 		return fmt.Errorf("failed to open Discord connection: %w", err)
 	}
 	
+	// Query processor manager disabled - event monitoring removed
+	
 	b.logger.Info("Discord bot is running. Press Ctrl+C to exit.")
 	
 	// Wait for interrupt signal
@@ -84,6 +100,9 @@ func (b *Bot) Start() error {
 // Stop stops the Discord bot
 func (b *Bot) Stop() error {
 	b.logger.Info("Stopping Discord bot...")
+	
+	// Query processor manager disabled - event monitoring removed
+	
 	return b.session.Close()
 }
 
@@ -106,6 +125,8 @@ func (b *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
 		if err := b.interactionHandlers.RegisterSlashCommands(s, guild.ID); err != nil {
 			b.logger.Error("Failed to register commands for guild", "guild_id", guild.ID, "error", err)
 		}
+		
+		// Query processor manager disabled - event monitoring removed
 	}
 }
 
@@ -123,6 +144,8 @@ func (b *Bot) onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) 
 			"admin_role_id", guildConfig.AdminRoleID,
 			"verified_role_id", guildConfig.VerifiedRoleID,
 		)
+		
+		// Query processor manager disabled - event monitoring removed
 	}
 	
 	// Register slash commands for the new guild
@@ -166,3 +189,6 @@ func (b *Bot) handleDirectMessage(s *discordgo.Session, userID string) {
 		b.logger.Error("Failed to send DM", "error", err, "user_id", userID)
 	}
 }
+
+// Event monitoring functionality has been removed
+// All presence tracking and query processor management code removed

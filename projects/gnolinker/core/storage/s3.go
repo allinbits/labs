@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -161,9 +162,95 @@ func (s *S3ConfigStore) Delete(guildID string) error {
 	return nil
 }
 
+// GetGlobal retrieves the global configuration
+func (s *S3ConfigStore) GetGlobal() (*GlobalConfig, error) {
+	key := s.getGlobalObjectKey()
+	
+	ctx := context.Background()
+	result, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	
+	if err != nil {
+		var nsk *types.NoSuchKey
+		if errors.As(err, &nsk) {
+			// Return default global config if none exists
+			return &GlobalConfig{
+				ConfigID:                 "global",
+				LastProcessedBlockHeight: 0,
+				LastUpdated:              time.Now(),
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get global config from S3: %w", err)
+	}
+	defer result.Body.Close()
+
+	body, err := io.ReadAll(result.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read global config response body: %w", err)
+	}
+
+	var config GlobalConfig
+	if err := json.Unmarshal(body, &config); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal global config: %w", err)
+	}
+
+	// Store ETag for optimistic concurrency control
+	if result.ETag != nil {
+		config.ETag = *result.ETag
+	}
+
+	return &config, nil
+}
+
+// SetGlobal stores the global configuration
+func (s *S3ConfigStore) SetGlobal(config *GlobalConfig) error {
+	if config == nil {
+		return errors.New("global config cannot be nil")
+	}
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal global config: %w", err)
+	}
+
+	key := s.getGlobalObjectKey()
+	
+	ctx := context.Background()
+	putInput := &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(data),
+		ContentType: aws.String("application/json"),
+	}
+
+	// Use conditional put if ETag is provided for optimistic concurrency control
+	if config.ETag != "" {
+		putInput.IfMatch = aws.String(config.ETag)
+	}
+
+	_, err = s.client.PutObject(ctx, putInput)
+	
+	if err != nil {
+		// Check for precondition failed (ETag mismatch) - AWS returns 412 status code
+		if strings.Contains(err.Error(), "PreconditionFailed") || strings.Contains(err.Error(), "412") {
+			return ErrConcurrencyConflict
+		}
+		return fmt.Errorf("failed to put global config to S3: %w", err)
+	}
+
+	return nil
+}
+
 // getObjectKey generates the S3 object key for a guild ID
 func (s *S3ConfigStore) getObjectKey(guildID string) string {
 	return fmt.Sprintf("%s%s.json", s.prefix, guildID)
+}
+
+// getGlobalObjectKey generates the S3 object key for global config
+func (s *S3ConfigStore) getGlobalObjectKey() string {
+	return fmt.Sprintf("%sglobal.json", s.prefix)
 }
 
 // EnsureBucket creates the bucket if it doesn't exist (useful for Minio setup)

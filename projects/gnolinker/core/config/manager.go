@@ -92,6 +92,11 @@ func (m *ConfigManager) GetLockManager() lock.LockManager {
 	return m.lockManager
 }
 
+// GetStore returns the storage store
+func (m *ConfigManager) GetStore() storage.ConfigStore {
+	return m.store
+}
+
 // UpdateGuildConfig updates a guild configuration
 func (m *ConfigManager) UpdateGuildConfig(guildID string, config *storage.GuildConfig) error {
 	return m.store.Set(guildID, config)

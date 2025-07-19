@@ -158,6 +158,37 @@ func (s *CachedConfigStore) copyConfig(config *GuildConfig) *GuildConfig {
 		}
 	}
 
+	// Deep copy the query states map
+	if config.QueryStates != nil {
+		copy.QueryStates = make(map[string]*GuildQueryState, len(config.QueryStates))
+		for k, v := range config.QueryStates {
+			if v != nil {
+				// Deep copy the query state
+				queryCopy := &GuildQueryState{
+					GuildID:            v.GuildID,
+					QueryID:            v.QueryID,
+					LastProcessedBlock: v.LastProcessedBlock,
+					LastRunTimestamp:   v.LastRunTimestamp,
+					NextRunTimestamp:   v.NextRunTimestamp,
+					Enabled:            v.Enabled,
+					ErrorCount:         v.ErrorCount,
+					LastError:          v.LastError,
+					LastErrorTime:      v.LastErrorTime,
+				}
+				
+				// Deep copy the state map if it exists
+				if v.State != nil {
+					queryCopy.State = make(map[string]any, len(v.State))
+					for sk, sv := range v.State {
+						queryCopy.State[sk] = sv
+					}
+				}
+				
+				copy.QueryStates[k] = queryCopy
+			}
+		}
+	}
+
 	return copy
 }
 
@@ -168,4 +199,16 @@ func (s *CachedConfigStore) RefreshCache(guildID string) (*GuildConfig, error) {
 	
 	// Fetch fresh from backend, which will also populate cache
 	return s.Get(guildID)
+}
+
+// GetGlobal retrieves the global configuration from the backend
+func (s *CachedConfigStore) GetGlobal() (*GlobalConfig, error) {
+	// Global config is not cached as it's accessed infrequently
+	return s.backend.GetGlobal()
+}
+
+// SetGlobal stores the global configuration in the backend
+func (s *CachedConfigStore) SetGlobal(config *GlobalConfig) error {
+	// Global config is not cached as it's accessed infrequently
+	return s.backend.SetGlobal(config)
 }

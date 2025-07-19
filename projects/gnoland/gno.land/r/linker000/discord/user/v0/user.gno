@@ -45,7 +45,6 @@ func UnlinkByCaller(cur realm) {
 		std.Emit("UserUnlinked",
 			"address", caller.String(),
 			"discordID", claim.discordID,
-			"triggeredBy", "UnlinkByCaller",
 		)
 	}
 
@@ -69,7 +68,6 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 		std.Emit("UserUnlinked",
 			"address", existingClaim.addr.String(),
 			"discordID", claim.discordID,
-			"triggeredBy", "UnlinkByClaim",
 		)
 	}
 

@@ -48,7 +48,6 @@ func (c *GnoClient) GetLinkedAddress(platformID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get linked address: %w", err)
 	}
-	fmt.Println("GetLinkedAddress result:", result)
 	return parseGnoAddress(result), nil
 }
 
@@ -79,7 +78,6 @@ func (c *GnoClient) HasRole(realmPath, roleName, address string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to check role membership: %w", err)
 	}
-	fmt.Println("HasRole result:", result)
 	return result == "(true bool)", nil
 }
 

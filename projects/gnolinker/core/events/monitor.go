@@ -511,7 +511,7 @@ func (m *Monitor) handleAllEventsData(data any, err error) {
 		return
 	}
 
-	m.logger.Info("🚨 ALL EVENTS: Raw subscription data received", "data", data)
+	m.logger.Debug("ALL EVENTS: Raw subscription data received", "data", data)
 
 	subscription, ok := data.(*graphql.UserLinkedEventsSubscription)
 	if !ok {
@@ -519,17 +519,17 @@ func (m *Monitor) handleAllEventsData(data any, err error) {
 		return
 	}
 
-	m.logger.Info("🚨 ALL EVENTS: Received subscription data", "transaction_count", len(subscription.Transactions))
+	m.logger.Debug("ALL EVENTS: Received subscription data", "transaction_count", len(subscription.Transactions))
 
 	for _, tx := range subscription.Transactions {
-		m.logger.Info("🚨 ALL EVENTS: Processing transaction", "hash", tx.Hash, "block_height", tx.BlockHeight, "events_count", len(tx.Response.Events))
+		m.logger.Debug("ALL EVENTS: Processing transaction", "hash", tx.Hash, "block_height", tx.BlockHeight, "events_count", len(tx.Response.Events))
 
 		for i, event := range tx.Response.Events {
-			m.logger.Info("🚨 ALL EVENTS: Event found", "index", i, "type", event.Type, "attrs_count", len(event.Attrs))
+			m.logger.Debug("ALL EVENTS: Event found", "index", i, "type", event.Type, "attrs_count", len(event.Attrs))
 
 			// Log all event attributes
 			for j, attr := range event.Attrs {
-				m.logger.Info("🚨 ALL EVENTS: Event attribute", "event_type", event.Type, "attr_index", j, "key", attr.Key, "value", attr.Value)
+				m.logger.Debug("ALL EVENTS: Event attribute", "event_type", event.Type, "attr_index", j, "key", attr.Key, "value", attr.Value)
 			}
 		}
 	}

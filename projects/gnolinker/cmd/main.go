@@ -16,7 +16,7 @@ func main() {
 
 	// Extract subcommand
 	subcommand := os.Args[1]
-	
+
 	// Handle help and version at the top level
 	switch subcommand {
 	case "help", "--help", "-h":
@@ -26,11 +26,11 @@ func main() {
 		fmt.Println("gnolinker version dev")
 		return
 	}
-	
+
 	// Route to platform-specific subcommands
 	// Remove the subcommand from args so subcommands can parse their own flags
 	os.Args = append(os.Args[:1], os.Args[2:]...)
-	
+
 	switch subcommand {
 	case "discord":
 		discord.Run()
@@ -38,7 +38,7 @@ func main() {
 		fmt.Println("Telegram support is not yet implemented")
 		os.Exit(1)
 	case "slack":
-		fmt.Println("Slack support is not yet implemented") 
+		fmt.Println("Slack support is not yet implemented")
 		os.Exit(1)
 	default:
 		fmt.Printf("Unknown subcommand: %s\n\n", subcommand)

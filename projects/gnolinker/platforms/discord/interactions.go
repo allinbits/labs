@@ -216,33 +216,28 @@ func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationComm
 	return []*discordgo.ApplicationCommand{gnolinkerCommand}
 }
 
-// RegisterSlashCommands registers all slash commands with Discord for a specific guild (legacy method)
-func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildID string) error {
-	return h.SyncSlashCommands(s, guildID)
-}
-
 // SyncSlashCommands intelligently syncs command definitions with Discord
 func (h *InteractionHandlers) SyncSlashCommands(s *discordgo.Session, guildID string) error {
 	// Get expected commands
 	expectedCommands := h.GetExpectedCommands()
-	
+
 	// Get current Discord commands
 	currentCommands, err := s.ApplicationCommands(s.State.User.ID, guildID)
 	if err != nil {
 		return fmt.Errorf("failed to get current commands: %w", err)
 	}
-	
-	h.logger.Info("Starting command synchronization", 
-		"guild_id", guildID, 
-		"expected_commands", len(expectedCommands), 
+
+	h.logger.Info("Starting command synchronization",
+		"guild_id", guildID,
+		"expected_commands", len(expectedCommands),
 		"current_commands", len(currentCommands))
-	
+
 	// Compare and determine changes needed
 	toCreate, toUpdate, toDelete := h.compareCommands(expectedCommands, currentCommands)
-	
+
 	// Apply changes
 	changesMade := 0
-	
+
 	// Delete obsolete commands
 	for _, cmd := range toDelete {
 		h.logger.Info("Deleting obsolete command", "guild_id", guildID, "command", cmd.Name)
@@ -253,7 +248,7 @@ func (h *InteractionHandlers) SyncSlashCommands(s *discordgo.Session, guildID st
 			changesMade++
 		}
 	}
-	
+
 	// Create new commands
 	for _, cmd := range toCreate {
 		h.logger.Info("Creating new command", "guild_id", guildID, "command", cmd.Name)
@@ -264,7 +259,7 @@ func (h *InteractionHandlers) SyncSlashCommands(s *discordgo.Session, guildID st
 			changesMade++
 		}
 	}
-	
+
 	// Update modified commands
 	for _, update := range toUpdate {
 		h.logger.Info("Updating modified command", "guild_id", guildID, "command", update.expected.Name)
@@ -275,13 +270,13 @@ func (h *InteractionHandlers) SyncSlashCommands(s *discordgo.Session, guildID st
 			changesMade++
 		}
 	}
-	
+
 	if changesMade > 0 {
 		h.logger.Info("Command synchronization completed", "guild_id", guildID, "changes_made", changesMade)
 	} else {
 		h.logger.Debug("Commands already in sync", "guild_id", guildID)
 	}
-	
+
 	return nil
 }
 
@@ -294,35 +289,35 @@ type CommandUpdate struct {
 // compareCommands compares expected vs current commands and returns what changes are needed
 func (h *InteractionHandlers) compareCommands(expected, current []*discordgo.ApplicationCommand) (
 	toCreate []*discordgo.ApplicationCommand,
-	toUpdate []CommandUpdate, 
+	toUpdate []CommandUpdate,
 	toDelete []*discordgo.ApplicationCommand,
 ) {
 	// Create maps for efficient lookup
 	expectedMap := make(map[string]*discordgo.ApplicationCommand)
 	currentMap := make(map[string]*discordgo.ApplicationCommand)
-	
+
 	for _, cmd := range expected {
 		expectedMap[cmd.Name] = cmd
 	}
-	
+
 	for _, cmd := range current {
 		currentMap[cmd.Name] = cmd
 	}
-	
+
 	// Find commands to create (in expected but not in current)
 	for _, expectedCmd := range expected {
 		if _, exists := currentMap[expectedCmd.Name]; !exists {
 			toCreate = append(toCreate, expectedCmd)
 		}
 	}
-	
+
 	// Find commands to delete (in current but not in expected)
 	for _, currentCmd := range current {
 		if _, exists := expectedMap[currentCmd.Name]; !exists {
 			toDelete = append(toDelete, currentCmd)
 		}
 	}
-	
+
 	// Find commands to update (exists in both but different)
 	for _, expectedCmd := range expected {
 		if currentCmd, exists := currentMap[expectedCmd.Name]; exists {
@@ -334,7 +329,7 @@ func (h *InteractionHandlers) compareCommands(expected, current []*discordgo.App
 			}
 		}
 	}
-	
+
 	return toCreate, toUpdate, toDelete
 }
 
@@ -346,7 +341,7 @@ func (h *InteractionHandlers) commandsEqual(expected, current *discordgo.Applica
 		expected.Type != current.Type {
 		return false
 	}
-	
+
 	// Compare options
 	return h.optionsEqual(expected.Options, current.Options)
 }
@@ -356,31 +351,31 @@ func (h *InteractionHandlers) optionsEqual(expected, current []*discordgo.Applic
 	if len(expected) != len(current) {
 		return false
 	}
-	
+
 	// Create maps for comparison (order shouldn't matter for our use case)
 	expectedMap := make(map[string]*discordgo.ApplicationCommandOption)
 	currentMap := make(map[string]*discordgo.ApplicationCommandOption)
-	
+
 	for _, opt := range expected {
 		expectedMap[opt.Name] = opt
 	}
-	
+
 	for _, opt := range current {
 		currentMap[opt.Name] = opt
 	}
-	
+
 	// Check if all expected options exist and match in current
 	for name, expectedOpt := range expectedMap {
 		currentOpt, exists := currentMap[name]
 		if !exists {
 			return false
 		}
-		
+
 		if !h.optionEqual(expectedOpt, currentOpt) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -393,7 +388,7 @@ func (h *InteractionHandlers) optionEqual(expected, current *discordgo.Applicati
 		expected.Required != current.Required {
 		return false
 	}
-	
+
 	// Recursively compare sub-options
 	return h.optionsEqual(expected.Options, current.Options)
 }
@@ -401,13 +396,13 @@ func (h *InteractionHandlers) optionEqual(expected, current *discordgo.Applicati
 // CleanupOldCommands removes all existing slash commands for a specific guild
 func (h *InteractionHandlers) CleanupOldCommands(s *discordgo.Session, guildID string) error {
 	h.logger.Info("Cleaning up old slash commands...", "guild_id", guildID)
-	
+
 	// Get all existing commands for the guild
 	commands, err := s.ApplicationCommands(s.State.User.ID, guildID)
 	if err != nil {
 		return fmt.Errorf("failed to get commands: %w", err)
 	}
-	
+
 	// Delete all commands for the guild
 	for _, cmd := range commands {
 		err := s.ApplicationCommandDelete(s.State.User.ID, guildID, cmd.ID)
@@ -417,7 +412,7 @@ func (h *InteractionHandlers) CleanupOldCommands(s *discordgo.Session, guildID s
 			h.logger.Info("Deleted command", "command", cmd.Name)
 		}
 	}
-	
+
 	h.logger.Info("Cleanup completed", "commands_deleted", len(commands))
 	return nil
 }
@@ -434,16 +429,16 @@ func (h *InteractionHandlers) HandleInteraction(s *discordgo.Session, i *discord
 
 func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.ApplicationCommandData()
-	
+
 	if data.Name != "gnolinker" {
 		return
 	}
-	
+
 	options := data.Options
 	if len(options) == 0 {
 		return
 	}
-	
+
 	// Handle top-level subcommands (like help)
 	if options[0].Type == discordgo.ApplicationCommandOptionSubCommand {
 		switch options[0].Name {
@@ -452,16 +447,16 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 		}
 		return
 	}
-	
+
 	// Handle subcommand groups
 	if options[0].Type == discordgo.ApplicationCommandOptionSubCommandGroup {
 		group := options[0]
 		if len(group.Options) == 0 {
 			return
 		}
-		
+
 		subcommand := group.Options[0]
-		
+
 		switch group.Name {
 		case "link":
 			switch subcommand.Name {
@@ -773,7 +768,7 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 				h.logger.Error("Failed to remove verified role", "error", err, "user_id", userID, "role_id", guildConfig.VerifiedRoleID)
 			}
 		}
-		
+
 		embed = &discordgo.MessageEmbed{
 			Title:       "No Linked Address",
 			Description: "Your Discord account is not linked to any gno.land address.",
@@ -786,7 +781,7 @@ func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i
 				h.logger.Error("Failed to add verified role", "error", err, "user_id", userID, "role_id", guildConfig.VerifiedRoleID)
 			}
 		}
-		
+
 		embed = &discordgo.MessageEmbed{
 			Title:       "Address Verified ✅",
 			Description: fmt.Sprintf("Your Discord account is linked to:\n`%s`", address),
@@ -819,7 +814,7 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 
 	// Log sync attempt
 	h.logger.Info("Starting role sync", "user_id", userID, "realm_path", realmPath, "guild_id", i.GuildID)
-	
+
 	// Sync roles
 	statuses, err := h.syncFlow.SyncUserRoles(userID, realmPath, i.GuildID)
 	if err != nil {
@@ -827,7 +822,7 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 		h.followUpError(s, i, "Failed to sync roles: "+err.Error())
 		return
 	}
-	
+
 	h.logger.Info("Sync workflow returned statuses", "user_id", userID, "realm_path", realmPath, "status_count", len(statuses))
 
 	// Build response embed
@@ -857,7 +852,7 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 		if status.IsMember {
 			statusEmoji = "✅"
 		}
-		
+
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 			Name:   fmt.Sprintf("%s %s", statusEmoji, status.RoleMapping.RealmRoleName),
 			Value:  fmt.Sprintf("Discord: %s", status.RoleMapping.PlatformRole.Name),
@@ -1076,7 +1071,7 @@ func (h *InteractionHandlers) handleSyncUserCommand(s *discordgo.Session, i *dis
 		if status.IsMember {
 			statusEmoji = "✅"
 		}
-		
+
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 			Name:   fmt.Sprintf("%s %s", statusEmoji, status.RoleMapping.RealmRoleName),
 			Value:  fmt.Sprintf("Discord: %s", status.RoleMapping.PlatformRole.Name),
@@ -1130,11 +1125,11 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 		}
 		return
 	}
-	
+
 	roleName := parts[0]
 	realmPath := parts[1]
 	userID := i.Member.User.ID
-	
+
 	// Update to show processing
 	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseUpdateMessage,
@@ -1147,7 +1142,7 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 		h.logger.Error("Failed to respond to interaction", "error", err)
 		return
 	}
-	
+
 	// Create or get the Discord role using safe role creation
 	discordRoleName := roleName + "-" + realmPath
 	platformRole, err := h.getOrCreateRole(s, i.GuildID, discordRoleName)
@@ -1160,7 +1155,7 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 		}
 		return
 	}
-	
+
 	// Generate claim
 	claim, err := h.roleLinkingFlow.GenerateClaim(userID, i.GuildID, platformRole.ID, roleName, realmPath)
 	if err != nil {
@@ -1172,7 +1167,7 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 		}
 		return
 	}
-	
+
 	// Create response
 	claimURL := h.roleLinkingFlow.GetClaimURL(claim)
 	embed := &discordgo.MessageEmbed{
@@ -1180,7 +1175,7 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 		Description: fmt.Sprintf("Ready to link Discord role `%s` to realm role `%s` at `%s`", platformRole.Name, roleName, realmPath),
 		Color:       0x00ff00,
 	}
-	
+
 	components := []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
@@ -1195,7 +1190,7 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 			},
 		},
 	}
-	
+
 	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Content:    &[]string{""}[0],
 		Embeds:     &[]*discordgo.MessageEmbed{embed},
@@ -1233,7 +1228,7 @@ func parseRoleLinkParams(params string) []string {
 	// Format: roleName_realmPath
 	parts := make([]string, 0)
 	lastUnderscore := -1
-	
+
 	// Find the last underscore to split roleName and realmPath
 	for i := len(params) - 1; i >= 0; i-- {
 		if params[i] == '_' {
@@ -1241,12 +1236,12 @@ func parseRoleLinkParams(params string) []string {
 			break
 		}
 	}
-	
+
 	if lastUnderscore > 0 && lastUnderscore < len(params)-1 {
 		parts = append(parts, params[:lastUnderscore])
 		parts = append(parts, params[lastUnderscore+1:])
 	}
-	
+
 	return parts
 }
 
@@ -1256,7 +1251,7 @@ func (h *InteractionHandlers) getRoleByName(s *discordgo.Session, guildID, name 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	for _, role := range roles {
 		if role.Name == name {
 			return &core.PlatformRole{
@@ -1265,7 +1260,7 @@ func (h *InteractionHandlers) getRoleByName(s *discordgo.Session, guildID, name 
 			}, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("role not found")
 }
 
@@ -1279,7 +1274,7 @@ func (h *InteractionHandlers) getOrCreateRole(s *discordgo.Session, guildID, nam
 	// Create a temporary role manager for this operation
 	lockManager := h.configManager.GetLockManager()
 	roleManager := NewRoleManager(s, lockManager, h.logger)
-	
+
 	// Use the role manager to safely create the role
 	defaultColor := 7506394
 	return roleManager.GetOrCreateRole(guildID, name, &defaultColor)
@@ -1291,13 +1286,13 @@ func (h *InteractionHandlers) hasRole(s *discordgo.Session, guildID, userID, rol
 	if err != nil {
 		return false, fmt.Errorf("failed to get guild member: %w", err)
 	}
-	
+
 	for _, memberRoleID := range member.Roles {
 		if memberRoleID == roleID {
 			return true, nil
 		}
 	}
-	
+
 	return false, nil
 }
 
@@ -1326,17 +1321,17 @@ func (h *InteractionHandlers) hasGuildAdminPermission(s *discordgo.Session, guil
 	if err != nil {
 		return false, fmt.Errorf("failed to get guild: %w", err)
 	}
-	
+
 	if guild.OwnerID == userID {
 		return true, nil
 	}
-	
+
 	// Check if user has Administrator permission
 	permissions, err := s.UserChannelPermissions(userID, guildID)
 	if err != nil {
 		return false, fmt.Errorf("failed to get user permissions: %w", err)
 	}
-	
+
 	return (permissions & discordgo.PermissionAdministrator) != 0, nil
 }
 

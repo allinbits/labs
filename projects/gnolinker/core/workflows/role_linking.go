@@ -31,28 +31,28 @@ func (w *RoleLinkingWorkflowImpl) GenerateClaim(organizerID, platformGuildID, pl
 	if err != nil {
 		return nil, fmt.Errorf("failed to get organizer's linked address: %w", err)
 	}
-	
+
 	if gnoAddress == "" {
 		return nil, fmt.Errorf("organizer has not linked their Gno address")
 	}
-	
+
 	// Check if the organizer has the organizer role in the realm
 	hasOrgRole, err := w.gnoClient.HasRole(realmPath, "organizer", gnoAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check organizer role: %w", err)
 	}
-	
+
 	if !hasOrgRole {
 		return nil, fmt.Errorf("user is not an organizer for realm %s", realmPath)
 	}
-	
+
 	// Generate the claim
 	timestamp := time.Now()
-	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v", 
+	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v",
 		timestamp.Unix(), organizerID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
 	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
 	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
-	
+
 	return &core.Claim{
 		Type:      core.ClaimTypeRoleLink,
 		Data:      message,
@@ -68,28 +68,28 @@ func (w *RoleLinkingWorkflowImpl) GenerateUnlinkClaim(organizerID, platformGuild
 	if err != nil {
 		return nil, fmt.Errorf("failed to get organizer's linked address: %w", err)
 	}
-	
+
 	if gnoAddress == "" {
 		return nil, fmt.Errorf("organizer has not linked their Gno address")
 	}
-	
+
 	// Check if the organizer has the organizer role in the realm
 	hasOrgRole, err := w.gnoClient.HasRole(realmPath, "organizer", gnoAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check organizer role: %w", err)
 	}
-	
+
 	if !hasOrgRole {
 		return nil, fmt.Errorf("user is not an organizer for realm %s", realmPath)
 	}
-	
+
 	// Generate the unlink claim
 	timestamp := time.Now()
-	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v", 
+	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v",
 		timestamp.Unix(), organizerID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
 	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
 	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
-	
+
 	return &core.Claim{
 		Type:      core.ClaimTypeRoleUnlink,
 		Data:      message,

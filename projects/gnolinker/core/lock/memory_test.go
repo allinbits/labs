@@ -138,7 +138,9 @@ func TestMemoryLockManager_AcquireLock(t *testing.T) {
 			}
 
 			// Clean up
-			manager.ReleaseLock(ctx, lock)
+			if err := manager.ReleaseLock(ctx, lock); err != nil {
+				t.Errorf("Failed to release lock: %v", err)
+			}
 		})
 	}
 }
@@ -214,7 +216,7 @@ func TestMemoryLockManager_ReleaseLock(t *testing.T) {
 	}
 
 	if lock2 == nil {
-		t.Error("Should be able to acquire after release")
+		t.Fatal("Should be able to acquire after release")
 	}
 
 	// Test releasing nil lock
@@ -252,7 +254,9 @@ func TestMemoryLockManager_ReleaseLock(t *testing.T) {
 	}
 
 	// Clean up
-	manager.ReleaseLock(ctx, lock2)
+	if err := manager.ReleaseLock(ctx, lock2); err != nil {
+		t.Errorf("Failed to release lock2: %v", err)
+	}
 }
 
 func TestMemoryLockManager_IsLocked(t *testing.T) {
@@ -347,7 +351,7 @@ func TestMemoryLockManager_GetLock(t *testing.T) {
 
 	// Verify it's a copy (modifying shouldn't affect original)
 	retrieved.Token = "modified"
-	
+
 	retrieved2, err := manager.GetLock(ctx, key)
 	if err != nil {
 		t.Errorf("Second GetLock() failed: %v", err)
@@ -358,7 +362,9 @@ func TestMemoryLockManager_GetLock(t *testing.T) {
 	}
 
 	// Clean up
-	manager.ReleaseLock(ctx, lock)
+	if err := manager.ReleaseLock(ctx, lock); err != nil {
+		t.Errorf("Failed to release lock: %v", err)
+	}
 }
 
 func TestMemoryLockManager_ExpiredLocks(t *testing.T) {
@@ -413,7 +419,9 @@ func TestMemoryLockManager_ExpiredLocks(t *testing.T) {
 	}
 
 	// Clean up
-	manager.ReleaseLock(ctx, lock2)
+	if err := manager.ReleaseLock(ctx, lock2); err != nil {
+		t.Errorf("Failed to release lock2: %v", err)
+	}
 }
 
 func TestMemoryLockManager_CleanupExpiredLocks(t *testing.T) {
@@ -533,7 +541,7 @@ func TestMemoryLockManager_ConcurrentAcquire(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			lock, err := manager.AcquireLock(ctx, key, time.Minute)
 			if err != nil {
 				failures <- err
@@ -572,7 +580,9 @@ func TestMemoryLockManager_ConcurrentAcquire(t *testing.T) {
 
 	// Clean up
 	if winningLock != nil {
-		manager.ReleaseLock(ctx, winningLock)
+		if err := manager.ReleaseLock(ctx, winningLock); err != nil {
+			t.Errorf("Failed to release winning lock: %v", err)
+		}
 	}
 }
 
@@ -590,7 +600,7 @@ func TestMemoryLockManager_ConcurrentDifferentKeys(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			key := fmt.Sprintf("key-%d", id)
 			lock, err := manager.AcquireLock(ctx, key, time.Minute)
 			if err != nil {

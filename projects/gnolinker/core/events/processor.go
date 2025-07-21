@@ -11,6 +11,12 @@ import (
 	"github.com/allinbits/labs/projects/gnolinker/core/storage"
 )
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+// saveCallbackKey is the context key for the save callback function
+const saveCallbackKey contextKey = "saveCallback"
+
 // QueryProcessor manages query execution for a specific guild
 type QueryProcessor struct {
 	guildID       string
@@ -28,15 +34,15 @@ type QueryProcessor struct {
 
 // QueryProcessorManager manages all query processors
 type QueryProcessorManager struct {
-	processors    map[string]*QueryProcessor
-	registry      *QueryRegistry
-	store         storage.ConfigStore
-	queryClient   *graphql.QueryClient
-	logger        core.Logger
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wg            sync.WaitGroup
-	mutex         sync.RWMutex
+	processors  map[string]*QueryProcessor
+	registry    *QueryRegistry
+	store       storage.ConfigStore
+	queryClient *graphql.QueryClient
+	logger      core.Logger
+	ctx         context.Context
+	cancel      context.CancelFunc
+	wg          sync.WaitGroup
+	mutex       sync.RWMutex
 }
 
 // NewQueryProcessorManager creates a new query processor manager
@@ -243,14 +249,14 @@ func (qp *QueryProcessor) processQueries() {
 	}
 
 	// Ensure core queries are enabled by default
-	coreQueries := []string{"user_events", "role_events", "verify_members"}
+	coreQueries := []string{"user_events", "role_events", "verify_high_priority", "verify_medium_priority", "verify_low_priority"}
 	for _, queryID := range coreQueries {
 		if _, exists := config.GetQueryState(queryID); !exists {
 			qp.logger.Info("Enabling core query for guild", "guild_id", qp.guildID, "query_id", queryID)
 			config.EnsureQueryState(queryID, true)
 		}
 	}
-	
+
 	// Save the updated config if we added any queries
 	if err := qp.store.Set(qp.guildID, config); err != nil {
 		qp.logger.Error("Failed to save config after enabling core queries", "guild_id", qp.guildID, "error", err)
@@ -259,7 +265,7 @@ func (qp *QueryProcessor) processQueries() {
 	// Get enabled queries
 	enabledQueries := config.GetEnabledQueries()
 	qp.logger.Debug("Processing queries for guild", "guild_id", qp.guildID, "enabled_queries", enabledQueries, "enabled_count", len(enabledQueries))
-	
+
 	// Process each enabled query
 	for _, queryID := range enabledQueries {
 		qp.logger.Debug("Processing query", "guild_id", qp.guildID, "query_id", queryID)
@@ -334,21 +340,21 @@ func (qp *QueryProcessor) processEventStreamQuery(queryDef *QueryDefinition, que
 		saveCallback := func() error {
 			return qp.store.Set(qp.guildID, config)
 		}
-		
+
 		// Create a wrapper that provides the save callback to the handler
 		wrappedHandler := func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
 			// Set the save callback in the context for handlers to use
-			ctxWithSave := context.WithValue(ctx, "saveCallback", saveCallback)
-			
+			ctxWithSave := context.WithValue(ctx, saveCallbackKey, saveCallback)
+
 			// Call the handler
 			if err := queryDef.Handler(ctxWithSave, results, guild, state); err != nil {
 				return err
 			}
-			
+
 			// Save at the end (fallback if handler didn't save incrementally)
 			return saveCallback()
 		}
-		
+
 		if err := wrappedHandler(qp.ctx, results, config, queryState); err != nil {
 			qp.logger.Error("Query handler failed", "guild_id", qp.guildID, "query_id", queryDef.QueryID, "error", err)
 			queryState.RecordError(err)

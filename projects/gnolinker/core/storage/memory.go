@@ -25,12 +25,12 @@ func NewMemoryConfigStore() *MemoryConfigStore {
 func (s *MemoryConfigStore) Get(guildID string) (*GuildConfig, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	
+
 	config, exists := s.configs[guildID]
 	if !exists {
 		return nil, ErrGuildConfigNotFound
 	}
-	
+
 	// Return a copy to prevent external modification
 	configCopy := *config
 	if config.Settings != nil {
@@ -39,7 +39,7 @@ func (s *MemoryConfigStore) Get(guildID string) (*GuildConfig, error) {
 			configCopy.Settings[k] = v
 		}
 	}
-	
+
 	// Deep copy the query states map
 	if config.QueryStates != nil {
 		configCopy.QueryStates = make(map[string]*GuildQueryState, len(config.QueryStates))
@@ -57,7 +57,7 @@ func (s *MemoryConfigStore) Get(guildID string) (*GuildConfig, error) {
 					LastError:          v.LastError,
 					LastErrorTime:      v.LastErrorTime,
 				}
-				
+
 				// Deep copy the state map if it exists
 				if v.State != nil {
 					queryCopy.State = make(map[string]any, len(v.State))
@@ -65,12 +65,12 @@ func (s *MemoryConfigStore) Get(guildID string) (*GuildConfig, error) {
 						queryCopy.State[sk] = sv
 					}
 				}
-				
+
 				configCopy.QueryStates[k] = queryCopy
 			}
 		}
 	}
-	
+
 	return &configCopy, nil
 }
 
@@ -79,10 +79,10 @@ func (s *MemoryConfigStore) Set(guildID string, config *GuildConfig) error {
 	if config == nil {
 		return errors.New("config cannot be nil")
 	}
-	
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	
+
 	// Store a copy to prevent external modification
 	configCopy := *config
 	if config.Settings != nil {
@@ -91,7 +91,7 @@ func (s *MemoryConfigStore) Set(guildID string, config *GuildConfig) error {
 			configCopy.Settings[k] = v
 		}
 	}
-	
+
 	// Deep copy the query states map
 	if config.QueryStates != nil {
 		configCopy.QueryStates = make(map[string]*GuildQueryState, len(config.QueryStates))
@@ -109,7 +109,7 @@ func (s *MemoryConfigStore) Set(guildID string, config *GuildConfig) error {
 					LastError:          v.LastError,
 					LastErrorTime:      v.LastErrorTime,
 				}
-				
+
 				// Deep copy the state map if it exists
 				if v.State != nil {
 					queryCopy.State = make(map[string]any, len(v.State))
@@ -117,12 +117,12 @@ func (s *MemoryConfigStore) Set(guildID string, config *GuildConfig) error {
 						queryCopy.State[sk] = sv
 					}
 				}
-				
+
 				configCopy.QueryStates[k] = queryCopy
 			}
 		}
 	}
-	
+
 	s.configs[guildID] = &configCopy
 	return nil
 }
@@ -131,7 +131,7 @@ func (s *MemoryConfigStore) Set(guildID string, config *GuildConfig) error {
 func (s *MemoryConfigStore) Delete(guildID string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	
+
 	delete(s.configs, guildID)
 	return nil
 }
@@ -155,7 +155,7 @@ func (s *MemoryConfigStore) Clear() {
 func (s *MemoryConfigStore) GetGlobal() (*GlobalConfig, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	
+
 	if s.globalConfig == nil {
 		// Return default global config if none exists
 		return &GlobalConfig{
@@ -164,7 +164,7 @@ func (s *MemoryConfigStore) GetGlobal() (*GlobalConfig, error) {
 			LastUpdated:              time.Now(),
 		}, nil
 	}
-	
+
 	// Return a copy to prevent external modification
 	return &GlobalConfig{
 		ConfigID:                 s.globalConfig.ConfigID,
@@ -178,16 +178,16 @@ func (s *MemoryConfigStore) SetGlobal(config *GlobalConfig) error {
 	if config == nil {
 		return errors.New("global config cannot be nil")
 	}
-	
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	
+
 	// Store a copy to prevent external modification
 	s.globalConfig = &GlobalConfig{
 		ConfigID:                 config.ConfigID,
 		LastProcessedBlockHeight: config.LastProcessedBlockHeight,
 		LastUpdated:              config.LastUpdated,
 	}
-	
+
 	return nil
 }

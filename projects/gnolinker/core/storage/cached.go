@@ -9,16 +9,16 @@ import (
 
 // CachedConfigStore wraps any ConfigStore with an LRU cache for improved performance
 type CachedConfigStore struct {
-	backend   ConfigStore
-	cache     *lru.Cache[string, *cachedConfig]
-	ttl       time.Duration
-	mutex     sync.RWMutex
+	backend ConfigStore
+	cache   *lru.Cache[string, *cachedConfig]
+	ttl     time.Duration
+	mutex   sync.RWMutex
 }
 
 // cachedConfig holds a config with its cache timestamp
 type cachedConfig struct {
-	config    *GuildConfig
-	cachedAt  time.Time
+	config   *GuildConfig
+	cachedAt time.Time
 }
 
 // CacheConfig holds the configuration for the cache
@@ -175,7 +175,7 @@ func (s *CachedConfigStore) copyConfig(config *GuildConfig) *GuildConfig {
 					LastError:          v.LastError,
 					LastErrorTime:      v.LastErrorTime,
 				}
-				
+
 				// Deep copy the state map if it exists
 				if v.State != nil {
 					queryCopy.State = make(map[string]any, len(v.State))
@@ -183,7 +183,7 @@ func (s *CachedConfigStore) copyConfig(config *GuildConfig) *GuildConfig {
 						queryCopy.State[sk] = sv
 					}
 				}
-				
+
 				copy.QueryStates[k] = queryCopy
 			}
 		}
@@ -196,7 +196,7 @@ func (s *CachedConfigStore) copyConfig(config *GuildConfig) *GuildConfig {
 func (s *CachedConfigStore) RefreshCache(guildID string) (*GuildConfig, error) {
 	// Remove from cache first
 	s.InvalidateCache(guildID)
-	
+
 	// Fetch fresh from backend, which will also populate cache
 	return s.Get(guildID)
 }

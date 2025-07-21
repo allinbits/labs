@@ -14,29 +14,29 @@ var (
 
 // GuildQueryState tracks per-guild progress for each query
 type GuildQueryState struct {
-	GuildID              string            `json:"guild_id"`
-	QueryID              string            `json:"query_id"`
-	LastProcessedBlock   int64             `json:"last_processed_block"`
-	LastProcessedTxIndex int64             `json:"last_processed_tx_index"` // Transaction index within block
-	IsExecuting          bool              `json:"is_executing"`            // Prevents concurrent execution
-	LastRunTimestamp     time.Time         `json:"last_run_timestamp"`
-	NextRunTimestamp     time.Time         `json:"next_run_timestamp"`
-	Enabled              bool              `json:"enabled"`
-	State                map[string]any    `json:"state,omitempty"` // Query-specific state
-	ErrorCount           int               `json:"error_count"`
-	LastError            string            `json:"last_error,omitempty"`
-	LastErrorTime        time.Time         `json:"last_error_time,omitempty"`
+	GuildID              string         `json:"guild_id"`
+	QueryID              string         `json:"query_id"`
+	LastProcessedBlock   int64          `json:"last_processed_block"`
+	LastProcessedTxIndex int64          `json:"last_processed_tx_index"` // Transaction index within block
+	IsExecuting          bool           `json:"is_executing"`            // Prevents concurrent execution
+	LastRunTimestamp     time.Time      `json:"last_run_timestamp"`
+	NextRunTimestamp     time.Time      `json:"next_run_timestamp"`
+	Enabled              bool           `json:"enabled"`
+	State                map[string]any `json:"state,omitempty"` // Query-specific state
+	ErrorCount           int            `json:"error_count"`
+	LastError            string         `json:"last_error,omitempty"`
+	LastErrorTime        time.Time      `json:"last_error_time,omitempty"`
 }
 
 // GuildConfig represents the configuration for a Discord guild
 type GuildConfig struct {
-	GuildID        string                        `json:"guild_id"`
-	AdminRoleID    string                        `json:"admin_role_id,omitempty"`
-	VerifiedRoleID string                        `json:"verified_role_id,omitempty"`
-	Settings       map[string]string             `json:"settings,omitempty"`
-	QueryStates    map[string]*GuildQueryState   `json:"query_states,omitempty"`
-	LastUpdated    time.Time                     `json:"last_updated"`
-	
+	GuildID        string                      `json:"guild_id"`
+	AdminRoleID    string                      `json:"admin_role_id,omitempty"`
+	VerifiedRoleID string                      `json:"verified_role_id,omitempty"`
+	Settings       map[string]string           `json:"settings,omitempty"`
+	QueryStates    map[string]*GuildQueryState `json:"query_states,omitempty"`
+	LastUpdated    time.Time                   `json:"last_updated"`
+
 	// ETag is used for optimistic concurrency control
 	// Not serialized to JSON - managed by storage layer
 	ETag string `json:"-"`
@@ -47,7 +47,7 @@ type GlobalConfig struct {
 	ConfigID                 string    `json:"config_id"`
 	LastProcessedBlockHeight int64     `json:"last_processed_block_height"`
 	LastUpdated              time.Time `json:"last_updated"`
-	
+
 	// ETag is used for optimistic concurrency control
 	ETag string `json:"-"`
 }
@@ -57,7 +57,7 @@ type ConfigStore interface {
 	Get(guildID string) (*GuildConfig, error)
 	Set(guildID string, config *GuildConfig) error
 	Delete(guildID string) error
-	
+
 	// Global config methods
 	GetGlobal() (*GlobalConfig, error)
 	SetGlobal(config *GlobalConfig) error
@@ -187,7 +187,7 @@ func (c *GuildConfig) EnsureQueryState(queryID string, enabled bool) *GuildQuery
 	if state, exists := c.GetQueryState(queryID); exists {
 		return state
 	}
-	
+
 	state := NewGuildQueryState(c.GuildID, queryID, enabled)
 	c.SetQueryState(queryID, state)
 	return state
@@ -282,7 +282,7 @@ func (gqs *GuildQueryState) ClearErrors() {
 
 // IsReady returns true if the query is ready to run
 func (gqs *GuildQueryState) IsReady() bool {
-	return gqs.Enabled && 
+	return gqs.Enabled &&
 		!gqs.IsExecuting && // Check not already running
 		time.Now().After(gqs.NextRunTimestamp)
 }

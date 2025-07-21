@@ -43,7 +43,7 @@ func NewS3ConfigStore(ctx context.Context, cfg S3Config) (*S3ConfigStore, error)
 	awsCfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(cfg.Region),
 	)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
@@ -72,13 +72,13 @@ func NewS3ConfigStore(ctx context.Context, cfg S3Config) (*S3ConfigStore, error)
 // Get retrieves a guild configuration by guild ID
 func (s *S3ConfigStore) Get(guildID string) (*GuildConfig, error) {
 	key := s.getObjectKey(guildID)
-	
+
 	ctx := context.Background()
 	result, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
-	
+
 	if err != nil {
 		var nsk *types.NoSuchKey
 		if errors.As(err, &nsk) {
@@ -86,7 +86,12 @@ func (s *S3ConfigStore) Get(guildID string) (*GuildConfig, error) {
 		}
 		return nil, fmt.Errorf("failed to get object from S3: %w", err)
 	}
-	defer result.Body.Close()
+	defer func() {
+		if err := result.Body.Close(); err != nil {
+			// Error closing body is non-critical, just ignore
+			_ = err
+		}
+	}()
 
 	body, err := io.ReadAll(result.Body)
 	if err != nil {
@@ -118,7 +123,7 @@ func (s *S3ConfigStore) Set(guildID string, config *GuildConfig) error {
 	}
 
 	key := s.getObjectKey(guildID)
-	
+
 	ctx := context.Background()
 	putInput := &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
@@ -133,7 +138,7 @@ func (s *S3ConfigStore) Set(guildID string, config *GuildConfig) error {
 	}
 
 	_, err = s.client.PutObject(ctx, putInput)
-	
+
 	if err != nil {
 		// Check for precondition failed (ETag mismatch) - AWS returns 412 status code
 		if strings.Contains(err.Error(), "PreconditionFailed") || strings.Contains(err.Error(), "412") {
@@ -148,13 +153,13 @@ func (s *S3ConfigStore) Set(guildID string, config *GuildConfig) error {
 // Delete removes a guild configuration
 func (s *S3ConfigStore) Delete(guildID string) error {
 	key := s.getObjectKey(guildID)
-	
+
 	ctx := context.Background()
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to delete object from S3: %w", err)
 	}
@@ -165,13 +170,13 @@ func (s *S3ConfigStore) Delete(guildID string) error {
 // GetGlobal retrieves the global configuration
 func (s *S3ConfigStore) GetGlobal() (*GlobalConfig, error) {
 	key := s.getGlobalObjectKey()
-	
+
 	ctx := context.Background()
 	result, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
-	
+
 	if err != nil {
 		var nsk *types.NoSuchKey
 		if errors.As(err, &nsk) {
@@ -184,7 +189,12 @@ func (s *S3ConfigStore) GetGlobal() (*GlobalConfig, error) {
 		}
 		return nil, fmt.Errorf("failed to get global config from S3: %w", err)
 	}
-	defer result.Body.Close()
+	defer func() {
+		if err := result.Body.Close(); err != nil {
+			// Error closing body is non-critical, just ignore
+			_ = err
+		}
+	}()
 
 	body, err := io.ReadAll(result.Body)
 	if err != nil {
@@ -216,7 +226,7 @@ func (s *S3ConfigStore) SetGlobal(config *GlobalConfig) error {
 	}
 
 	key := s.getGlobalObjectKey()
-	
+
 	ctx := context.Background()
 	putInput := &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
@@ -231,7 +241,7 @@ func (s *S3ConfigStore) SetGlobal(config *GlobalConfig) error {
 	}
 
 	_, err = s.client.PutObject(ctx, putInput)
-	
+
 	if err != nil {
 		// Check for precondition failed (ETag mismatch) - AWS returns 412 status code
 		if strings.Contains(err.Error(), "PreconditionFailed") || strings.Contains(err.Error(), "412") {
@@ -259,7 +269,7 @@ func (s *S3ConfigStore) EnsureBucket(ctx context.Context) error {
 	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{
 		Bucket: aws.String(s.bucket),
 	})
-	
+
 	if err == nil {
 		return nil // Bucket already exists
 	}
@@ -268,7 +278,7 @@ func (s *S3ConfigStore) EnsureBucket(ctx context.Context) error {
 	_, err = s.client.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(s.bucket),
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to create bucket: %w", err)
 	}
@@ -282,7 +292,7 @@ func (s *S3ConfigStore) HealthCheck(ctx context.Context) error {
 	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{
 		Bucket: aws.String(s.bucket),
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("bucket health check failed: %w", err)
 	}
@@ -290,7 +300,7 @@ func (s *S3ConfigStore) HealthCheck(ctx context.Context) error {
 	// Test write/read/delete cycle with a test object
 	testKey := s.getObjectKey("__health_check__")
 	testData := []byte(`{"test": true}`)
-	
+
 	// Test write
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
@@ -298,7 +308,7 @@ func (s *S3ConfigStore) HealthCheck(ctx context.Context) error {
 		Body:        bytes.NewReader(testData),
 		ContentType: aws.String("application/json"),
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("write test failed: %w", err)
 	}
@@ -308,7 +318,7 @@ func (s *S3ConfigStore) HealthCheck(ctx context.Context) error {
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(testKey),
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("read test failed: %w", err)
 	}
@@ -321,7 +331,7 @@ func (s *S3ConfigStore) HealthCheck(ctx context.Context) error {
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(testKey),
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("delete test failed: %w", err)
 	}

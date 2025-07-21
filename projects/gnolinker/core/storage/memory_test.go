@@ -74,7 +74,7 @@ func TestMemoryConfigStore_GetNotFound(t *testing.T) {
 
 	// Try to get a config that doesn't exist
 	_, err := store.Get("nonexistent-guild")
-	
+
 	if err == nil {
 		t.Fatal("Get() should return error for nonexistent guild")
 	}
@@ -197,7 +197,7 @@ func TestMemoryConfigStore_MultipleGuilds(t *testing.T) {
 
 	// Create configs for multiple guilds
 	guilds := []string{"guild-1", "guild-2", "guild-3"}
-	
+
 	for i, guildID := range guilds {
 		config := NewGuildConfig(guildID)
 		config.AdminRoleID = fmt.Sprintf("admin-%d", i+1)

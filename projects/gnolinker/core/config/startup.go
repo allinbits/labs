@@ -12,10 +12,10 @@ import (
 // InitializeStorage initializes the storage backend and performs health checks
 func InitializeStorage(ctx context.Context, logger core.Logger) (storage.ConfigStore, error) {
 	logger.Info("Initializing storage backend...")
-	
+
 	// Load configuration
 	config := LoadStorageConfig()
-	logger.Info("Storage configuration loaded", 
+	logger.Info("Storage configuration loaded",
 		"type", config.Type,
 		"bucket", config.S3Bucket,
 		"endpoint", config.S3Endpoint,
@@ -38,7 +38,7 @@ func InitializeStorage(ctx context.Context, logger core.Logger) (storage.ConfigS
 		return nil, fmt.Errorf("storage health check failed: %w", err)
 	}
 
-	logger.Info("Storage backend initialized and healthy", 
+	logger.Info("Storage backend initialized and healthy",
 		"type", config.Type,
 		"ready", true,
 	)
@@ -49,10 +49,10 @@ func InitializeStorage(ctx context.Context, logger core.Logger) (storage.ConfigS
 // InitializeLockManager initializes the distributed lock manager
 func InitializeLockManager(ctx context.Context, logger core.Logger) (lock.LockManager, error) {
 	logger.Info("Initializing lock manager...")
-	
+
 	// Load lock configuration
 	config := LoadLockConfig()
-	logger.Info("Lock configuration loaded", 
+	logger.Info("Lock configuration loaded",
 		"type", config.Type,
 		"default_ttl", config.DefaultTTL,
 		"max_retries", config.MaxRetries,
@@ -89,8 +89,8 @@ func InitializeConfigManager(ctx context.Context, logger core.Logger) (*ConfigMa
 
 	// Create ConfigManager
 	configManager := NewConfigManager(store, storageConfig, lockManager, logger)
-	
-	logger.Info("ConfigManager initialized successfully", 
+
+	logger.Info("ConfigManager initialized successfully",
 		"storage_type", storageConfig.Type,
 		"lock_type", "enabled",
 	)
@@ -106,7 +106,7 @@ func performStorageHealthCheck(ctx context.Context, store storage.ConfigStore, c
 	if config.Type == "s3" {
 		// Try to unwrap to get the underlying S3 store
 		var s3Store *storage.S3ConfigStore
-		
+
 		// Check if it's a cached store wrapping an S3 store
 		if cachedStore, ok := store.(*storage.CachedConfigStore); ok {
 			// We need to access the backend, but it's private
@@ -117,24 +117,24 @@ func performStorageHealthCheck(ctx context.Context, store storage.ConfigStore, c
 				Endpoint: config.S3Endpoint,
 				Prefix:   config.S3Prefix,
 			}
-			
+
 			tempS3Store, err := storage.NewS3ConfigStore(ctx, s3Config)
 			if err != nil {
 				return fmt.Errorf("failed to create temporary S3 store for health check: %w", err)
 			}
 			s3Store = tempS3Store
-			
+
 			// Log cache stats
 			cacheSize := cachedStore.CacheStats()
 			logger.Info("Cache initialized", "current_size", cacheSize, "max_size", config.CacheSize)
-			
+
 		} else if directS3Store, ok := store.(*storage.S3ConfigStore); ok {
 			s3Store = directS3Store
 		}
 
 		if s3Store != nil {
 			logger.Info("Running S3 health checks...", "bucket", config.S3Bucket, "endpoint", config.S3Endpoint)
-			
+
 			// Run health check to verify bucket access (without creating it)
 			if err := s3Store.HealthCheck(ctx); err != nil {
 				return fmt.Errorf("S3 health check failed: %w", err)
@@ -155,13 +155,13 @@ func performStorageHealthCheck(ctx context.Context, store storage.ConfigStore, c
 // testBasicStoreOperations tests basic CRUD operations on the store
 func testBasicStoreOperations(ctx context.Context, store storage.ConfigStore, logger core.Logger) error {
 	logger.Info("Testing basic store operations...")
-	
+
 	testGuildID := "__startup_test__"
-	
+
 	// Create test config
 	testConfig := storage.NewGuildConfig(testGuildID)
 	testConfig.SetString("test_key", "test_value")
-	
+
 	// Test Set
 	if err := store.Set(testGuildID, testConfig); err != nil {
 		return fmt.Errorf("store Set operation failed: %w", err)
@@ -173,7 +173,7 @@ func testBasicStoreOperations(ctx context.Context, store storage.ConfigStore, lo
 	if err != nil {
 		return fmt.Errorf("store Get operation failed: %w", err)
 	}
-	
+
 	if retrievedConfig.GetString("test_key", "") != "test_value" {
 		return fmt.Errorf("store Get returned incorrect data")
 	}

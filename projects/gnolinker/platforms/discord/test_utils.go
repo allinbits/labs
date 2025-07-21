@@ -13,8 +13,8 @@ type MockDiscordSession struct {
 	mu               sync.RWMutex
 	user             *discordgo.User
 	guilds           map[string]*discordgo.Guild
-	roles            map[string][]*discordgo.Role // guildID -> roles
-	members          map[string]map[string]*discordgo.Member // guildID -> userID -> member
+	roles            map[string][]*discordgo.Role               // guildID -> roles
+	members          map[string]map[string]*discordgo.Member    // guildID -> userID -> member
 	commands         map[string][]*discordgo.ApplicationCommand // guildID -> commands
 	responses        map[string]*discordgo.InteractionResponse
 	followups        map[string]*discordgo.WebhookEdit
@@ -412,7 +412,7 @@ func (l *MockLogger) HasMessage(level, msgSubstring string) bool {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s == substr || 
-		    (len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr))))
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			(len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr))))
 }

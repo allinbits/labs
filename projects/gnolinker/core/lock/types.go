@@ -34,10 +34,10 @@ type LockManager interface {
 // Lock represents a distributed lock
 type Lock struct {
 	Key        string    `json:"key"`
-	HolderID   string    `json:"holder_id"`   // Unique identifier of the lock holder
+	HolderID   string    `json:"holder_id"` // Unique identifier of the lock holder
 	AcquiredAt time.Time `json:"acquired_at"`
 	ExpiresAt  time.Time `json:"expires_at"`
-	Token      string    `json:"token"` // Random token for additional verification
+	Token      string    `json:"token"`              // Random token for additional verification
 	Metadata   string    `json:"metadata,omitempty"` // Optional metadata about the lock purpose
 }
 

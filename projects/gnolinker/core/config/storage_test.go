@@ -10,28 +10,32 @@ import (
 func TestLoadStorageConfig(t *testing.T) {
 	// Save original env vars
 	originalEnvs := map[string]string{
-		"GNOLINKER__STORAGE_TYPE":              os.Getenv("GNOLINKER__STORAGE_TYPE"),
-		"GNOLINKER__STORAGE_BUCKET":            os.Getenv("GNOLINKER__STORAGE_BUCKET"),
-		"GNOLINKER__S3_BUCKET":                 os.Getenv("GNOLINKER__S3_BUCKET"),
-		"GNOLINKER__S3_REGION":                 os.Getenv("GNOLINKER__S3_REGION"),
-		"AWS_REGION":                           os.Getenv("AWS_REGION"),
-		"AWS_ENDPOINT_URL_S3":                  os.Getenv("AWS_ENDPOINT_URL_S3"),
-		"AWS_ENDPOINT_URL":                     os.Getenv("AWS_ENDPOINT_URL"),
-		"GNOLINKER__S3_ENDPOINT":               os.Getenv("GNOLINKER__S3_ENDPOINT"),
-		"GNOLINKER__STORAGE_PREFIX":            os.Getenv("GNOLINKER__STORAGE_PREFIX"),
-		"GNOLINKER__CACHE_SIZE":                os.Getenv("GNOLINKER__CACHE_SIZE"),
-		"GNOLINKER__CACHE_TTL":                 os.Getenv("GNOLINKER__CACHE_TTL"),
+		"GNOLINKER__STORAGE_TYPE":               os.Getenv("GNOLINKER__STORAGE_TYPE"),
+		"GNOLINKER__STORAGE_BUCKET":             os.Getenv("GNOLINKER__STORAGE_BUCKET"),
+		"GNOLINKER__S3_BUCKET":                  os.Getenv("GNOLINKER__S3_BUCKET"),
+		"GNOLINKER__S3_REGION":                  os.Getenv("GNOLINKER__S3_REGION"),
+		"AWS_REGION":                            os.Getenv("AWS_REGION"),
+		"AWS_ENDPOINT_URL_S3":                   os.Getenv("AWS_ENDPOINT_URL_S3"),
+		"AWS_ENDPOINT_URL":                      os.Getenv("AWS_ENDPOINT_URL"),
+		"GNOLINKER__S3_ENDPOINT":                os.Getenv("GNOLINKER__S3_ENDPOINT"),
+		"GNOLINKER__STORAGE_PREFIX":             os.Getenv("GNOLINKER__STORAGE_PREFIX"),
+		"GNOLINKER__CACHE_SIZE":                 os.Getenv("GNOLINKER__CACHE_SIZE"),
+		"GNOLINKER__CACHE_TTL":                  os.Getenv("GNOLINKER__CACHE_TTL"),
 		"GNOLINKER__DEFAULT_VERIFIED_ROLE_NAME": os.Getenv("GNOLINKER__DEFAULT_VERIFIED_ROLE_NAME"),
-		"GNOLINKER__AUTO_CREATE_ROLES":         os.Getenv("GNOLINKER__AUTO_CREATE_ROLES"),
+		"GNOLINKER__AUTO_CREATE_ROLES":          os.Getenv("GNOLINKER__AUTO_CREATE_ROLES"),
 	}
 
 	// Restore env vars after test
 	defer func() {
 		for key, value := range originalEnvs {
 			if value == "" {
-				os.Unsetenv(key)
+				if err := os.Unsetenv(key); err != nil {
+					t.Errorf("Failed to unset env var %s: %v", key, err)
+				}
 			} else {
-				os.Setenv(key, value)
+				if err := os.Setenv(key, value); err != nil {
+					t.Errorf("Failed to set env var %s: %v", key, err)
+				}
 			}
 		}
 	}()
@@ -101,7 +105,7 @@ func TestLoadStorageConfig(t *testing.T) {
 		{
 			name: "disabled auto create roles",
 			envVars: map[string]string{
-				"GNOLINKER__AUTO_CREATE_ROLES":         "false",
+				"GNOLINKER__AUTO_CREATE_ROLES":          "false",
 				"GNOLINKER__DEFAULT_VERIFIED_ROLE_NAME": "Custom-Verified",
 			},
 			expected: &StorageConfig{
@@ -122,12 +126,16 @@ func TestLoadStorageConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clear all env vars first
 			for key := range originalEnvs {
-				os.Unsetenv(key)
+				if err := os.Unsetenv(key); err != nil {
+					t.Fatalf("Failed to unset env var %s: %v", key, err)
+				}
 			}
 
 			// Set test env vars
 			for key, value := range tt.envVars {
-				os.Setenv(key, value)
+				if err := os.Setenv(key, value); err != nil {
+					t.Fatalf("Failed to set env var %s: %v", key, err)
+				}
 			}
 
 			// Load config
@@ -223,13 +231,10 @@ func TestStorageConfig_CreateConfigStore(t *testing.T) {
 			}
 
 			// Basic test - verify the store was created successfully
-			// We can't easily check the exact type due to interfaces, 
+			// We can't easily check the exact type due to interfaces,
 			// but we can verify the store works
-			if tt.config.Type == "memory" {
-				// Memory store should work
-				// Note: We skip the actual store operations since they need
-				// the storage.GuildConfig type which requires more setup
-			}
+			// TODO: Add specific tests for memory store type
+			// Currently we just verify that the store was created successfully
 		})
 	}
 }
@@ -270,14 +275,20 @@ func TestGetTigrisProductionConfig(t *testing.T) {
 	originalBucket := os.Getenv("GNOLINKER__STORAGE_BUCKET")
 	defer func() {
 		if originalBucket == "" {
-			os.Unsetenv("GNOLINKER__STORAGE_BUCKET")
+			if err := os.Unsetenv("GNOLINKER__STORAGE_BUCKET"); err != nil {
+				t.Errorf("Failed to unset GNOLINKER__STORAGE_BUCKET: %v", err)
+			}
 		} else {
-			os.Setenv("GNOLINKER__STORAGE_BUCKET", originalBucket)
+			if err := os.Setenv("GNOLINKER__STORAGE_BUCKET", originalBucket); err != nil {
+				t.Errorf("Failed to restore GNOLINKER__STORAGE_BUCKET: %v", err)
+			}
 		}
 	}()
 
 	// Test with default bucket
-	os.Unsetenv("GNOLINKER__STORAGE_BUCKET")
+	if err := os.Unsetenv("GNOLINKER__STORAGE_BUCKET"); err != nil {
+		t.Fatalf("Failed to unset GNOLINKER__STORAGE_BUCKET: %v", err)
+	}
 	config := GetTigrisProductionConfig()
 
 	if config.Type != "s3" {
@@ -300,7 +311,9 @@ func TestGetTigrisProductionConfig(t *testing.T) {
 	}
 
 	// Test with custom bucket
-	os.Setenv("GNOLINKER__STORAGE_BUCKET", "custom-bucket")
+	if err := os.Setenv("GNOLINKER__STORAGE_BUCKET", "custom-bucket"); err != nil {
+		t.Fatalf("Failed to set GNOLINKER__STORAGE_BUCKET: %v", err)
+	}
 	config = GetTigrisProductionConfig()
 
 	if config.S3Bucket != "custom-bucket" {
@@ -325,16 +338,22 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 	defer func() {
 		for key, value := range originalEnvs {
 			if value == "" {
-				os.Unsetenv(key)
+				if err := os.Unsetenv(key); err != nil {
+					t.Errorf("Failed to unset env var %s: %v", key, err)
+				}
 			} else {
-				os.Setenv(key, value)
+				if err := os.Setenv(key, value); err != nil {
+					t.Errorf("Failed to set env var %s: %v", key, err)
+				}
 			}
 		}
 	}()
 
 	t.Run("getEnvWithDefault", func(t *testing.T) {
 		// Clear env var
-		os.Unsetenv("TEST_STRING")
+		if err := os.Unsetenv("TEST_STRING"); err != nil {
+			t.Fatalf("Failed to unset TEST_STRING: %v", err)
+		}
 
 		// Should return default
 		result := getEnvWithDefault("TEST_STRING", "default_value")
@@ -343,7 +362,9 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 		}
 
 		// Set env var
-		os.Setenv("TEST_STRING", "env_value")
+		if err := os.Setenv("TEST_STRING", "env_value"); err != nil {
+			t.Fatalf("Failed to set TEST_STRING: %v", err)
+		}
 		result = getEnvWithDefault("TEST_STRING", "default_value")
 		if result != "env_value" {
 			t.Errorf("getEnvWithDefault() = %q, want %q", result, "env_value")
@@ -352,8 +373,12 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 
 	t.Run("getEnvWithFallbackAndDefault", func(t *testing.T) {
 		// Clear both env vars
-		os.Unsetenv("TEST_PRIMARY")
-		os.Unsetenv("TEST_FALLBACK")
+		if err := os.Unsetenv("TEST_PRIMARY"); err != nil {
+			t.Fatalf("Failed to unset TEST_PRIMARY: %v", err)
+		}
+		if err := os.Unsetenv("TEST_FALLBACK"); err != nil {
+			t.Fatalf("Failed to unset TEST_FALLBACK: %v", err)
+		}
 
 		// Should return default
 		result := getEnvWithFallbackAndDefault("TEST_PRIMARY", "TEST_FALLBACK", "default_value")
@@ -362,14 +387,18 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 		}
 
 		// Set fallback
-		os.Setenv("TEST_FALLBACK", "fallback_value")
+		if err := os.Setenv("TEST_FALLBACK", "fallback_value"); err != nil {
+			t.Fatalf("Failed to set TEST_FALLBACK: %v", err)
+		}
 		result = getEnvWithFallbackAndDefault("TEST_PRIMARY", "TEST_FALLBACK", "default_value")
 		if result != "fallback_value" {
 			t.Errorf("getEnvWithFallbackAndDefault() = %q, want %q", result, "fallback_value")
 		}
 
 		// Set primary (should override fallback)
-		os.Setenv("TEST_PRIMARY", "primary_value")
+		if err := os.Setenv("TEST_PRIMARY", "primary_value"); err != nil {
+			t.Fatalf("Failed to set TEST_PRIMARY: %v", err)
+		}
 		result = getEnvWithFallbackAndDefault("TEST_PRIMARY", "TEST_FALLBACK", "default_value")
 		if result != "primary_value" {
 			t.Errorf("getEnvWithFallbackAndDefault() = %q, want %q", result, "primary_value")
@@ -378,9 +407,15 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 
 	t.Run("getEnvWithMultipleFallbacks", func(t *testing.T) {
 		// Clear all env vars
-		os.Unsetenv("TEST_PRIMARY")
-		os.Unsetenv("TEST_SECONDARY")
-		os.Unsetenv("TEST_TERTIARY")
+		if err := os.Unsetenv("TEST_PRIMARY"); err != nil {
+			t.Fatalf("Failed to unset TEST_PRIMARY: %v", err)
+		}
+		if err := os.Unsetenv("TEST_SECONDARY"); err != nil {
+			t.Fatalf("Failed to unset TEST_SECONDARY: %v", err)
+		}
+		if err := os.Unsetenv("TEST_TERTIARY"); err != nil {
+			t.Fatalf("Failed to unset TEST_TERTIARY: %v", err)
+		}
 
 		// Should return empty string
 		result := getEnvWithMultipleFallbacks("TEST_PRIMARY", "TEST_SECONDARY", "TEST_TERTIARY")
@@ -389,21 +424,27 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 		}
 
 		// Set tertiary
-		os.Setenv("TEST_TERTIARY", "tertiary_value")
+		if err := os.Setenv("TEST_TERTIARY", "tertiary_value"); err != nil {
+			t.Fatalf("Failed to set TEST_TERTIARY: %v", err)
+		}
 		result = getEnvWithMultipleFallbacks("TEST_PRIMARY", "TEST_SECONDARY", "TEST_TERTIARY")
 		if result != "tertiary_value" {
 			t.Errorf("getEnvWithMultipleFallbacks() = %q, want %q", result, "tertiary_value")
 		}
 
 		// Set secondary (should override tertiary)
-		os.Setenv("TEST_SECONDARY", "secondary_value")
+		if err := os.Setenv("TEST_SECONDARY", "secondary_value"); err != nil {
+			t.Fatalf("Failed to set TEST_SECONDARY: %v", err)
+		}
 		result = getEnvWithMultipleFallbacks("TEST_PRIMARY", "TEST_SECONDARY", "TEST_TERTIARY")
 		if result != "secondary_value" {
 			t.Errorf("getEnvWithMultipleFallbacks() = %q, want %q", result, "secondary_value")
 		}
 
 		// Set primary (should override secondary)
-		os.Setenv("TEST_PRIMARY", "primary_value")
+		if err := os.Setenv("TEST_PRIMARY", "primary_value"); err != nil {
+			t.Fatalf("Failed to set TEST_PRIMARY: %v", err)
+		}
 		result = getEnvWithMultipleFallbacks("TEST_PRIMARY", "TEST_SECONDARY", "TEST_TERTIARY")
 		if result != "primary_value" {
 			t.Errorf("getEnvWithMultipleFallbacks() = %q, want %q", result, "primary_value")
@@ -429,9 +470,13 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 
 		for _, tt := range tests {
 			if tt.envValue == "" {
-				os.Unsetenv("TEST_BOOL")
+				if err := os.Unsetenv("TEST_BOOL"); err != nil {
+					t.Fatalf("Failed to unset TEST_BOOL: %v", err)
+				}
 			} else {
-				os.Setenv("TEST_BOOL", tt.envValue)
+				if err := os.Setenv("TEST_BOOL", tt.envValue); err != nil {
+					t.Fatalf("Failed to set TEST_BOOL: %v", err)
+				}
 			}
 
 			result := getEnvBool("TEST_BOOL", true)
@@ -455,9 +500,13 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 
 		for _, tt := range tests {
 			if tt.envValue == "" {
-				os.Unsetenv("TEST_INT")
+				if err := os.Unsetenv("TEST_INT"); err != nil {
+					t.Fatalf("Failed to unset TEST_INT: %v", err)
+				}
 			} else {
-				os.Setenv("TEST_INT", tt.envValue)
+				if err := os.Setenv("TEST_INT", tt.envValue); err != nil {
+					t.Fatalf("Failed to set TEST_INT: %v", err)
+				}
 			}
 
 			result := getEnvInt("TEST_INT", 100)
@@ -481,9 +530,13 @@ func TestGetEnvHelperFunctions(t *testing.T) {
 
 		for _, tt := range tests {
 			if tt.envValue == "" {
-				os.Unsetenv("TEST_DURATION")
+				if err := os.Unsetenv("TEST_DURATION"); err != nil {
+					t.Fatalf("Failed to unset TEST_DURATION: %v", err)
+				}
 			} else {
-				os.Setenv("TEST_DURATION", tt.envValue)
+				if err := os.Setenv("TEST_DURATION", tt.envValue); err != nil {
+					t.Fatalf("Failed to set TEST_DURATION: %v", err)
+				}
 			}
 
 			result := getEnvDuration("TEST_DURATION", time.Hour)

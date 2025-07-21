@@ -38,7 +38,7 @@ func LoadStorageConfig() *StorageConfig {
 
 		// S3 Configuration
 		S3Bucket:   getEnvWithFallbackAndDefault("GNOLINKER__STORAGE_BUCKET", "GNOLINKER__S3_BUCKET", "gnolinker-data"),
-		S3Region:   getEnvWithFallbackAndDefault("GNOLINKER__S3_REGION", "AWS_REGION", "us-east-1"), // Prefer AWS standard, allow override
+		S3Region:   getEnvWithFallbackAndDefault("GNOLINKER__S3_REGION", "AWS_REGION", "us-east-1"),                  // Prefer AWS standard, allow override
 		S3Endpoint: getEnvWithMultipleFallbacks("AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL", "GNOLINKER__S3_ENDPOINT"), // AWS SDK standard, fallback to custom
 		S3Prefix:   getEnvWithDefault("GNOLINKER__STORAGE_PREFIX", "configs"),
 		// Note: AWS SDK automatically uses AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, and AWS_ENDPOINT_URL_S3/AWS_ENDPOINT_URL
@@ -157,7 +157,6 @@ func getEnvWithMultipleFallbacks(primaryKey, secondaryKey, tertiaryKey string) s
 	}
 	return ""
 }
-
 
 func getEnvBool(key string, defaultValue bool) bool {
 	if value := os.Getenv(key); value != "" {

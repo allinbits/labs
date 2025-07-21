@@ -12,9 +12,11 @@ import (
 
 // Query IDs
 const (
-	UserEventsQueryID    = "user_events"         // All events from user package in chronological order
-	RoleEventsQueryID    = "role_events"         // All events from role package in chronological order
-	VerifyMembersQueryID = "verify_members"
+	UserEventsQueryID           = "user_events"            // All events from user package in chronological order
+	RoleEventsQueryID           = "role_events"            // All events from role package in chronological order
+	VerifyHighPriorityQueryID   = "verify_high_priority"   // Verify online/active users frequently
+	VerifyMediumPriorityQueryID = "verify_medium_priority" // Verify recently active users
+	VerifyLowPriorityQueryID    = "verify_low_priority"    // Verify inactive/offline users
 )
 
 // CreateCoreQueryRegistry creates and registers all core queries
@@ -45,46 +47,116 @@ func CreateCoreQueryRegistry(logger core.Logger, eventHandlers *EventHandlers) *
 		Enabled:      true,
 	})
 
-	// Register VerifyMembers query
+	// Register high priority verification query - online/active users
 	registry.RegisterQuery(&QueryDefinition{
-		QueryID:      VerifyMembersQueryID,
-		Name:         "Verify Members",
-		Description:  "Periodically verifies guild members against blockchain state with presence-aware prioritization",
+		QueryID:      VerifyHighPriorityQueryID,
+		Name:         "Verify High Priority Members",
+		Description:  "Verifies online/active guild members against Gno realm state",
 		QueryType:    PeriodicCheckQuery,
-		GraphQLQuery: "", // This query doesn't use GraphQL directly
-		Interval:     5 * time.Minute, // Run every 5 minutes for responsive sync
-		Handler:      createVerifyMembersHandler(logger, eventHandlers),
-		Enabled:      true, // Enabled by default for better UX
+		GraphQLQuery: "",              // Uses QEval to query Gno realms directly
+		Interval:     1 * time.Minute, // Check online users every minute
+		Handler:      createVerifyHighPriorityHandler(logger, eventHandlers),
+		Enabled:      true,
+	})
+
+	// Register medium priority verification query - recently active users
+	registry.RegisterQuery(&QueryDefinition{
+		QueryID:      VerifyMediumPriorityQueryID,
+		Name:         "Verify Medium Priority Members",
+		Description:  "Verifies recently active guild members against Gno realm state",
+		QueryType:    PeriodicCheckQuery,
+		GraphQLQuery: "",              // Uses QEval to query Gno realms directly
+		Interval:     5 * time.Minute, // Check recently active users every 5 minutes
+		Handler:      createVerifyMediumPriorityHandler(logger, eventHandlers),
+		Enabled:      true,
+	})
+
+	// Register low priority verification query - inactive/offline users
+	registry.RegisterQuery(&QueryDefinition{
+		QueryID:      VerifyLowPriorityQueryID,
+		Name:         "Verify Low Priority Members",
+		Description:  "Verifies inactive/offline guild members against Gno realm state incrementally",
+		QueryType:    PeriodicCheckQuery,
+		GraphQLQuery: "",               // Uses QEval to query Gno realms directly
+		Interval:     30 * time.Minute, // Check inactive users every 30 minutes
+		Handler:      createVerifyLowPriorityHandler(logger, eventHandlers),
+		Enabled:      true,
 	})
 
 	return registry
 }
 
-
-// createVerifyMembersHandler creates a handler for periodic member verification
-func createVerifyMembersHandler(logger core.Logger, eventHandlers *EventHandlers) QueryHandler {
+// createVerifyHighPriorityHandler creates a handler for high priority member verification (online/active users)
+func createVerifyHighPriorityHandler(logger core.Logger, eventHandlers *EventHandlers) QueryHandler {
 	return func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
-		logger.Info("Processing VerifyMembers query", "guild_id", guild.GuildID)
+		logger.Info("Processing VerifyHighPriority query", "guild_id", guild.GuildID)
 
 		if eventHandlers == nil {
-			logger.Error("EventHandlers not available for VerifyMembers", "guild_id", guild.GuildID)
+			logger.Error("EventHandlers not available for VerifyHighPriority", "guild_id", guild.GuildID)
 			return nil
 		}
 
-		// Process priority users first, then continue with incremental batch
-		if err := eventHandlers.ProcessPresenceAwareVerification(ctx, guild.GuildID, state); err != nil {
-			logger.Error("Failed to process presence-aware verification", 
-				"guild_id", guild.GuildID, 
+		// Process high priority users (online/active) - no user limit
+		if err := eventHandlers.ProcessTieredVerification(ctx, guild.GuildID, state, "high", 0); err != nil {
+			logger.Error("Failed to process high priority verification",
+				"guild_id", guild.GuildID,
 				"error", err,
 			)
 			return err
 		}
 
-		logger.Info("Completed VerifyMembers processing", "guild_id", guild.GuildID)
+		logger.Info("Completed VerifyHighPriority processing", "guild_id", guild.GuildID)
 		return nil
 	}
 }
 
+// createVerifyMediumPriorityHandler creates a handler for medium priority member verification (recently active users)
+func createVerifyMediumPriorityHandler(logger core.Logger, eventHandlers *EventHandlers) QueryHandler {
+	return func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
+		logger.Info("Processing VerifyMediumPriority query", "guild_id", guild.GuildID)
+
+		if eventHandlers == nil {
+			logger.Error("EventHandlers not available for VerifyMediumPriority", "guild_id", guild.GuildID)
+			return nil
+		}
+
+		// Process medium priority users (recently active) - up to 20 users
+		if err := eventHandlers.ProcessTieredVerification(ctx, guild.GuildID, state, "medium", 20); err != nil {
+			logger.Error("Failed to process medium priority verification",
+				"guild_id", guild.GuildID,
+				"error", err,
+			)
+			return err
+		}
+
+		logger.Info("Completed VerifyMediumPriority processing", "guild_id", guild.GuildID)
+		return nil
+	}
+}
+
+// createVerifyLowPriorityHandler creates a handler for low priority member verification (inactive/offline users)
+func createVerifyLowPriorityHandler(logger core.Logger, eventHandlers *EventHandlers) QueryHandler {
+	return func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
+		logger.Info("Processing VerifyLowPriority query", "guild_id", guild.GuildID)
+
+		if eventHandlers == nil {
+			logger.Error("EventHandlers not available for VerifyLowPriority", "guild_id", guild.GuildID)
+			return nil
+		}
+
+		// Process low priority users (inactive/offline) incrementally - up to 10 users
+		if err := eventHandlers.ProcessTieredVerification(ctx, guild.GuildID, state, "low", 10); err != nil {
+			logger.Error("Failed to process low priority verification",
+				"guild_id", guild.GuildID,
+				"error", err,
+			)
+			return err
+		}
+
+		logger.Info("Completed VerifyLowPriority processing", "guild_id", guild.GuildID)
+		return nil
+	}
+}
 
 // QueryExecutor handles the execution of queries
 type QueryExecutor struct {
@@ -107,7 +179,7 @@ func (qe *QueryExecutor) ExecuteQuery(ctx context.Context, queryDef *QueryDefini
 		return qe.executeUserEventsQuery(ctx, queryState)
 	case RoleEventsQueryID:
 		return qe.executeRoleEventsQuery(ctx, queryState)
-	case VerifyMembersQueryID:
+	case VerifyHighPriorityQueryID, VerifyMediumPriorityQueryID, VerifyLowPriorityQueryID:
 		return qe.executeVerifyMembersQuery(ctx, queryState)
 	default:
 		return nil, fmt.Errorf("unknown query ID: %s", queryDef.QueryID)
@@ -125,8 +197,8 @@ func (qe *QueryExecutor) executeUserEventsQuery(ctx context.Context, queryState 
 
 	// Check if chain was reset - if indexer height < last processed, reset to 0
 	if currentHeight < queryState.LastProcessedBlock {
-		qe.logger.Warn("Chain appears to have been reset, resyncing from block 0", 
-			"indexer_height", currentHeight, 
+		qe.logger.Warn("Chain appears to have been reset, resyncing from block 0",
+			"indexer_height", currentHeight,
 			"last_processed", queryState.LastProcessedBlock)
 		queryState.LastProcessedBlock = 0
 		queryState.LastProcessedTxIndex = 0
@@ -145,39 +217,39 @@ func (qe *QueryExecutor) executeUserEventsQuery(ctx context.Context, queryState 
 
 	// Get processing position
 	blockHeight, txIndex := queryState.GetProcessingPosition()
-	
+
 	// Query from last processed position to current block
 	qe.logger.Debug("Querying user events", "from_block", blockHeight, "from_tx_index", txIndex, "to_block", currentHeight)
-	
+
 	// Log the query range that will be used
 	if txIndex > 0 {
-		qe.logger.Info("Executing UserEvents GraphQL query with block range", 
+		qe.logger.Info("Executing UserEvents GraphQL query with block range",
 			"query_type", "user_events",
-			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > %d)", 
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > %d)",
 				blockHeight, currentHeight, blockHeight, txIndex))
 	} else {
-		qe.logger.Info("Executing UserEvents GraphQL query with block range", 
+		qe.logger.Info("Executing UserEvents GraphQL query with block range",
 			"query_type", "user_events",
-			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > 0)", 
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > 0)",
 				blockHeight, currentHeight, blockHeight))
 	}
-	
+
 	transactions, err := qe.queryClient.QueryUserEvents(ctx, blockHeight, txIndex, currentHeight)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Debug log all transactions found before filtering
-	qe.logger.Debug("Raw transactions from GraphQL", 
-		"query_type", "user_events", 
+	qe.logger.Debug("Raw transactions from GraphQL",
+		"query_type", "user_events",
 		"total_transactions", len(transactions),
 		"block_range", fmt.Sprintf("%d-%d", blockHeight, currentHeight))
-	
+
 	for i, tx := range transactions {
-		qe.logger.Debug("Transaction found", 
+		qe.logger.Debug("Transaction found",
 			"index", i,
-			"hash", tx.Hash, 
-			"block_height", tx.BlockHeight, 
+			"hash", tx.Hash,
+			"block_height", tx.BlockHeight,
 			"tx_index", tx.Index,
 			"event_count", len(tx.Response.Events))
 	}
@@ -190,15 +262,15 @@ func (qe *QueryExecutor) executeUserEventsQuery(ctx context.Context, queryState 
 		}
 	}
 
-	qe.logger.Info("Filtered user events by current block height", 
-		"total_from_indexer", len(transactions), 
-		"filtered_valid", len(filteredTransactions), 
+	qe.logger.Info("Filtered user events by current block height",
+		"total_from_indexer", len(transactions),
+		"filtered_valid", len(filteredTransactions),
 		"current_height", currentHeight)
 
 	// If no transactions found, advance to current height to keep queries efficient
 	if len(filteredTransactions) == 0 && currentHeight > queryState.LastProcessedBlock {
-		qe.logger.Debug("No transactions found, advancing to current height", 
-			"from", queryState.LastProcessedBlock, 
+		qe.logger.Debug("No transactions found, advancing to current height",
+			"from", queryState.LastProcessedBlock,
 			"to", currentHeight)
 		queryState.LastProcessedBlock = currentHeight
 		queryState.LastProcessedTxIndex = 0
@@ -229,24 +301,24 @@ func createUserEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 				continue
 			}
 		}
-		
+
 		// Process each transaction with incremental position updates
 		for _, tx := range transactions {
 			// Skip if we've already processed this transaction
 			currentBlock, currentIndex := state.GetProcessingPosition()
 			if tx.BlockHeight < currentBlock || (tx.BlockHeight == currentBlock && tx.Index <= currentIndex) {
-				logger.Debug("Skipping already processed transaction", 
-					"tx_hash", tx.Hash, 
-					"tx_block", tx.BlockHeight, 
+				logger.Debug("Skipping already processed transaction",
+					"tx_hash", tx.Hash,
+					"tx_block", tx.BlockHeight,
 					"tx_index", tx.Index,
 					"current_block", currentBlock,
 					"current_index", currentIndex)
 				continue
 			}
-			
-			logger.Info("Processing user event transaction", 
-				"guild_id", guild.GuildID, 
-				"hash", tx.Hash, 
+
+			logger.Info("Processing user event transaction",
+				"guild_id", guild.GuildID,
+				"hash", tx.Hash,
 				"block_height", tx.BlockHeight,
 				"tx_index", tx.Index)
 
@@ -255,7 +327,7 @@ func createUserEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 				switch event.Type {
 				case "UserLinked":
 					logger.Info("Found UserLinked event", "guild_id", guild.GuildID, "tx_hash", tx.Hash)
-					
+
 					if userLinked, err := graphql.ParseUserLinkedEvent(event); err == nil {
 						eventObj := Event{
 							Type:            UserLinkedEvent,
@@ -265,22 +337,22 @@ func createUserEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 						}
 
 						if err := eventHandlers.HandleUserLinked(eventObj); err != nil {
-							logger.Error("Failed to handle UserLinked event", 
-								"guild_id", guild.GuildID, 
-								"tx_hash", tx.Hash, 
+							logger.Error("Failed to handle UserLinked event",
+								"guild_id", guild.GuildID,
+								"tx_hash", tx.Hash,
 								"error", err)
 							return err
 						}
 					} else {
-						logger.Error("Failed to parse UserLinked event", 
-							"guild_id", guild.GuildID, 
-							"tx_hash", tx.Hash, 
+						logger.Error("Failed to parse UserLinked event",
+							"guild_id", guild.GuildID,
+							"tx_hash", tx.Hash,
 							"error", err)
 					}
-				
+
 				case "UserUnlinked":
 					logger.Info("Found UserUnlinked event", "guild_id", guild.GuildID, "tx_hash", tx.Hash)
-					
+
 					if userUnlinked, err := graphql.ParseUserUnlinkedEvent(event); err == nil {
 						eventObj := Event{
 							Type:            UserUnlinkedEvent,
@@ -290,40 +362,40 @@ func createUserEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 						}
 
 						if err := eventHandlers.HandleUserUnlinked(eventObj); err != nil {
-							logger.Error("Failed to handle UserUnlinked event", 
-								"guild_id", guild.GuildID, 
-								"tx_hash", tx.Hash, 
+							logger.Error("Failed to handle UserUnlinked event",
+								"guild_id", guild.GuildID,
+								"tx_hash", tx.Hash,
 								"error", err)
 							return err
 						}
 					} else {
-						logger.Error("Failed to parse UserUnlinked event", 
-							"guild_id", guild.GuildID, 
-							"tx_hash", tx.Hash, 
+						logger.Error("Failed to parse UserUnlinked event",
+							"guild_id", guild.GuildID,
+							"tx_hash", tx.Hash,
 							"error", err)
 					}
 				}
 			}
-			
+
 			// Update position after successfully processing the transaction
 			state.UpdateProcessingPosition(tx.BlockHeight, tx.Index)
-			logger.Debug("Updated processing position", 
+			logger.Debug("Updated processing position",
 				"guild_id", guild.GuildID,
-				"block_height", tx.BlockHeight, 
+				"block_height", tx.BlockHeight,
 				"tx_index", tx.Index)
-			
+
 			// Save state incrementally if callback is available
-			if saveCallback, ok := ctx.Value("saveCallback").(func() error); ok {
+			if saveCallback, ok := ctx.Value(saveCallbackKey).(func() error); ok {
 				if err := saveCallback(); err != nil {
-					logger.Error("Failed to save state incrementally", 
-						"guild_id", guild.GuildID, 
-						"tx_hash", tx.Hash, 
+					logger.Error("Failed to save state incrementally",
+						"guild_id", guild.GuildID,
+						"tx_hash", tx.Hash,
 						"error", err)
 					// Continue processing but return error to indicate partial failure
 					return err
 				}
-				logger.Debug("State saved incrementally after transaction", 
-					"guild_id", guild.GuildID, 
+				logger.Debug("State saved incrementally after transaction",
+					"guild_id", guild.GuildID,
 					"tx_hash", tx.Hash)
 			}
 		}
@@ -343,8 +415,8 @@ func (qe *QueryExecutor) executeRoleEventsQuery(ctx context.Context, queryState 
 
 	// Check if chain was reset - if indexer height < last processed, reset to 0
 	if currentHeight < queryState.LastProcessedBlock {
-		qe.logger.Warn("Chain appears to have been reset, resyncing from block 0", 
-			"indexer_height", currentHeight, 
+		qe.logger.Warn("Chain appears to have been reset, resyncing from block 0",
+			"indexer_height", currentHeight,
 			"last_processed", queryState.LastProcessedBlock)
 		queryState.LastProcessedBlock = 0
 		queryState.LastProcessedTxIndex = 0
@@ -363,23 +435,23 @@ func (qe *QueryExecutor) executeRoleEventsQuery(ctx context.Context, queryState 
 
 	// Get processing position
 	blockHeight, txIndex := queryState.GetProcessingPosition()
-	
+
 	// Query from last processed position to current block
 	qe.logger.Debug("Querying role events", "from_block", blockHeight, "from_tx_index", txIndex, "to_block", currentHeight)
-	
+
 	// Log the query range that will be used
 	if txIndex > 0 {
-		qe.logger.Info("Executing RoleEvents GraphQL query with block range", 
+		qe.logger.Info("Executing RoleEvents GraphQL query with block range",
 			"query_type", "role_events",
-			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > %d)", 
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > %d)",
 				blockHeight, currentHeight, blockHeight, txIndex))
 	} else {
-		qe.logger.Info("Executing RoleEvents GraphQL query with block range", 
+		qe.logger.Info("Executing RoleEvents GraphQL query with block range",
 			"query_type", "role_events",
-			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > 0)", 
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > 0)",
 				blockHeight, currentHeight, blockHeight))
 	}
-	
+
 	transactions, err := qe.queryClient.QueryRoleEvents(ctx, blockHeight, txIndex, currentHeight)
 	if err != nil {
 		return nil, err
@@ -393,15 +465,15 @@ func (qe *QueryExecutor) executeRoleEventsQuery(ctx context.Context, queryState 
 		}
 	}
 
-	qe.logger.Info("Filtered role events by current block height", 
-		"total_from_indexer", len(transactions), 
-		"filtered_valid", len(filteredTransactions), 
+	qe.logger.Info("Filtered role events by current block height",
+		"total_from_indexer", len(transactions),
+		"filtered_valid", len(filteredTransactions),
 		"current_height", currentHeight)
 
 	// If no transactions found, advance to current height to keep queries efficient
 	if len(filteredTransactions) == 0 && currentHeight > queryState.LastProcessedBlock {
-		qe.logger.Debug("No transactions found, advancing to current height", 
-			"from", queryState.LastProcessedBlock, 
+		qe.logger.Debug("No transactions found, advancing to current height",
+			"from", queryState.LastProcessedBlock,
 			"to", currentHeight)
 		queryState.LastProcessedBlock = currentHeight
 		queryState.LastProcessedTxIndex = 0
@@ -439,24 +511,24 @@ func createRoleEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 				continue
 			}
 		}
-		
+
 		// Process each transaction with incremental position updates
 		for _, tx := range transactions {
 			// Skip if we've already processed this transaction
 			currentBlock, currentIndex := state.GetProcessingPosition()
 			if tx.BlockHeight < currentBlock || (tx.BlockHeight == currentBlock && tx.Index <= currentIndex) {
-				logger.Debug("Skipping already processed transaction", 
-					"tx_hash", tx.Hash, 
-					"tx_block", tx.BlockHeight, 
+				logger.Debug("Skipping already processed transaction",
+					"tx_hash", tx.Hash,
+					"tx_block", tx.BlockHeight,
 					"tx_index", tx.Index,
 					"current_block", currentBlock,
 					"current_index", currentIndex)
 				continue
 			}
-			
-			logger.Info("Processing role event transaction", 
-				"guild_id", guild.GuildID, 
-				"hash", tx.Hash, 
+
+			logger.Info("Processing role event transaction",
+				"guild_id", guild.GuildID,
+				"hash", tx.Hash,
 				"block_height", tx.BlockHeight,
 				"tx_index", tx.Index)
 
@@ -465,7 +537,7 @@ func createRoleEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 				switch event.Type {
 				case "RoleLinked":
 					logger.Info("Found RoleLinked event", "guild_id", guild.GuildID, "tx_hash", tx.Hash)
-					
+
 					if roleLinked, err := graphql.ParseRoleLinkedEvent(event); err == nil {
 						// Only process if this event is for the current guild
 						if roleLinked.DiscordGuildID == guild.GuildID {
@@ -477,27 +549,27 @@ func createRoleEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 							}
 
 							if err := eventHandlers.HandleRoleLinked(eventObj); err != nil {
-								logger.Error("Failed to handle RoleLinked event", 
-									"guild_id", guild.GuildID, 
-									"tx_hash", tx.Hash, 
+								logger.Error("Failed to handle RoleLinked event",
+									"guild_id", guild.GuildID,
+									"tx_hash", tx.Hash,
 									"error", err)
 								return err
 							}
 						} else {
-							logger.Debug("RoleLinked event not for this guild, skipping", 
-								"guild_id", guild.GuildID, 
+							logger.Debug("RoleLinked event not for this guild, skipping",
+								"guild_id", guild.GuildID,
 								"event_guild_id", roleLinked.DiscordGuildID)
 						}
 					} else {
-						logger.Error("Failed to parse RoleLinked event", 
-							"guild_id", guild.GuildID, 
-							"tx_hash", tx.Hash, 
+						logger.Error("Failed to parse RoleLinked event",
+							"guild_id", guild.GuildID,
+							"tx_hash", tx.Hash,
 							"error", err)
 					}
-				
+
 				case "RoleUnlinked":
 					logger.Info("Found RoleUnlinked event", "guild_id", guild.GuildID, "tx_hash", tx.Hash)
-					
+
 					if roleUnlinked, err := graphql.ParseRoleUnlinkedEvent(event); err == nil {
 						// Only process if this event is for the current guild
 						if roleUnlinked.DiscordGuildID == guild.GuildID {
@@ -509,45 +581,45 @@ func createRoleEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 							}
 
 							if err := eventHandlers.HandleRoleUnlinked(eventObj); err != nil {
-								logger.Error("Failed to handle RoleUnlinked event", 
-									"guild_id", guild.GuildID, 
-									"tx_hash", tx.Hash, 
+								logger.Error("Failed to handle RoleUnlinked event",
+									"guild_id", guild.GuildID,
+									"tx_hash", tx.Hash,
 									"error", err)
 								return err
 							}
 						} else {
-							logger.Debug("RoleUnlinked event not for this guild, skipping", 
-								"guild_id", guild.GuildID, 
+							logger.Debug("RoleUnlinked event not for this guild, skipping",
+								"guild_id", guild.GuildID,
 								"event_guild_id", roleUnlinked.DiscordGuildID)
 						}
 					} else {
-						logger.Error("Failed to parse RoleUnlinked event", 
-							"guild_id", guild.GuildID, 
-							"tx_hash", tx.Hash, 
+						logger.Error("Failed to parse RoleUnlinked event",
+							"guild_id", guild.GuildID,
+							"tx_hash", tx.Hash,
 							"error", err)
 					}
 				}
 			}
-			
+
 			// Update position after successfully processing the transaction
 			state.UpdateProcessingPosition(tx.BlockHeight, tx.Index)
-			logger.Debug("Updated processing position", 
+			logger.Debug("Updated processing position",
 				"guild_id", guild.GuildID,
-				"block_height", tx.BlockHeight, 
+				"block_height", tx.BlockHeight,
 				"tx_index", tx.Index)
-			
+
 			// Save state incrementally if callback is available
-			if saveCallback, ok := ctx.Value("saveCallback").(func() error); ok {
+			if saveCallback, ok := ctx.Value(saveCallbackKey).(func() error); ok {
 				if err := saveCallback(); err != nil {
-					logger.Error("Failed to save state incrementally", 
-						"guild_id", guild.GuildID, 
-						"tx_hash", tx.Hash, 
+					logger.Error("Failed to save state incrementally",
+						"guild_id", guild.GuildID,
+						"tx_hash", tx.Hash,
 						"error", err)
 					// Continue processing but return error to indicate partial failure
 					return err
 				}
-				logger.Debug("State saved incrementally after transaction", 
-					"guild_id", guild.GuildID, 
+				logger.Debug("State saved incrementally after transaction",
+					"guild_id", guild.GuildID,
 					"tx_hash", tx.Hash)
 			}
 		}

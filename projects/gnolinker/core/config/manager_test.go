@@ -159,9 +159,9 @@ func (l *MockLogger) HasMessage(level, msgSubstring string) bool {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s == substr || 
-		    (len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr))))
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			(len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr))))
 }
 
 func TestNewConfigManager(t *testing.T) {
@@ -454,7 +454,7 @@ func TestConfigManager_GetStorageConfig(t *testing.T) {
 	t.Parallel()
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &StorageConfig{
-		Type:        "memory",
+		Type:            "memory",
 		AutoCreateRoles: true,
 	}
 	lockManager := lock.NewNoOpLockManager()

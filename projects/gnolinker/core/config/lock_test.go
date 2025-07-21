@@ -30,9 +30,13 @@ func TestLoadLockConfig(t *testing.T) {
 	defer func() {
 		for key, value := range originalEnvs {
 			if value == "" {
-				os.Unsetenv(key)
+				if err := os.Unsetenv(key); err != nil {
+					t.Errorf("Failed to unset env var %s: %v", key, err)
+				}
 			} else {
-				os.Setenv(key, value)
+				if err := os.Setenv(key, value); err != nil {
+					t.Errorf("Failed to set env var %s: %v", key, err)
+				}
 			}
 		}
 	}()
@@ -150,12 +154,16 @@ func TestLoadLockConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clear all env vars first
 			for key := range originalEnvs {
-				os.Unsetenv(key)
+				if err := os.Unsetenv(key); err != nil {
+					t.Errorf("Failed to unset env var %s: %v", key, err)
+				}
 			}
 
 			// Set test env vars
 			for key, value := range tt.envVars {
-				os.Setenv(key, value)
+				if err := os.Setenv(key, value); err != nil {
+					t.Errorf("Failed to set env var %s: %v", key, err)
+				}
 			}
 
 			// Load config
@@ -323,9 +331,13 @@ func TestGetS3LockConfig(t *testing.T) {
 	defer func() {
 		for key, value := range originalEnvs {
 			if value == "" {
-				os.Unsetenv(key)
+				if err := os.Unsetenv(key); err != nil {
+					t.Errorf("Failed to unset env var %s: %v", key, err)
+				}
 			} else {
-				os.Setenv(key, value)
+				if err := os.Setenv(key, value); err != nil {
+					t.Errorf("Failed to set env var %s: %v", key, err)
+				}
 			}
 		}
 	}()
@@ -333,7 +345,9 @@ func TestGetS3LockConfig(t *testing.T) {
 	t.Run("default values", func(t *testing.T) {
 		// Clear all env vars
 		for key := range originalEnvs {
-			os.Unsetenv(key)
+			if err := os.Unsetenv(key); err != nil {
+				t.Errorf("Failed to unset env var %s: %v", key, err)
+			}
 		}
 
 		config := GetS3LockConfig()
@@ -366,9 +380,15 @@ func TestGetS3LockConfig(t *testing.T) {
 
 	t.Run("custom values from environment", func(t *testing.T) {
 		// Set custom env vars
-		os.Setenv("GNOLINKER__LOCK_BUCKET", "custom-lock-bucket")
-		os.Setenv("GNOLINKER__LOCK_REGION", "eu-west-1")
-		os.Setenv("AWS_ENDPOINT_URL_S3", "https://custom.s3.endpoint.com")
+		if err := os.Setenv("GNOLINKER__LOCK_BUCKET", "custom-lock-bucket"); err != nil {
+			t.Fatalf("Failed to set env var: %v", err)
+		}
+		if err := os.Setenv("GNOLINKER__LOCK_REGION", "eu-west-1"); err != nil {
+			t.Fatalf("Failed to set env var: %v", err)
+		}
+		if err := os.Setenv("AWS_ENDPOINT_URL_S3", "https://custom.s3.endpoint.com"); err != nil {
+			t.Fatalf("Failed to set env var: %v", err)
+		}
 
 		config := GetS3LockConfig()
 
@@ -385,12 +405,22 @@ func TestGetS3LockConfig(t *testing.T) {
 
 	t.Run("fallback values from environment", func(t *testing.T) {
 		// Clear primary env vars, set fallback ones
-		os.Unsetenv("GNOLINKER__LOCK_BUCKET")
-		os.Unsetenv("GNOLINKER__LOCK_REGION")
-		os.Unsetenv("AWS_ENDPOINT_URL_S3")
+		if err := os.Unsetenv("GNOLINKER__LOCK_BUCKET"); err != nil {
+			t.Errorf("Failed to unset env var: %v", err)
+		}
+		if err := os.Unsetenv("GNOLINKER__LOCK_REGION"); err != nil {
+			t.Errorf("Failed to unset env var: %v", err)
+		}
+		if err := os.Unsetenv("AWS_ENDPOINT_URL_S3"); err != nil {
+			t.Errorf("Failed to unset env var: %v", err)
+		}
 
-		os.Setenv("AWS_REGION", "ap-southeast-1")
-		os.Setenv("AWS_ENDPOINT_URL", "https://fallback.endpoint.com")
+		if err := os.Setenv("AWS_REGION", "ap-southeast-1"); err != nil {
+			t.Fatalf("Failed to set env var: %v", err)
+		}
+		if err := os.Setenv("AWS_ENDPOINT_URL", "https://fallback.endpoint.com"); err != nil {
+			t.Fatalf("Failed to set env var: %v", err)
+		}
 
 		config := GetS3LockConfig()
 
@@ -408,9 +438,13 @@ func TestGetEnvIntWithDefault(t *testing.T) {
 	originalValue := os.Getenv("TEST_INT_HELPER")
 	defer func() {
 		if originalValue == "" {
-			os.Unsetenv("TEST_INT_HELPER")
+			if err := os.Unsetenv("TEST_INT_HELPER"); err != nil {
+				t.Errorf("Failed to unset env var: %v", err)
+			}
 		} else {
-			os.Setenv("TEST_INT_HELPER", originalValue)
+			if err := os.Setenv("TEST_INT_HELPER", originalValue); err != nil {
+				t.Errorf("Failed to set env var: %v", err)
+			}
 		}
 	}()
 
@@ -428,9 +462,13 @@ func TestGetEnvIntWithDefault(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("value_"+tt.envValue, func(t *testing.T) {
 			if tt.envValue == "" {
-				os.Unsetenv("TEST_INT_HELPER")
+				if err := os.Unsetenv("TEST_INT_HELPER"); err != nil {
+					t.Errorf("Failed to unset env var: %v", err)
+				}
 			} else {
-				os.Setenv("TEST_INT_HELPER", tt.envValue)
+				if err := os.Setenv("TEST_INT_HELPER", tt.envValue); err != nil {
+					t.Errorf("Failed to set env var: %v", err)
+				}
 			}
 
 			result := getEnvIntWithDefault("TEST_INT_HELPER", 999)
@@ -461,7 +499,7 @@ func TestLockConfig_S3Integration(t *testing.T) {
 
 	// This will fail without proper AWS credentials, but we can test the config creation
 	_, err := config.CreateLockManager(ctx)
-	
+
 	// We expect this to fail in test environment without AWS credentials
 	// The important thing is that it tries to create the S3 lock manager
 	if err == nil {

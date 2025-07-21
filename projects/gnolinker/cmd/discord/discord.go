@@ -30,10 +30,10 @@ func Run() {
 		enableEventMonitorFlag = flag.Bool("enable-event-monitoring", false, "Enable real-time event monitoring")
 	)
 	flag.Parse()
-	
+
 	// Load log level from environment or flag
 	logLevel := getEnvOrFlag("GNOLINKER__LOG_LEVEL", *logLevelFlag)
-	
+
 	// Initialize logger with configurable level
 	logger := core.NewLoggerFromLevel(logLevel)
 	logger.Info("Starting gnolinker Discord bot", "log_level", logLevel)
@@ -69,7 +69,7 @@ func Run() {
 	// Roles are now managed per-guild by ConfigManager
 	storageConfig := configManager.GetStorageConfig()
 	logger.Info("Roles will be managed per-guild", "auto_create_roles", storageConfig.AutoCreateRoles, "default_verified_role_name", storageConfig.DefaultVerifiedRoleName)
-	
+
 	// Log GraphQL event monitoring configuration
 	if enableEventMonitoring && graphqlEndpoint != "" {
 		logger.Info("GraphQL event monitoring enabled with polling", "endpoint", graphqlEndpoint)

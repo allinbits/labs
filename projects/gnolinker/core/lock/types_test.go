@@ -8,7 +8,7 @@ import (
 func TestLock_IsExpired(t *testing.T) {
 	t.Parallel()
 	now := time.Now()
-	
+
 	tests := []struct {
 		name      string
 		expiresAt time.Time
@@ -57,7 +57,7 @@ func TestLock_IsExpired(t *testing.T) {
 func TestLock_RemainingTTL(t *testing.T) {
 	t.Parallel()
 	now := time.Now()
-	
+
 	tests := []struct {
 		name      string
 		expiresAt time.Time
@@ -101,7 +101,7 @@ func TestLock_RemainingTTL(t *testing.T) {
 			}
 
 			got := lock.RemainingTTL()
-			
+
 			if got < tt.wantMin || got > tt.wantMax {
 				t.Errorf("RemainingTTL() = %v, want between %v and %v", got, tt.wantMin, tt.wantMax)
 			}
@@ -181,7 +181,7 @@ func TestLockConfig_Validation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Just verify the config can be created and accessed
 			config := tt.config
-			
+
 			if config.DefaultTTL < 0 {
 				t.Error("DefaultTTL should not be negative")
 			}
@@ -200,7 +200,7 @@ func TestLock_Fields(t *testing.T) {
 	// Test that Lock struct holds all required fields correctly
 	now := time.Now()
 	expiresAt := now.Add(30 * time.Second)
-	
+
 	lock := &Lock{
 		Key:        "test-key-123",
 		HolderID:   "holder-456",
@@ -238,7 +238,7 @@ func TestLock_Fields(t *testing.T) {
 func TestLock_TimeRelatedMethods(t *testing.T) {
 	t.Parallel()
 	now := time.Now()
-	
+
 	// Create a lock that expires in 1 minute
 	lock := &Lock{
 		Key:        "test-key",

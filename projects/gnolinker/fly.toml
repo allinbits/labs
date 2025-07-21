@@ -14,7 +14,7 @@ AWS_REGION = 'auto'
 GNOLINKER__STORAGE_TYPE = 's3'
 GNOLINKER__LOCK_TYPE = 's3'
 GNOLINKER__LOCK_DEFAULT_TTL = '10s'
-GNOLINKER__GRAPHQL_ENDPOINT = "wss://indexer.aiblabs.net/graphql/query"
+GNOLINKER__GRAPHQL_ENDPOINT = 'https://indexer.aiblabs.net/graphql/query'
 GNOLINKER__ENABLE_EVENT_MONITORING = 'true'
 
 GNOLINKER__LOG_LEVEL = 'debug'

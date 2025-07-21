@@ -165,7 +165,7 @@ func (b *Bot) onReady(s *discordgo.Session, event *discordgo.Ready) {
 	// Register commands for all existing guilds on startup
 	for _, guild := range event.Guilds {
 		b.logger.Info("Registering commands for guild", "guild_id", guild.ID)
-		if err := b.interactionHandlers.RegisterSlashCommands(s, guild.ID); err != nil {
+		if err := b.interactionHandlers.SyncSlashCommands(s, guild.ID); err != nil {
 			b.logger.Error("Failed to register commands for guild", "guild_id", guild.ID, "error", err)
 		}
 
@@ -216,7 +216,7 @@ func (b *Bot) onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) 
 	}
 
 	// Register slash commands for the new guild
-	if err := b.interactionHandlers.RegisterSlashCommands(s, event.ID); err != nil {
+	if err := b.interactionHandlers.SyncSlashCommands(s, event.ID); err != nil {
 		b.logger.Error("Failed to register commands for new guild", "guild_id", event.ID, "error", err)
 		return
 	}

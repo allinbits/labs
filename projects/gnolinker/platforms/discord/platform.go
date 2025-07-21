@@ -97,27 +97,3 @@ func (p *DiscordPlatform) GetRoleByID(guildID, roleID string) (*core.PlatformRol
 
 	return nil, fmt.Errorf("role not found: %s", roleID)
 }
-
-// IsAdmin checks if a user is an admin (has the admin role)
-// DEPRECATED: Use ConfigManager.EnsureGuildConfig() and check AdminRoleID dynamically
-func (p *DiscordPlatform) IsAdmin(guildID, userID string) (bool, error) {
-	// This method is deprecated - admin roles are now managed per-guild
-	// For backward compatibility, return false
-	return false, nil
-}
-
-// Discord-specific methods for the verified address role
-
-// AddVerifiedRole adds the verified address role to a user
-// DEPRECATED: Use ConfigManager.EnsureGuildConfig() and manage VerifiedRoleID dynamically
-func (p *DiscordPlatform) AddVerifiedRole(guildID, userID string) error {
-	// This method is deprecated - verified roles are now managed per-guild
-	return nil
-}
-
-// RemoveVerifiedRole removes the verified address role from a user
-// DEPRECATED: Use ConfigManager.EnsureGuildConfig() and manage VerifiedRoleID dynamically
-func (p *DiscordPlatform) RemoveVerifiedRole(guildID, userID string) error {
-	// This method is deprecated - verified roles are now managed per-guild
-	return nil
-}

@@ -16,9 +16,6 @@ type Platform interface {
 	RemoveRole(guildID, userID, roleID string) error
 	GetOrCreateRole(guildID, name string) (*core.PlatformRole, error)
 	GetRoleByID(guildID, roleID string) (*core.PlatformRole, error)
-
-	// Server management
-	IsAdmin(guildID, userID string) (bool, error)
 }
 
 // Message represents a platform-agnostic message

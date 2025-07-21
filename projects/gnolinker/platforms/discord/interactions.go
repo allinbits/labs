@@ -216,11 +216,6 @@ func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationComm
 	return []*discordgo.ApplicationCommand{gnolinkerCommand}
 }
 
-// RegisterSlashCommands registers all slash commands with Discord for a specific guild (legacy method)
-func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildID string) error {
-	return h.SyncSlashCommands(s, guildID)
-}
-
 // SyncSlashCommands intelligently syncs command definitions with Discord
 func (h *InteractionHandlers) SyncSlashCommands(s *discordgo.Session, guildID string) error {
 	// Get expected commands

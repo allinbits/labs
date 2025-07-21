@@ -221,7 +221,9 @@ func TestRoleManager_GetOrCreateRole_RoleCreatedByOtherInstance(t *testing.T) {
 			Name: roleName,
 		})
 		// Release the lock after adding the role
-		lockManager.ReleaseLock(ctx, blockingLock)
+		if err := lockManager.ReleaseLock(ctx, blockingLock); err != nil {
+			t.Errorf("Failed to release blocking lock: %v", err)
+		}
 	}()
 
 	// Should find the role created by "other instance"
@@ -576,8 +578,8 @@ func TestRoleManager_ConcurrentRoleCreation(t *testing.T) {
 
 	// Should have logged either creation or finding existing role
 	hasCreated := logger.HasMessage("INFO", "Created new Discord role")
-	hasFound := logger.HasMessage("DEBUG", "Found existing role") || 
-		        logger.HasMessage("INFO", "Role already exists after acquiring lock")
+	hasFound := logger.HasMessage("DEBUG", "Found existing role") ||
+		logger.HasMessage("INFO", "Role already exists after acquiring lock")
 
 	if !hasCreated && !hasFound {
 		t.Error("Should log either role creation or finding existing role")

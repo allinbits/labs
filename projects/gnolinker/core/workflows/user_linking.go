@@ -30,7 +30,7 @@ func (w *UserLinkingWorkflowImpl) GenerateClaim(platformID, gnoAddress string) (
 	message := fmt.Sprintf("%v,%v,%v", timestamp.Unix(), platformID, gnoAddress)
 	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
 	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
-	
+
 	return &core.Claim{
 		Type:      core.ClaimTypeUserLink,
 		Data:      message,
@@ -45,7 +45,7 @@ func (w *UserLinkingWorkflowImpl) GenerateUnlinkClaim(platformID, gnoAddress str
 	message := fmt.Sprintf("%v,%v,%v", timestamp.Unix(), platformID, gnoAddress)
 	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
 	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
-	
+
 	return &core.Claim{
 		Type:      core.ClaimTypeUserUnlink,
 		Data:      message,

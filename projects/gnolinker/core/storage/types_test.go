@@ -81,7 +81,7 @@ func TestGuildConfig_GetSetString(t *testing.T) {
 
 			if tt.setKey != "" {
 				config.SetString(tt.setKey, tt.setValue)
-				
+
 				// Verify LastUpdated was modified
 				if !config.LastUpdated.After(oldTime) {
 					t.Error("SetString() should update LastUpdated timestamp")
@@ -159,7 +159,7 @@ func TestGuildConfig_GetSetBool(t *testing.T) {
 
 func TestGuildConfig_GetSetInt(t *testing.T) {
 	t.Parallel()
-	tests := []struct{
+	tests := []struct {
 		name     string
 		key      string
 		setValue int

@@ -43,8 +43,8 @@ type SimpleEventsFilter struct {
 }
 
 type Message struct {
-	Route   string `json:"route"`
-	TypeURL string `json:"typeUrl"`
+	Route   string       `json:"route"`
+	TypeURL string       `json:"typeUrl"`
 	Value   MessageValue `json:"value"`
 }
 

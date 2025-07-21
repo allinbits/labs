@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 
@@ -38,12 +37,12 @@ func (p *DiscordPlatform) SendDirectMessage(userID, content string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create DM channel: %w", err)
 	}
-	
+
 	_, err = p.session.ChannelMessageSend(channel.ID, content)
 	if err != nil {
 		return fmt.Errorf("failed to send DM: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -53,7 +52,7 @@ func (p *DiscordPlatform) HasRole(guildID, userID, roleID string) (bool, error) 
 	if err != nil {
 		return false, fmt.Errorf("failed to get guild member: %w", err)
 	}
-	
+
 	return slices.Contains(member.Roles, roleID), nil
 }
 
@@ -86,7 +85,7 @@ func (p *DiscordPlatform) GetRoleByID(guildID, roleID string) (*core.PlatformRol
 	if err != nil {
 		return nil, fmt.Errorf("failed to get guild roles: %w", err)
 	}
-	
+
 	for _, role := range roles {
 		if role.ID == roleID {
 			return &core.PlatformRole{
@@ -95,10 +94,9 @@ func (p *DiscordPlatform) GetRoleByID(guildID, roleID string) (*core.PlatformRol
 			}, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("role not found: %s", roleID)
 }
-
 
 // IsAdmin checks if a user is an admin (has the admin role)
 // DEPRECATED: Use ConfigManager.EnsureGuildConfig() and check AdminRoleID dynamically
@@ -106,23 +104,6 @@ func (p *DiscordPlatform) IsAdmin(guildID, userID string) (bool, error) {
 	// This method is deprecated - admin roles are now managed per-guild
 	// For backward compatibility, return false
 	return false, nil
-}
-
-// Helper methods
-
-func (p *DiscordPlatform) getRoleByName(guildID, name string) (*discordgo.Role, error) {
-	roles, err := p.session.GuildRoles(guildID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get guild roles: %w", err)
-	}
-	
-	for _, role := range roles {
-		if role.Name == name {
-			return role, nil
-		}
-	}
-	
-	return nil, errors.New("role not found")
 }
 
 // Discord-specific methods for the verified address role

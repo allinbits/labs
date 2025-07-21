@@ -56,7 +56,7 @@ func NewMockUserLinkingWorkflow() *MockUserLinkingWorkflow {
 func (m *MockUserLinkingWorkflow) GenerateClaim(userID, address string) (*MockUserClaim, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	claim := &MockUserClaim{
 		UserID:    userID,
 		Address:   address,
@@ -69,7 +69,7 @@ func (m *MockUserLinkingWorkflow) GenerateClaim(userID, address string) (*MockUs
 func (m *MockUserLinkingWorkflow) GetLinkedAddress(userID string) (string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	address, exists := m.linkedAddresses[userID]
 	if !exists {
 		return "", nil
@@ -105,7 +105,7 @@ func NewMockRoleLinkingWorkflow() *MockRoleLinkingWorkflow {
 func (m *MockRoleLinkingWorkflow) GenerateClaim(userID, guildID, platformRoleID, roleName, realmPath string) (*MockRoleClaim, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	claim := &MockRoleClaim{
 		UserID:         userID,
 		GuildID:        guildID,
@@ -121,7 +121,7 @@ func (m *MockRoleLinkingWorkflow) GenerateClaim(userID, guildID, platformRoleID,
 func (m *MockRoleLinkingWorkflow) GetLinkedRole(realmPath, roleName, guildID string) (*MockRoleMapping, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	key := realmPath + "_" + roleName + "_" + guildID
 	mapping, exists := m.linkedRoles[key]
 	if !exists {
@@ -156,11 +156,11 @@ func NewMockSyncWorkflow() *MockSyncWorkflow {
 func (m *MockSyncWorkflow) SyncUserRoles(userID, realmPath, guildID string) ([]*MockRoleStatus, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	if m.syncError != nil {
 		return nil, m.syncError
 	}
-	
+
 	statuses, exists := m.statuses[userID]
 	if !exists {
 		return []*MockRoleStatus{}, nil
@@ -185,7 +185,7 @@ func setupInteractionHandlers() (*InteractionHandlers, *MockDiscordSession, *Moc
 	userFlow := NewMockUserLinkingWorkflow()
 	roleFlow := NewMockRoleLinkingWorkflow()
 	syncFlow := NewMockSyncWorkflow()
-	
+
 	store := storage.NewMemoryConfigStore()
 	storageConfig := &config.StorageConfig{
 		Type:                    "memory",
@@ -195,37 +195,37 @@ func setupInteractionHandlers() (*InteractionHandlers, *MockDiscordSession, *Moc
 	lockManager := lock.NewNoOpLockManager()
 	logger := NewMockLogger()
 	configManager := config.NewConfigManager(store, storageConfig, lockManager, logger)
-	
+
 	session := NewMockDiscordSession()
-	
+
 	// Note: We'll need to create a wrapper that adapts the mock workflows to the real interfaces
 	// For now, we'll create a minimal handler without workflows to test basic functionality
 	handlers := &InteractionHandlers{
 		configManager: configManager,
 		logger:        logger,
 	}
-	
+
 	return handlers, session, userFlow, roleFlow, syncFlow, configManager, logger
 }
 
 func TestNewInteractionHandlers_Basic(t *testing.T) {
 	t.Parallel()
 	handlers, _, _, _, _, configManager, logger := setupInteractionHandlers()
-	
+
 	if handlers == nil {
 		t.Fatal("InteractionHandlers should not be nil")
 	}
-	
+
 	if handlers.configManager != configManager {
 		t.Error("configManager not set correctly")
 	}
-	
+
 	if handlers.logger != logger {
 		t.Error("logger not set correctly")
 	}
 }
 
-// Note: Full integration tests with actual discord session would require 
+// Note: Full integration tests with actual discord session would require
 // implementing the complete discordgo.Session interface. For now, we test
 // the helper functions and logic that can be tested independently.
 
@@ -256,16 +256,16 @@ func TestParseRoleLinkParams(t *testing.T) {
 			expected: []string{"role_with_underscores", "/r/demo/test"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run("input_"+tt.input, func(t *testing.T) {
 			result := parseRoleLinkParams(tt.input)
-			
+
 			if len(result) != len(tt.expected) {
 				t.Errorf("parseRoleLinkParams(%q) returned %d parts, want %d", tt.input, len(result), len(tt.expected))
 				return
 			}
-			
+
 			for i, part := range result {
 				if part != tt.expected[i] {
 					t.Errorf("parseRoleLinkParams(%q)[%d] = %q, want %q", tt.input, i, part, tt.expected[i])
@@ -284,11 +284,11 @@ func TestInteractionHandlers_CoreFunctionality(t *testing.T) {
 	t.Parallel()
 	// Basic constructor test
 	handlers, _, _, _, _, configManager, logger := setupInteractionHandlers()
-	
+
 	if handlers.configManager != configManager {
 		t.Error("configManager not set correctly")
 	}
-	
+
 	if handlers.logger != logger {
 		t.Error("logger not set correctly")
 	}

@@ -35,7 +35,7 @@ func NewGnoClient(config ClientConfig) (*GnoClient, error) {
 	client := gnoclient.Client{
 		RPCClient: rpcClient,
 	}
-	
+
 	// Create a logger for the client
 	logger := core.NewSlogLogger(core.ParseLogLevel("info"))
 
@@ -50,19 +50,19 @@ func NewGnoClient(config ClientConfig) (*GnoClient, error) {
 func (c *GnoClient) GetLinkedAddress(platformID string) (string, error) {
 	query := fmt.Sprintf(`GetLinkedAddress("%v")`, platformID)
 	contractPath := "gno.land/" + c.config.UserContract
-	
+
 	c.logger.Debug("Querying GetLinkedAddress", "platform_id", platformID, "contract", contractPath, "query", query)
-	
+
 	result, _, err := c.client.QEval(contractPath, query)
 	if err != nil {
 		c.logger.Error("GetLinkedAddress query failed", "error", err, "platform_id", platformID, "contract", contractPath)
 		return "", fmt.Errorf("failed to get linked address: %w", err)
 	}
-	
+
 	c.logger.Info("GetLinkedAddress result", "platform_id", platformID, "raw_result", result)
 	address := parseGnoAddress(result)
 	c.logger.Info("GetLinkedAddress parsed", "platform_id", platformID, "address", address)
-	
+
 	return address, nil
 }
 
@@ -80,45 +80,45 @@ func (c *GnoClient) GetLinkedRole(realmPath, roleName, platformGuildID string) (
 func (c *GnoClient) ListLinkedRoles(realmPath, platformGuildID string) ([]*core.RoleMapping, error) {
 	query := fmt.Sprintf(`ListLinkedRolesJSON("%v", "%v")`, realmPath, platformGuildID)
 	contractPath := "gno.land/" + c.config.RoleContract
-	
+
 	c.logger.Debug("Querying ListLinkedRoles", "realm_path", realmPath, "guild_id", platformGuildID, "contract", contractPath, "query", query)
-	
+
 	result, _, err := c.client.QEval(contractPath, query)
 	if err != nil {
 		c.logger.Error("ListLinkedRoles query failed", "error", err, "realm_path", realmPath, "guild_id", platformGuildID, "contract", contractPath)
 		return nil, fmt.Errorf("failed to list linked roles: %w", err)
 	}
-	
+
 	c.logger.Info("ListLinkedRoles result", "realm_path", realmPath, "guild_id", platformGuildID, "raw_result", result)
-	
+
 	roles, err := parseLinkedRoles(result)
 	if err != nil {
 		c.logger.Error("Failed to parse linked roles", "error", err, "raw_result", result)
 		return nil, err
 	}
-	
+
 	c.logger.Info("ListLinkedRoles parsed", "realm_path", realmPath, "guild_id", platformGuildID, "role_count", len(roles))
-	
+
 	return roles, nil
 }
 
 // HasRole checks if an address has a specific role in the realm
 func (c *GnoClient) HasRole(realmPath, roleName, address string) (bool, error) {
 	query := fmt.Sprintf(`HasRole("%v", "%v")`, roleName, address)
-	
+
 	c.logger.Debug("Querying HasRole", "realm_path", realmPath, "role_name", roleName, "address", address, "query", query)
-	
+
 	result, _, err := c.client.QEval(realmPath, query)
 	if err != nil {
 		c.logger.Error("HasRole query failed", "error", err, "realm_path", realmPath, "role_name", roleName, "address", address)
 		return false, fmt.Errorf("failed to check role membership: %w", err)
 	}
-	
+
 	c.logger.Info("HasRole result", "realm_path", realmPath, "role_name", roleName, "address", address, "raw_result", result)
-	
+
 	isMember := result == "(true bool)"
 	c.logger.Info("HasRole parsed", "realm_path", realmPath, "role_name", roleName, "address", address, "is_member", isMember)
-	
+
 	return isMember, nil
 }
 

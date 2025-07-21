@@ -1,4 +1,4 @@
-.PHONY: dev clean down test security-scan pull-data
+.PHONY: dev clean down test security-scan pull-data tidy fmt vet lint
 
 clean: down
 	docker-compose down -v --remove-orphans
@@ -32,3 +32,16 @@ pull-data:
 	@echo "✅ Data exported to data/export/"
 	@echo "📁 Contents:"
 	@find data/export -type f 2>/dev/null | head -20 || echo "   (no files found)"
+
+fmt:
+	go fmt ./...
+
+vet:
+	go vet ./...
+
+lint:
+	@which golangci-lint > /dev/null || go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	golangci-lint run
+
+tidy: fmt vet lint
+	go mod tidy

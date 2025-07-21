@@ -9,7 +9,6 @@ require (
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/gnolang/gno v0.0.0-20250420213829-404deea07261
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	golang.org/x/crypto v0.40.0
 )
@@ -41,6 +40,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

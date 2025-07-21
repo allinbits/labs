@@ -10,7 +10,7 @@ import (
 func TestNewNoOpLockManager(t *testing.T) {
 	t.Parallel()
 	manager := NewNoOpLockManager()
-	
+
 	if manager == nil {
 		t.Fatal("NewNoOpLockManager() returned nil")
 	}
@@ -62,7 +62,7 @@ func TestNoOpLockManager_AcquireLock(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			lock, err := manager.AcquireLock(ctx, tt.key, tt.ttl)
-			
+
 			if err != nil {
 				t.Errorf("AcquireLock() failed: %v", err)
 			}
@@ -190,7 +190,7 @@ func TestNoOpLockManager_IsLocked(t *testing.T) {
 	for _, key := range tests {
 		t.Run("key_"+key, func(t *testing.T) {
 			locked, err := manager.IsLocked(ctx, key)
-			
+
 			if err != nil {
 				t.Errorf("IsLocked() failed: %v", err)
 			}
@@ -217,7 +217,7 @@ func TestNoOpLockManager_GetLock(t *testing.T) {
 	for _, key := range tests {
 		t.Run("key_"+key, func(t *testing.T) {
 			lock, err := manager.GetLock(ctx, key)
-			
+
 			if lock != nil {
 				t.Error("GetLock() should always return nil lock for NoOp manager")
 			}

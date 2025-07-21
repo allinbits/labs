@@ -52,20 +52,20 @@ func NewQueryClient(url string, realmConfig RealmConfig) *QueryClient {
 	} else if strings.HasPrefix(url, "ws://") {
 		url = "http://" + url[5:]
 	}
-	
+
 	// Create HTTP client with proper connection pooling and timeouts
 	transport := &http.Transport{
-		MaxIdleConns:        10,
-		MaxIdleConnsPerHost: 10,
-		IdleConnTimeout:     90 * time.Second,
-		DisableKeepAlives:   false, // Enable keep-alives
-		TLSHandshakeTimeout: 10 * time.Second,
+		MaxIdleConns:          10,
+		MaxIdleConnsPerHost:   10,
+		IdleConnTimeout:       90 * time.Second,
+		DisableKeepAlives:     false, // Enable keep-alives
+		TLSHandshakeTimeout:   10 * time.Second,
 		ResponseHeaderTimeout: 10 * time.Second,
 	}
-	
+
 	// Create a logger for the query client
 	logger := core.NewSlogLogger(core.ParseLogLevel("info"))
-	
+
 	return &QueryClient{
 		url:         url,
 		realmConfig: realmConfig,
@@ -77,16 +77,15 @@ func NewQueryClient(url string, realmConfig RealmConfig) *QueryClient {
 	}
 }
 
-
 // QueryUserEvents queries for all user events (UserLinked and UserUnlinked) in chronological order
 func (qc *QueryClient) QueryUserEvents(ctx context.Context, afterBlockHeight int64, afterTxIndex int64, latestBlockHeight int64) ([]Transaction, error) {
-	
+
 	// Set index to 0 if not greater than 0
 	txIndex := afterTxIndex
 	if txIndex <= 0 {
 		txIndex = 0
 	}
-	
+
 	whereClause := fmt.Sprintf(`_or: [
 			{
 				block_height: { gt: %d, lt: %d }
@@ -152,16 +151,15 @@ func (qc *QueryClient) QueryUserEvents(ctx context.Context, afterBlockHeight int
 	return qc.executeQuery(ctx, queryString)
 }
 
-
 // QueryRoleEvents queries for all role events (RoleLinked and RoleUnlinked) in chronological order
 func (qc *QueryClient) QueryRoleEvents(ctx context.Context, afterBlockHeight int64, afterTxIndex int64, latestBlockHeight int64) ([]Transaction, error) {
-	
+
 	// Set index to 0 if not greater than 0
 	txIndex := afterTxIndex
 	if txIndex <= 0 {
 		txIndex = 0
 	}
-	
+
 	whereClause := fmt.Sprintf(`_or: [
 			{
 				block_height: { gt: %d, lt: %d }
@@ -227,7 +225,6 @@ func (qc *QueryClient) QueryRoleEvents(ctx context.Context, afterBlockHeight int
 	return qc.executeQuery(ctx, queryString)
 }
 
-
 // executeQuery executes a GraphQL query and returns parsed transactions
 func (qc *QueryClient) executeQuery(ctx context.Context, queryString string) ([]Transaction, error) {
 	return qc.executeQueryWithRetry(ctx, queryString, 3)
@@ -236,9 +233,9 @@ func (qc *QueryClient) executeQuery(ctx context.Context, queryString string) ([]
 // executeQueryWithRetry executes a GraphQL query with retry logic
 func (qc *QueryClient) executeQueryWithRetry(ctx context.Context, queryString string, maxRetries int) ([]Transaction, error) {
 	var lastErr error
-	
+
 	qc.logger.Debug("Executing GraphQL query", "url", qc.url, "max_retries", maxRetries)
-	
+
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
 			qc.logger.Warn("Retrying GraphQL query", "attempt", attempt+1, "max_attempts", maxRetries+1, "previous_error", lastErr)
@@ -251,10 +248,10 @@ func (qc *QueryClient) executeQueryWithRetry(ctx context.Context, queryString st
 			case <-time.After(backoff):
 			}
 		}
-		
+
 		// Log the query being sent for debugging
 		qc.logger.Debug("Sending GraphQL query", "url", qc.url, "query", queryString, "attempt", attempt+1)
-		
+
 		// Create HTTP request
 		req, err := http.NewRequestWithContext(ctx, "POST", qc.url, bytes.NewBufferString(queryString))
 		if err != nil {
@@ -274,8 +271,12 @@ func (qc *QueryClient) executeQueryWithRetry(ctx context.Context, queryString st
 			}
 			return nil, lastErr
 		}
-		defer resp.Body.Close()
-		
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				qc.logger.Error("Failed to close response body", "error", err)
+			}
+		}()
+
 		// Check HTTP status code
 		if resp.StatusCode != http.StatusOK {
 			// Read error response body for more details
@@ -342,7 +343,7 @@ func (qc *QueryClient) executeQueryWithRetry(ctx context.Context, queryString st
 
 		return transactions, nil
 	}
-	
+
 	return nil, lastErr
 }
 
@@ -354,9 +355,9 @@ func (qc *QueryClient) QueryLatestBlockHeight(ctx context.Context) (int64, error
 // queryLatestBlockHeightWithRetry queries the latest block height with retry logic
 func (qc *QueryClient) queryLatestBlockHeightWithRetry(ctx context.Context, maxRetries int) (int64, error) {
 	queryString := `{"query": "query LatestBlock { latestBlockHeight }"}`
-	
+
 	var lastErr error
-	
+
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
 			// Wait before retrying (exponential backoff)
@@ -386,7 +387,11 @@ func (qc *QueryClient) queryLatestBlockHeightWithRetry(ctx context.Context, maxR
 			}
 			return 0, lastErr
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				qc.logger.Error("Failed to close response body", "error", err)
+			}
+		}()
 
 		// Read response
 		body, err := io.ReadAll(resp.Body)
@@ -434,6 +439,6 @@ func (qc *QueryClient) queryLatestBlockHeightWithRetry(ctx context.Context, maxR
 			return 0, fmt.Errorf("unexpected type for latestBlockHeight: %T", v)
 		}
 	}
-	
+
 	return 0, lastErr
 }

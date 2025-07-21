@@ -59,7 +59,7 @@ func (m *MemoryLockManager) AcquireLock(ctx context.Context, key string, ttl tim
 
 		m.mu.Lock()
 		existing, exists := m.locks[key]
-		
+
 		if !exists || existing.IsExpired() {
 			// Lock doesn't exist or is expired, we can take it
 			m.locks[key] = lock

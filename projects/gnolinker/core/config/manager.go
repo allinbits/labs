@@ -234,24 +234,24 @@ func (m *ConfigManager) ensureVerifiedRole(session DiscordSession, config *stora
 func (m *ConfigManager) ensureVerifiedRoleWithLock(session DiscordSession, config *storage.GuildConfig) error {
 	ctx := context.Background()
 	lockKey := fmt.Sprintf("role:create:%s:verified", config.GuildID)
-	
+
 	// Try to acquire lock
 	lockAcquired, err := m.lockManager.AcquireLock(ctx, lockKey, 30*time.Second)
 	if err != nil {
 		// Failed to get lock, wait and re-check if role was created
 		m.logger.Warn("Failed to acquire lock for role creation, retrying", "guild_id", config.GuildID, "error", err)
 		time.Sleep(m.lockFailureRetryDelay)
-		
+
 		// Check if role was created by another instance
 		if roleID := m.findRoleByName(session, config.GuildID, m.storageConfig.DefaultVerifiedRoleName); roleID != "" {
 			config.VerifiedRoleID = roleID
 			m.logger.Info("Role was created by another instance", "guild_id", config.GuildID, "role_id", roleID)
 			return nil
 		}
-		
+
 		return fmt.Errorf("could not acquire lock for role creation: %w", err)
 	}
-	
+
 	// Always release lock when done
 	defer func() {
 		if releaseErr := m.lockManager.ReleaseLock(ctx, lockAcquired); releaseErr != nil {

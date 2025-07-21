@@ -32,7 +32,7 @@ type S3LockConfig struct {
 	Region   string
 	Endpoint string // For Minio/Tigris - leave empty for AWS S3
 	Prefix   string // Prefix for lock objects (default: "locks/")
-	
+
 	// Embed common lock config
 	LockConfig
 }
@@ -97,7 +97,7 @@ func (m *S3LockManager) AcquireLock(ctx context.Context, key string, ttl time.Du
 	}
 
 	objectKey := m.getObjectKey(key)
-	
+
 	// Try to acquire lock with retries
 	var lastErr error
 	for i := 0; i <= m.config.MaxRetries; i++ {
@@ -130,9 +130,9 @@ func (m *S3LockManager) AcquireLock(ctx context.Context, key string, ttl time.Du
 		// Use conditional put to ensure atomicity
 		// This will fail if the object already exists
 		_, err = m.client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(m.bucket),
-			Key:    aws.String(objectKey),
-			Body:   bytes.NewReader(lockData),
+			Bucket:      aws.String(m.bucket),
+			Key:         aws.String(objectKey),
+			Body:        bytes.NewReader(lockData),
 			ContentType: aws.String("application/json"),
 			// Only create if doesn't exist
 			Metadata: map[string]string{
@@ -156,7 +156,7 @@ func (m *S3LockManager) AcquireLock(ctx context.Context, key string, ttl time.Du
 // stealExpiredLock attempts to replace an expired lock
 func (m *S3LockManager) stealExpiredLock(ctx context.Context, key string, newLock *Lock, oldLock *Lock) (*Lock, error) {
 	objectKey := m.getObjectKey(key)
-	
+
 	lockData, err := json.Marshal(newLock)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal lock: %w", err)
@@ -241,7 +241,12 @@ func (m *S3LockManager) GetLock(ctx context.Context, key string) (*Lock, error) 
 		}
 		return nil, fmt.Errorf("failed to get lock from S3: %w", err)
 	}
-	defer result.Body.Close()
+	defer func() {
+		if err := result.Body.Close(); err != nil {
+			// Error closing body is non-critical, just ignore
+			_ = err
+		}
+	}()
 
 	body, err := io.ReadAll(result.Body)
 	if err != nil {

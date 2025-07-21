@@ -27,10 +27,10 @@ func NewSlogLogger(level slog.Level) *SlogLogger {
 	opts := &slog.HandlerOptions{
 		Level: level,
 	}
-	
+
 	handler := slog.NewTextHandler(os.Stdout, opts)
 	logger := slog.New(handler)
-	
+
 	return &SlogLogger{
 		logger: logger,
 	}

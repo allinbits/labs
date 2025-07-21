@@ -39,6 +39,21 @@ func (w *UserLinkingWorkflowImpl) GenerateClaim(platformID, gnoAddress string) (
 	}, nil
 }
 
+// GenerateUnlinkClaim creates a signed claim for unlinking a platform user from their Gno address
+func (w *UserLinkingWorkflowImpl) GenerateUnlinkClaim(platformID, gnoAddress string) (*core.Claim, error) {
+	timestamp := time.Now()
+	message := fmt.Sprintf("%v,%v,%v", timestamp.Unix(), platformID, gnoAddress)
+	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
+	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
+	
+	return &core.Claim{
+		Type:      core.ClaimTypeUserUnlink,
+		Data:      message,
+		Signature: signature,
+		CreatedAt: timestamp,
+	}, nil
+}
+
 // GetLinkedAddress retrieves the Gno address linked to a platform user
 func (w *UserLinkingWorkflowImpl) GetLinkedAddress(platformID string) (string, error) {
 	return w.gnoClient.GetLinkedAddress(platformID)

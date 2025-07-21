@@ -35,8 +35,8 @@ func NewInteractionHandlers(
 	}
 }
 
-// RegisterSlashCommands registers all slash commands with Discord for a specific guild
-func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildID string) error {
+// GetExpectedCommands returns the canonical command definitions that should exist
+func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationCommand {
 	// Single command with all functionality as subcommands
 	gnolinkerCommand := &discordgo.ApplicationCommand{
 		Name:        "gnolinker",
@@ -65,6 +65,38 @@ func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildI
 						Type:        discordgo.ApplicationCommandOptionSubCommand,
 						Name:        "role",
 						Description: "Link a realm role to a Discord role (Admin only)",
+						Options: []*discordgo.ApplicationCommandOption{
+							{
+								Type:        discordgo.ApplicationCommandOptionString,
+								Name:        "role",
+								Description: "The realm role name",
+								Required:    true,
+							},
+							{
+								Type:        discordgo.ApplicationCommandOptionString,
+								Name:        "realm",
+								Description: "The realm path",
+								Required:    true,
+							},
+						},
+					},
+				},
+			},
+			// Unlink subcommand group
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+				Name:        "unlink",
+				Description: "Unlink accounts and roles",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Name:        "address",
+						Description: "Unlink your Discord account from your gno.land address",
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Name:        "role",
+						Description: "Unlink a realm role from a Discord role (Admin only)",
 						Options: []*discordgo.ApplicationCommandOption{
 							{
 								Type:        discordgo.ApplicationCommandOptionString,
@@ -181,14 +213,189 @@ func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildI
 		},
 	}
 
-	// Register the command for the specific guild
-	_, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, gnolinkerCommand)
-	if err != nil {
-		return fmt.Errorf("cannot create gnolinker command: %w", err)
-	}
+	return []*discordgo.ApplicationCommand{gnolinkerCommand}
+}
 
-	h.logger.Info("Registered gnolinker slash command", "guild_id", guildID)
+// RegisterSlashCommands registers all slash commands with Discord for a specific guild (legacy method)
+func (h *InteractionHandlers) RegisterSlashCommands(s *discordgo.Session, guildID string) error {
+	return h.SyncSlashCommands(s, guildID)
+}
+
+// SyncSlashCommands intelligently syncs command definitions with Discord
+func (h *InteractionHandlers) SyncSlashCommands(s *discordgo.Session, guildID string) error {
+	// Get expected commands
+	expectedCommands := h.GetExpectedCommands()
+	
+	// Get current Discord commands
+	currentCommands, err := s.ApplicationCommands(s.State.User.ID, guildID)
+	if err != nil {
+		return fmt.Errorf("failed to get current commands: %w", err)
+	}
+	
+	h.logger.Info("Starting command synchronization", 
+		"guild_id", guildID, 
+		"expected_commands", len(expectedCommands), 
+		"current_commands", len(currentCommands))
+	
+	// Compare and determine changes needed
+	toCreate, toUpdate, toDelete := h.compareCommands(expectedCommands, currentCommands)
+	
+	// Apply changes
+	changesMade := 0
+	
+	// Delete obsolete commands
+	for _, cmd := range toDelete {
+		h.logger.Info("Deleting obsolete command", "guild_id", guildID, "command", cmd.Name)
+		err := s.ApplicationCommandDelete(s.State.User.ID, guildID, cmd.ID)
+		if err != nil {
+			h.logger.Error("Failed to delete command", "guild_id", guildID, "command", cmd.Name, "error", err)
+		} else {
+			changesMade++
+		}
+	}
+	
+	// Create new commands
+	for _, cmd := range toCreate {
+		h.logger.Info("Creating new command", "guild_id", guildID, "command", cmd.Name)
+		_, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, cmd)
+		if err != nil {
+			h.logger.Error("Failed to create command", "guild_id", guildID, "command", cmd.Name, "error", err)
+		} else {
+			changesMade++
+		}
+	}
+	
+	// Update modified commands
+	for _, update := range toUpdate {
+		h.logger.Info("Updating modified command", "guild_id", guildID, "command", update.expected.Name)
+		_, err := s.ApplicationCommandEdit(s.State.User.ID, guildID, update.current.ID, update.expected)
+		if err != nil {
+			h.logger.Error("Failed to update command", "guild_id", guildID, "command", update.expected.Name, "error", err)
+		} else {
+			changesMade++
+		}
+	}
+	
+	if changesMade > 0 {
+		h.logger.Info("Command synchronization completed", "guild_id", guildID, "changes_made", changesMade)
+	} else {
+		h.logger.Debug("Commands already in sync", "guild_id", guildID)
+	}
+	
 	return nil
+}
+
+// CommandUpdate represents a command that needs to be updated
+type CommandUpdate struct {
+	current  *discordgo.ApplicationCommand
+	expected *discordgo.ApplicationCommand
+}
+
+// compareCommands compares expected vs current commands and returns what changes are needed
+func (h *InteractionHandlers) compareCommands(expected, current []*discordgo.ApplicationCommand) (
+	toCreate []*discordgo.ApplicationCommand,
+	toUpdate []CommandUpdate, 
+	toDelete []*discordgo.ApplicationCommand,
+) {
+	// Create maps for efficient lookup
+	expectedMap := make(map[string]*discordgo.ApplicationCommand)
+	currentMap := make(map[string]*discordgo.ApplicationCommand)
+	
+	for _, cmd := range expected {
+		expectedMap[cmd.Name] = cmd
+	}
+	
+	for _, cmd := range current {
+		currentMap[cmd.Name] = cmd
+	}
+	
+	// Find commands to create (in expected but not in current)
+	for _, expectedCmd := range expected {
+		if _, exists := currentMap[expectedCmd.Name]; !exists {
+			toCreate = append(toCreate, expectedCmd)
+		}
+	}
+	
+	// Find commands to delete (in current but not in expected)
+	for _, currentCmd := range current {
+		if _, exists := expectedMap[currentCmd.Name]; !exists {
+			toDelete = append(toDelete, currentCmd)
+		}
+	}
+	
+	// Find commands to update (exists in both but different)
+	for _, expectedCmd := range expected {
+		if currentCmd, exists := currentMap[expectedCmd.Name]; exists {
+			if !h.commandsEqual(expectedCmd, currentCmd) {
+				toUpdate = append(toUpdate, CommandUpdate{
+					current:  currentCmd,
+					expected: expectedCmd,
+				})
+			}
+		}
+	}
+	
+	return toCreate, toUpdate, toDelete
+}
+
+// commandsEqual compares two commands for equality (ignoring ID and other Discord-managed fields)
+func (h *InteractionHandlers) commandsEqual(expected, current *discordgo.ApplicationCommand) bool {
+	// Compare basic fields
+	if expected.Name != current.Name ||
+		expected.Description != current.Description ||
+		expected.Type != current.Type {
+		return false
+	}
+	
+	// Compare options
+	return h.optionsEqual(expected.Options, current.Options)
+}
+
+// optionsEqual compares two option slices for equality
+func (h *InteractionHandlers) optionsEqual(expected, current []*discordgo.ApplicationCommandOption) bool {
+	if len(expected) != len(current) {
+		return false
+	}
+	
+	// Create maps for comparison (order shouldn't matter for our use case)
+	expectedMap := make(map[string]*discordgo.ApplicationCommandOption)
+	currentMap := make(map[string]*discordgo.ApplicationCommandOption)
+	
+	for _, opt := range expected {
+		expectedMap[opt.Name] = opt
+	}
+	
+	for _, opt := range current {
+		currentMap[opt.Name] = opt
+	}
+	
+	// Check if all expected options exist and match in current
+	for name, expectedOpt := range expectedMap {
+		currentOpt, exists := currentMap[name]
+		if !exists {
+			return false
+		}
+		
+		if !h.optionEqual(expectedOpt, currentOpt) {
+			return false
+		}
+	}
+	
+	return true
+}
+
+// optionEqual compares two individual options for equality
+func (h *InteractionHandlers) optionEqual(expected, current *discordgo.ApplicationCommandOption) bool {
+	// Compare basic fields
+	if expected.Name != current.Name ||
+		expected.Description != current.Description ||
+		expected.Type != current.Type ||
+		expected.Required != current.Required {
+		return false
+	}
+	
+	// Recursively compare sub-options
+	return h.optionsEqual(expected.Options, current.Options)
 }
 
 // CleanupOldCommands removes all existing slash commands for a specific guild
@@ -263,6 +470,13 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 			case "role":
 				h.handleLinkRoleCommand(s, i, subcommand.Options)
 			}
+		case "unlink":
+			switch subcommand.Name {
+			case "address":
+				h.handleUnlinkAddressCommand(s, i)
+			case "role":
+				h.handleUnlinkRoleCommand(s, i, subcommand.Options)
+			}
 		case "verify":
 			switch subcommand.Name {
 			case "address":
@@ -304,14 +518,8 @@ func (h *InteractionHandlers) handleLinkAddressCommand(s *discordgo.Session, i *
 	claimURL := h.userLinkingFlow.GetClaimURL(claim)
 	embed := &discordgo.MessageEmbed{
 		Title:       "Link Your Account",
-		Description: "Here's your signed claim to link your Discord account to gno.land:",
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:  "Claim Signature",
-				Value: fmt.Sprintf("```\n%s\n```", claim.Signature),
-			},
-		},
-		Color: 0x00ff00,
+		Description: fmt.Sprintf("Ready to link your Discord account to `%s`", address),
+		Color:       0x00ff00,
 	}
 
 	// Add button to claim on gno.land
@@ -339,6 +547,189 @@ func (h *InteractionHandlers) handleLinkAddressCommand(s *discordgo.Session, i *
 		},
 	}); err != nil {
 		h.logger.Error("Failed to respond to interaction", "error", err)
+	}
+}
+
+func (h *InteractionHandlers) handleUnlinkAddressCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	userID := i.Member.User.ID
+
+	// Defer response to prevent timeout
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		h.logger.Error("Failed to defer response", "error", err, "user_id", userID)
+		return
+	}
+
+	// 1. Look up the gno address linked to this Discord ID
+	linkedAddress, err := h.userLinkingFlow.GetLinkedAddress(userID)
+	if err != nil {
+		h.logger.Error("Failed to get linked address", "error", err, "user_id", userID)
+		h.followUpError(s, i, "Failed to check linked address.")
+		return
+	}
+
+	// 2. Check if Discord ID has a linked address
+	if linkedAddress == "" {
+		embed := &discordgo.MessageEmbed{
+			Title:       "No Linked Address",
+			Description: "❌ Your Discord account is not linked to any gno.land address. There's nothing to unlink.",
+			Color:       0xff0000,
+		}
+
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Embeds: &[]*discordgo.MessageEmbed{embed},
+		})
+		if err != nil {
+			h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
+		}
+		return
+	}
+
+	// 3. Generate unlink claim
+	claim, err := h.userLinkingFlow.GenerateUnlinkClaim(userID, linkedAddress)
+	if err != nil {
+		h.logger.Error("Failed to generate unlink claim", "error", err, "user_id", userID, "address", linkedAddress)
+		h.followUpError(s, i, "Failed to generate unlink claim. Please try again.")
+		return
+	}
+
+	// Create response with claim and URL
+	claimURL := h.userLinkingFlow.GetClaimURL(claim)
+	embed := &discordgo.MessageEmbed{
+		Title:       "Unlink Your Account",
+		Description: fmt.Sprintf("Ready to unlink your Discord account from `%s`", linkedAddress),
+		Color:       0xff9900, // Orange color for unlink
+	}
+
+	// Add button to claim on gno.land
+	components := []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					Label: "Unlink on gno.land",
+					Style: discordgo.LinkButton,
+					URL:   claimURL,
+					Emoji: &discordgo.ComponentEmoji{
+						Name: "🔓",
+					},
+				},
+			},
+		},
+	}
+
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds:     &[]*discordgo.MessageEmbed{embed},
+		Components: &components,
+	})
+	if err != nil {
+		h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
+	}
+}
+
+func (h *InteractionHandlers) handleUnlinkRoleCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
+	// Check role admin permissions (for realm role management)
+	userID := i.Member.User.ID
+	isRoleAdmin, err := h.hasRoleAdminPermission(s, i.GuildID, userID)
+	if err != nil || !isRoleAdmin {
+		h.respondError(s, i, "You need gno.land admin permissions to unlink realm roles. Contact a server admin to get the configured admin role.")
+		return
+	}
+
+	roleName := options[0].StringValue()
+	realmPath := options[1].StringValue()
+
+	// Defer response to prevent timeout
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		h.logger.Error("Failed to defer response", "error", err, "user_id", userID)
+		return
+	}
+
+	// 1. Check if the role mapping exists
+	roleMapping, err := h.roleLinkingFlow.GetLinkedRole(realmPath, roleName, i.GuildID)
+	if err != nil {
+		h.logger.Error("Failed to get linked role", "error", err, "role_name", roleName, "realm_path", realmPath)
+		// If the error is "role not found", show appropriate message
+		embed := &discordgo.MessageEmbed{
+			Title:       "Role Not Linked",
+			Description: fmt.Sprintf("❌ Realm role `%s` at `%s` is not linked to any Discord role. There's nothing to unlink.", roleName, realmPath),
+			Color:       0xff0000,
+		}
+
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Embeds: &[]*discordgo.MessageEmbed{embed},
+		})
+		if err != nil {
+			h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
+		}
+		return
+	}
+
+	// 2. Additional check if role mapping is nil (defensive programming)
+	if roleMapping == nil {
+		embed := &discordgo.MessageEmbed{
+			Title:       "Role Not Linked",
+			Description: fmt.Sprintf("❌ Realm role `%s` at `%s` is not linked to any Discord role. There's nothing to unlink.", roleName, realmPath),
+			Color:       0xff0000,
+		}
+
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Embeds: &[]*discordgo.MessageEmbed{embed},
+		})
+		if err != nil {
+			h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
+		}
+		return
+	}
+
+	// 3. Generate unlink claim
+	claim, err := h.roleLinkingFlow.GenerateUnlinkClaim(userID, i.GuildID, roleMapping.PlatformRole.ID, roleName, realmPath)
+	if err != nil {
+		h.logger.Error("Failed to generate role unlink claim", "error", err, "user_id", userID, "role_name", roleName, "realm_path", realmPath)
+		h.followUpError(s, i, "Failed to generate unlink claim: "+err.Error())
+		return
+	}
+
+	// Create response with claim and URL
+	claimURL := h.roleLinkingFlow.GetClaimURL(claim)
+	embed := &discordgo.MessageEmbed{
+		Title:       "Unlink Role",
+		Description: fmt.Sprintf("Ready to unlink Discord role `%s` from realm role `%s` at `%s`", roleMapping.PlatformRole.Name, roleName, realmPath),
+		Color:       0xff9900, // Orange color for unlink
+	}
+
+	// Add button to claim on gno.land
+	components := []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					Label: "Unlink on gno.land",
+					Style: discordgo.LinkButton,
+					URL:   claimURL,
+					Emoji: &discordgo.ComponentEmoji{
+						Name: "🔓",
+					},
+				},
+			},
+		},
+	}
+
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds:     &[]*discordgo.MessageEmbed{embed},
+		Components: &components,
+	})
+	if err != nil {
+		h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
 	}
 }
 
@@ -426,6 +817,9 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 		return
 	}
 
+	// Log sync attempt
+	h.logger.Info("Starting role sync", "user_id", userID, "realm_path", realmPath, "guild_id", i.GuildID)
+	
 	// Sync roles
 	statuses, err := h.syncFlow.SyncUserRoles(userID, realmPath, i.GuildID)
 	if err != nil {
@@ -433,6 +827,8 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 		h.followUpError(s, i, "Failed to sync roles: "+err.Error())
 		return
 	}
+	
+	h.logger.Info("Sync workflow returned statuses", "user_id", userID, "realm_path", realmPath, "status_count", len(statuses))
 
 	// Build response embed
 	embed := &discordgo.MessageEmbed{
@@ -484,6 +880,10 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 			{
 				Name:  "📎 Link Commands",
 				Value: "`/gnolinker link address <address>` - Link your Discord to a gno.land address\n`/gnolinker link role <role> <realm>` - Link realm role to Discord role (Gno.land Admin)",
+			},
+			{
+				Name:  "🔓 Unlink Commands",
+				Value: "`/gnolinker unlink address` - Unlink your Discord from your gno.land address\n`/gnolinker unlink role <role> <realm>` - Unlink realm role from Discord role (Gno.land Admin)",
 			},
 			{
 				Name:  "✅ Verify Commands",
@@ -777,14 +1177,8 @@ func (h *InteractionHandlers) handleConfirmLinkRole(s *discordgo.Session, i *dis
 	claimURL := h.roleLinkingFlow.GetClaimURL(claim)
 	embed := &discordgo.MessageEmbed{
 		Title:       "Role Link Created",
-		Description: fmt.Sprintf("Link Discord role `%s` to realm role `%s` at `%s`", platformRole.Name, roleName, realmPath),
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:  "Claim Signature",
-				Value: fmt.Sprintf("```\n%s\n```", claim.Signature),
-			},
-		},
-		Color: 0x00ff00,
+		Description: fmt.Sprintf("Ready to link Discord role `%s` to realm role `%s` at `%s`", platformRole.Name, roleName, realmPath),
+		Color:       0x00ff00,
 	}
 	
 	components := []discordgo.MessageComponent{
@@ -968,8 +1362,8 @@ func (h *InteractionHandlers) handleAdminRefreshCommandsCommand(s *discordgo.Ses
 		return
 	}
 
-	// Re-register slash commands for this guild
-	if err := h.RegisterSlashCommands(s, i.GuildID); err != nil {
+	// Re-sync slash commands for this guild
+	if err := h.SyncSlashCommands(s, i.GuildID); err != nil {
 		h.logger.Error("Failed to refresh commands", "guild_id", i.GuildID, "error", err)
 		embed := &discordgo.MessageEmbed{
 			Title:       "Command Refresh Failed",

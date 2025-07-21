@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/allinbits/labs/projects/gnolinker/core"
 )
 
 // RealmConfig holds the configurable realm paths
@@ -23,12 +25,13 @@ type QueryClient struct {
 	url         string
 	httpClient  *http.Client
 	realmConfig RealmConfig
+	logger      core.Logger
 }
 
 // GraphQLResponse represents a GraphQL response
 type GraphQLResponse struct {
-	Data   map[string]interface{} `json:"data"`
-	Errors []GraphQLError         `json:"errors"`
+	Data   map[string]any `json:"data"`
+	Errors []GraphQLError `json:"errors"`
 }
 
 // GraphQLError represents a GraphQL error
@@ -38,7 +41,7 @@ type GraphQLError struct {
 		Line   int `json:"line"`
 		Column int `json:"column"`
 	} `json:"locations"`
-	Extensions map[string]interface{} `json:"extensions"`
+	Extensions map[string]any `json:"extensions"`
 }
 
 // NewQueryClient creates a new GraphQL query client
@@ -55,14 +58,18 @@ func NewQueryClient(url string, realmConfig RealmConfig) *QueryClient {
 		MaxIdleConns:        10,
 		MaxIdleConnsPerHost: 10,
 		IdleConnTimeout:     90 * time.Second,
-		DisableKeepAlives:   false, // Enable keep-alive
+		DisableKeepAlives:   false, // Enable keep-alives
 		TLSHandshakeTimeout: 10 * time.Second,
 		ResponseHeaderTimeout: 10 * time.Second,
 	}
 	
+	// Create a logger for the query client
+	logger := core.NewSlogLogger(core.ParseLogLevel("info"))
+	
 	return &QueryClient{
 		url:         url,
 		realmConfig: realmConfig,
+		logger:      logger,
 		httpClient: &http.Client{
 			Timeout:   30 * time.Second,
 			Transport: transport,
@@ -70,51 +77,29 @@ func NewQueryClient(url string, realmConfig RealmConfig) *QueryClient {
 	}
 }
 
-// buildWhereClause creates the where clause for pagination with proper bounds
-func (qc *QueryClient) buildWhereClause(afterBlockHeight int64, afterTxIndex int64) string {
-	// Use a reasonable upper bound to prevent unbounded queries
-	upperBound := afterBlockHeight + 1000000
-	
-	if afterTxIndex > 0 {
-		// We're resuming from within a block
-		return fmt.Sprintf(`_or: [
-			{
-				block_height: {
-					gt: %d
-					lt: %d
-				}
-			},
-			{
-				block_height: {
-					eq: %d
-				}
-				index: { gt: %d }
-			}
-		]`, afterBlockHeight, upperBound, afterBlockHeight, afterTxIndex)
-	}
-	// We're starting from the next block
-	return fmt.Sprintf(`_or: [
-		{
-			block_height: {
-				gt: %d
-				lt: %d
-			}
-		},
-		{
-			block_height: {
-				eq: %d
-			}
-			index: { gt: 0 }
-		}
-	]`, afterBlockHeight, upperBound, afterBlockHeight)
-}
 
 // QueryUserEvents queries for all user events (UserLinked and UserUnlinked) in chronological order
-func (qc *QueryClient) QueryUserEvents(ctx context.Context, afterBlockHeight int64, afterTxIndex int64) ([]Transaction, error) {
-	whereClause := qc.buildWhereClause(afterBlockHeight, afterTxIndex)
+func (qc *QueryClient) QueryUserEvents(ctx context.Context, afterBlockHeight int64, afterTxIndex int64, latestBlockHeight int64) ([]Transaction, error) {
 	
-	queryString := fmt.Sprintf(`{
-		"query": "query UserEvents {
+	// Set index to 0 if not greater than 0
+	txIndex := afterTxIndex
+	if txIndex <= 0 {
+		txIndex = 0
+	}
+	
+	whereClause := fmt.Sprintf(`_or: [
+			{
+				block_height: { gt: %d, lt: %d }
+			},
+			{
+				block_height: { eq: %d }
+				index: { gt: %d }
+			}
+		]`, afterBlockHeight, latestBlockHeight, afterBlockHeight, txIndex)
+
+	// Build the GraphQL query in readable format
+	query := fmt.Sprintf(`
+		query UserEvents {
 			getTransactions(
 				where: {
 					success: { eq: true }
@@ -122,7 +107,7 @@ func (qc *QueryClient) QueryUserEvents(ctx context.Context, afterBlockHeight int
 					response: {
 						events: {
 							GnoEvent: {
-								pkg_path: { eq: \"%s\" }
+								pkg_path: { eq: "%s" }
 							}
 						}
 					}
@@ -152,19 +137,44 @@ func (qc *QueryClient) QueryUserEvents(ctx context.Context, afterBlockHeight int
 					}
 				}
 			}
-		}"
-	}`, whereClause, qc.realmConfig.UserRealmPath)
+		}
+	`, whereClause, qc.realmConfig.UserRealmPath)
 
+	// Convert to single-line JSON for HTTP request, properly escaping quotes and whitespace
+	escapedQuery := strings.ReplaceAll(query, `"`, `\"`)
+	escapedQuery = strings.ReplaceAll(escapedQuery, "\n", " ")
+	escapedQuery = strings.ReplaceAll(escapedQuery, "\t", " ")
+	// Remove extra spaces
+	escapedQuery = strings.Join(strings.Fields(escapedQuery), " ")
+	queryString := fmt.Sprintf(`{"query": "%s"}`, escapedQuery)
+
+	qc.logger.Debug("Executing UserEvents query", "from_block", afterBlockHeight, "from_tx_index", afterTxIndex, "readable_query", query)
 	return qc.executeQuery(ctx, queryString)
 }
 
 
 // QueryRoleEvents queries for all role events (RoleLinked and RoleUnlinked) in chronological order
-func (qc *QueryClient) QueryRoleEvents(ctx context.Context, afterBlockHeight int64, afterTxIndex int64) ([]Transaction, error) {
-	whereClause := qc.buildWhereClause(afterBlockHeight, afterTxIndex)
+func (qc *QueryClient) QueryRoleEvents(ctx context.Context, afterBlockHeight int64, afterTxIndex int64, latestBlockHeight int64) ([]Transaction, error) {
 	
-	queryString := fmt.Sprintf(`{
-		"query": "query RoleEvents {
+	// Set index to 0 if not greater than 0
+	txIndex := afterTxIndex
+	if txIndex <= 0 {
+		txIndex = 0
+	}
+	
+	whereClause := fmt.Sprintf(`_or: [
+			{
+				block_height: { gt: %d, lt: %d }
+			},
+			{
+				block_height: { eq: %d }
+				index: { gt: %d }
+			}
+		]`, afterBlockHeight, latestBlockHeight, afterBlockHeight, txIndex)
+
+	// Build the GraphQL query in readable format
+	query := fmt.Sprintf(`
+		query RoleEvents {
 			getTransactions(
 				where: {
 					success: { eq: true }
@@ -172,7 +182,7 @@ func (qc *QueryClient) QueryRoleEvents(ctx context.Context, afterBlockHeight int
 					response: {
 						events: {
 							GnoEvent: {
-								pkg_path: { eq: \"%s\" }
+								pkg_path: { eq: "%s" }
 							}
 						}
 					}
@@ -202,9 +212,18 @@ func (qc *QueryClient) QueryRoleEvents(ctx context.Context, afterBlockHeight int
 					}
 				}
 			}
-		}"
-	}`, whereClause, qc.realmConfig.RoleRealmPath)
+		}
+	`, whereClause, qc.realmConfig.RoleRealmPath)
 
+	// Convert to single-line JSON for HTTP request, properly escaping quotes and whitespace
+	escapedQuery := strings.ReplaceAll(query, `"`, `\"`)
+	escapedQuery = strings.ReplaceAll(escapedQuery, "\n", " ")
+	escapedQuery = strings.ReplaceAll(escapedQuery, "\t", " ")
+	// Remove extra spaces
+	escapedQuery = strings.Join(strings.Fields(escapedQuery), " ")
+	queryString := fmt.Sprintf(`{"query": "%s"}`, escapedQuery)
+
+	qc.logger.Debug("Executing RoleEvents query", "from_block", afterBlockHeight, "from_tx_index", afterTxIndex, "readable_query", query)
 	return qc.executeQuery(ctx, queryString)
 }
 
@@ -218,16 +237,23 @@ func (qc *QueryClient) executeQuery(ctx context.Context, queryString string) ([]
 func (qc *QueryClient) executeQueryWithRetry(ctx context.Context, queryString string, maxRetries int) ([]Transaction, error) {
 	var lastErr error
 	
+	qc.logger.Debug("Executing GraphQL query", "url", qc.url, "max_retries", maxRetries)
+	
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
+			qc.logger.Warn("Retrying GraphQL query", "attempt", attempt+1, "max_attempts", maxRetries+1, "previous_error", lastErr)
 			// Wait before retrying (exponential backoff)
 			backoff := time.Duration(attempt) * time.Second
 			select {
 			case <-ctx.Done():
+				qc.logger.Error("GraphQL query cancelled", "error", ctx.Err())
 				return nil, ctx.Err()
 			case <-time.After(backoff):
 			}
 		}
+		
+		// Log the query being sent for debugging
+		qc.logger.Debug("Sending GraphQL query", "url", qc.url, "query", queryString, "attempt", attempt+1)
 		
 		// Create HTTP request
 		req, err := http.NewRequestWithContext(ctx, "POST", qc.url, bytes.NewBufferString(queryString))
@@ -242,17 +268,36 @@ func (qc *QueryClient) executeQueryWithRetry(ctx context.Context, queryString st
 		resp, err := qc.httpClient.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to execute request (attempt %d/%d): %w", attempt+1, maxRetries+1, err)
+			qc.logger.Error("GraphQL request failed", "attempt", attempt+1, "error", err, "url", qc.url)
 			if attempt < maxRetries {
 				continue // Retry on network errors
 			}
 			return nil, lastErr
 		}
 		defer resp.Body.Close()
+		
+		// Check HTTP status code
+		if resp.StatusCode != http.StatusOK {
+			// Read error response body for more details
+			errorBody, bodyErr := io.ReadAll(resp.Body)
+			if bodyErr == nil && len(errorBody) > 0 {
+				qc.logger.Error("GraphQL server error with body", "status_code", resp.StatusCode, "status", resp.Status, "url", qc.url, "error_body", string(errorBody))
+				lastErr = fmt.Errorf("GraphQL server returned HTTP %d: %s, body: %s", resp.StatusCode, resp.Status, string(errorBody))
+			} else {
+				qc.logger.Error("GraphQL server error", "status_code", resp.StatusCode, "status", resp.Status, "url", qc.url)
+				lastErr = fmt.Errorf("GraphQL server returned HTTP %d: %s", resp.StatusCode, resp.Status)
+			}
+			if attempt < maxRetries && (resp.StatusCode >= 500 || resp.StatusCode == 429) {
+				continue // Retry on server errors and rate limiting
+			}
+			return nil, lastErr
+		}
 
 		// Read response
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to read response body: %w", err)
+			qc.logger.Error("Failed to read GraphQL response", "error", err, "attempt", attempt+1)
 			if attempt < maxRetries {
 				continue // Retry on read errors
 			}
@@ -308,11 +353,7 @@ func (qc *QueryClient) QueryLatestBlockHeight(ctx context.Context) (int64, error
 
 // queryLatestBlockHeightWithRetry queries the latest block height with retry logic
 func (qc *QueryClient) queryLatestBlockHeightWithRetry(ctx context.Context, maxRetries int) (int64, error) {
-	queryString := `{
-		"query": "query LatestBlock {
-			latestBlockHeight
-		}"
-	}`
+	queryString := `{"query": "query LatestBlock { latestBlockHeight }"}`
 	
 	var lastErr error
 	

@@ -817,6 +817,9 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 		return
 	}
 
+	// Log sync attempt
+	h.logger.Info("Starting role sync", "user_id", userID, "realm_path", realmPath, "guild_id", i.GuildID)
+	
 	// Sync roles
 	statuses, err := h.syncFlow.SyncUserRoles(userID, realmPath, i.GuildID)
 	if err != nil {
@@ -824,6 +827,8 @@ func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *di
 		h.followUpError(s, i, "Failed to sync roles: "+err.Error())
 		return
 	}
+	
+	h.logger.Info("Sync workflow returned statuses", "user_id", userID, "realm_path", realmPath, "status_count", len(statuses))
 
 	// Build response embed
 	embed := &discordgo.MessageEmbed{

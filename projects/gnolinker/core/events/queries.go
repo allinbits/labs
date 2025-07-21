@@ -148,9 +148,38 @@ func (qe *QueryExecutor) executeUserEventsQuery(ctx context.Context, queryState 
 	
 	// Query from last processed position to current block
 	qe.logger.Debug("Querying user events", "from_block", blockHeight, "from_tx_index", txIndex, "to_block", currentHeight)
-	transactions, err := qe.queryClient.QueryUserEvents(ctx, blockHeight, txIndex)
+	
+	// Log the query range that will be used
+	if txIndex > 0 {
+		qe.logger.Info("Executing UserEvents GraphQL query with block range", 
+			"query_type", "user_events",
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > %d)", 
+				blockHeight, currentHeight, blockHeight, txIndex))
+	} else {
+		qe.logger.Info("Executing UserEvents GraphQL query with block range", 
+			"query_type", "user_events",
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > 0)", 
+				blockHeight, currentHeight, blockHeight))
+	}
+	
+	transactions, err := qe.queryClient.QueryUserEvents(ctx, blockHeight, txIndex, currentHeight)
 	if err != nil {
 		return nil, err
+	}
+	
+	// Debug log all transactions found before filtering
+	qe.logger.Debug("Raw transactions from GraphQL", 
+		"query_type", "user_events", 
+		"total_transactions", len(transactions),
+		"block_range", fmt.Sprintf("%d-%d", blockHeight, currentHeight))
+	
+	for i, tx := range transactions {
+		qe.logger.Debug("Transaction found", 
+			"index", i,
+			"hash", tx.Hash, 
+			"block_height", tx.BlockHeight, 
+			"tx_index", tx.Index,
+			"event_count", len(tx.Response.Events))
 	}
 
 	// Filter transactions to only include those up to current block height
@@ -282,6 +311,21 @@ func createUserEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 				"guild_id", guild.GuildID,
 				"block_height", tx.BlockHeight, 
 				"tx_index", tx.Index)
+			
+			// Save state incrementally if callback is available
+			if saveCallback, ok := ctx.Value("saveCallback").(func() error); ok {
+				if err := saveCallback(); err != nil {
+					logger.Error("Failed to save state incrementally", 
+						"guild_id", guild.GuildID, 
+						"tx_hash", tx.Hash, 
+						"error", err)
+					// Continue processing but return error to indicate partial failure
+					return err
+				}
+				logger.Debug("State saved incrementally after transaction", 
+					"guild_id", guild.GuildID, 
+					"tx_hash", tx.Hash)
+			}
 		}
 
 		return nil
@@ -322,7 +366,21 @@ func (qe *QueryExecutor) executeRoleEventsQuery(ctx context.Context, queryState 
 	
 	// Query from last processed position to current block
 	qe.logger.Debug("Querying role events", "from_block", blockHeight, "from_tx_index", txIndex, "to_block", currentHeight)
-	transactions, err := qe.queryClient.QueryRoleEvents(ctx, blockHeight, txIndex)
+	
+	// Log the query range that will be used
+	if txIndex > 0 {
+		qe.logger.Info("Executing RoleEvents GraphQL query with block range", 
+			"query_type", "role_events",
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > %d)", 
+				blockHeight, currentHeight, blockHeight, txIndex))
+	} else {
+		qe.logger.Info("Executing RoleEvents GraphQL query with block range", 
+			"query_type", "role_events",
+			"block_range", fmt.Sprintf("(block > %d AND block < %d) OR (block = %d AND tx_index > 0)", 
+				blockHeight, currentHeight, blockHeight))
+	}
+	
+	transactions, err := qe.queryClient.QueryRoleEvents(ctx, blockHeight, txIndex, currentHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -477,6 +535,21 @@ func createRoleEventsHandler(logger core.Logger, eventHandlers *EventHandlers) Q
 				"guild_id", guild.GuildID,
 				"block_height", tx.BlockHeight, 
 				"tx_index", tx.Index)
+			
+			// Save state incrementally if callback is available
+			if saveCallback, ok := ctx.Value("saveCallback").(func() error); ok {
+				if err := saveCallback(); err != nil {
+					logger.Error("Failed to save state incrementally", 
+						"guild_id", guild.GuildID, 
+						"tx_hash", tx.Hash, 
+						"error", err)
+					// Continue processing but return error to indicate partial failure
+					return err
+				}
+				logger.Debug("State saved incrementally after transaction", 
+					"guild_id", guild.GuildID, 
+					"tx_hash", tx.Hash)
+			}
 		}
 
 		return nil

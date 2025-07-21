@@ -25,6 +25,9 @@ type SaveStateFunc func(guild *storage.GuildConfig) error
 // QueryHandler processes query results
 type QueryHandler func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error
 
+// QueryHandlerWithCallback processes query results with incremental saving support
+type QueryHandlerWithCallback func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState, saveCallback func() error) error
+
 // QueryDefinition defines a reusable query
 type QueryDefinition struct {
 	QueryID      string        `json:"query_id"`

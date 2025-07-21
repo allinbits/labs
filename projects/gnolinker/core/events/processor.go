@@ -242,8 +242,27 @@ func (qp *QueryProcessor) processQueries() {
 		return
 	}
 
+	// Ensure core queries are enabled by default
+	coreQueries := []string{"user_events", "role_events", "verify_members"}
+	for _, queryID := range coreQueries {
+		if _, exists := config.GetQueryState(queryID); !exists {
+			qp.logger.Info("Enabling core query for guild", "guild_id", qp.guildID, "query_id", queryID)
+			config.EnsureQueryState(queryID, true)
+		}
+	}
+	
+	// Save the updated config if we added any queries
+	if err := qp.store.Set(qp.guildID, config); err != nil {
+		qp.logger.Error("Failed to save config after enabling core queries", "guild_id", qp.guildID, "error", err)
+	}
+
+	// Get enabled queries
+	enabledQueries := config.GetEnabledQueries()
+	qp.logger.Debug("Processing queries for guild", "guild_id", qp.guildID, "enabled_queries", enabledQueries, "enabled_count", len(enabledQueries))
+	
 	// Process each enabled query
-	for _, queryID := range config.GetEnabledQueries() {
+	for _, queryID := range enabledQueries {
+		qp.logger.Debug("Processing query", "guild_id", qp.guildID, "query_id", queryID)
 		if err := qp.processQuery(queryID, config); err != nil {
 			qp.logger.Error("Failed to process query", "guild_id", qp.guildID, "query_id", queryID, "error", err)
 		}
@@ -311,18 +330,23 @@ func (qp *QueryProcessor) processEventStreamQuery(queryDef *QueryDefinition, que
 
 	// Process results and save position incrementally
 	if len(results) > 0 && queryDef.Handler != nil {
-		// Create a wrapper that saves after each successful transaction
+		// Create a save callback for incremental state saving
+		saveCallback := func() error {
+			return qp.store.Set(qp.guildID, config)
+		}
+		
+		// Create a wrapper that provides the save callback to the handler
 		wrappedHandler := func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
-			// Call the actual handler
-			if err := queryDef.Handler(ctx, results, guild, state); err != nil {
+			// Set the save callback in the context for handlers to use
+			ctxWithSave := context.WithValue(ctx, "saveCallback", saveCallback)
+			
+			// Call the handler
+			if err := queryDef.Handler(ctxWithSave, results, guild, state); err != nil {
 				return err
 			}
 			
-			// After handler completes, save the updated state
-			// The handler has already updated the position for each transaction
-			// TODO: Ideally we should save after each transaction, not at the end
-			// This would require passing a save callback to the handler
-			return qp.store.Set(qp.guildID, guild)
+			// Save at the end (fallback if handler didn't save incrementally)
+			return saveCallback()
 		}
 		
 		if err := wrappedHandler(qp.ctx, results, config, queryState); err != nil {

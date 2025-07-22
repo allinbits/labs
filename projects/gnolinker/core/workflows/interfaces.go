@@ -33,6 +33,9 @@ type RoleLinkingWorkflow interface {
 	// ListLinkedRoles retrieves all role mappings for a realm
 	ListLinkedRoles(realmPath, platformGuildID string) ([]*core.RoleMapping, error)
 
+	// ListAllRolesByGuild retrieves all role mappings for a guild across all realms
+	ListAllRolesByGuild(platformGuildID string) ([]*core.RoleMapping, error)
+
 	// HasRealmRole checks if an address has a specific role in the realm
 	HasRealmRole(realmPath, roleName, address string) (bool, error)
 

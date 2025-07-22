@@ -102,6 +102,32 @@ func (c *GnoClient) ListLinkedRoles(realmPath, platformGuildID string) ([]*core.
 	return roles, nil
 }
 
+// ListAllRolesByGuild returns all role mappings for a guild across all realms
+func (c *GnoClient) ListAllRolesByGuild(platformGuildID string) ([]*core.RoleMapping, error) {
+	query := fmt.Sprintf(`ListAllRolesByGuildJSON("%v")`, platformGuildID)
+	contractPath := "gno.land/" + c.config.RoleContract
+
+	c.logger.Debug("Querying ListAllRolesByGuild", "guild_id", platformGuildID, "contract", contractPath, "query", query)
+
+	result, _, err := c.client.QEval(contractPath, query)
+	if err != nil {
+		c.logger.Error("ListAllRolesByGuild query failed", "error", err, "guild_id", platformGuildID, "contract", contractPath)
+		return nil, fmt.Errorf("failed to list all roles by guild: %w", err)
+	}
+
+	c.logger.Info("ListAllRolesByGuild result", "guild_id", platformGuildID, "raw_result", result)
+
+	roles, err := parseLinkedRoles(result)
+	if err != nil {
+		c.logger.Error("Failed to parse all roles by guild", "error", err, "raw_result", result)
+		return nil, err
+	}
+
+	c.logger.Info("ListAllRolesByGuild parsed", "guild_id", platformGuildID, "role_count", len(roles))
+
+	return roles, nil
+}
+
 // HasRole checks if an address has a specific role in the realm
 func (c *GnoClient) HasRole(realmPath, roleName, address string) (bool, error) {
 	query := fmt.Sprintf(`HasRole("%v", "%v")`, roleName, address)

@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
@@ -438,49 +437,32 @@ func (eh *EventHandlers) getMonitoredRealms(config *storage.GuildConfig) []strin
 		return config.MonitoredRealms
 	}
 
-	// Otherwise, discover realms by examining Discord roles
+	// Otherwise, discover realms by fetching all linked roles for each guild
 	realmPaths := make(map[string]bool)
 
 	// For each guild we're monitoring
 	for _, guild := range eh.session.State.Guilds {
-		// Get all Discord roles
-		roles, err := eh.session.GuildRoles(guild.ID)
+		// Get all linked roles for this guild in one call
+		linkedRoles, err := eh.roleLinkingFlow.ListAllRolesByGuild(guild.ID)
 		if err != nil {
-			eh.logger.Error("Failed to get guild roles", "guild_id", guild.ID, "error", err)
+			eh.logger.Error("Failed to list all roles by guild", "guild_id", guild.ID, "error", err)
 			continue
 		}
 
-		// Check each role name for our naming convention: {roleName}-{realmPath}
-		for _, role := range roles {
-			// Look for roles that contain realm paths
-			// Realm paths typically start with "gno.land/r/"
-			if strings.Contains(role.Name, "gno.land/r/") {
-				// Extract realm path from role name
-				// Format is: {roleName}-{realmPath}
-				parts := strings.SplitN(role.Name, "-", 2)
-				if len(parts) == 2 && strings.HasPrefix(parts[1], "gno.land/r/") {
-					realmPath := parts[1]
+		// Extract unique realm paths from the linked roles
+		for _, roleMapping := range linkedRoles {
+			realmPaths[roleMapping.RealmPath] = true
+			eh.logger.Debug("Found monitored realm",
+				"realm_path", roleMapping.RealmPath,
+				"role_name", roleMapping.RealmRoleName,
+				"guild_id", guild.ID)
+		}
 
-					// Verify this is actually a linked role by querying the contract
-					linkedRole, err := eh.roleLinkingFlow.GetLinkedRole(realmPath, parts[0], guild.ID)
-					if err != nil {
-						eh.logger.Debug("Failed to verify linked role",
-							"role_name", role.Name,
-							"realm_path", realmPath,
-							"error", err)
-						continue
-					}
-
-					// If we confirmed it's a linked role, add the realm
-					if linkedRole != nil && linkedRole.PlatformRole.ID == role.ID {
-						realmPaths[realmPath] = true
-						eh.logger.Info("Found monitored realm from Discord role",
-							"realm_path", realmPath,
-							"role_name", role.Name,
-							"guild_id", guild.ID)
-					}
-				}
-			}
+		if len(linkedRoles) > 0 {
+			eh.logger.Info("Discovered linked roles for guild",
+				"guild_id", guild.ID,
+				"role_count", len(linkedRoles),
+				"unique_realms", len(realmPaths))
 		}
 	}
 

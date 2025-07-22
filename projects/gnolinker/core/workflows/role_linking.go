@@ -108,6 +108,11 @@ func (w *RoleLinkingWorkflowImpl) ListLinkedRoles(realmPath, platformGuildID str
 	return w.gnoClient.ListLinkedRoles(realmPath, platformGuildID)
 }
 
+// ListAllRolesByGuild retrieves all role mappings for a guild across all realms
+func (w *RoleLinkingWorkflowImpl) ListAllRolesByGuild(platformGuildID string) ([]*core.RoleMapping, error) {
+	return w.gnoClient.ListAllRolesByGuild(platformGuildID)
+}
+
 // HasRealmRole checks if an address has a specific role in the realm
 func (w *RoleLinkingWorkflowImpl) HasRealmRole(realmPath, roleName, address string) (bool, error) {
 	return w.gnoClient.HasRole(realmPath, roleName, address)

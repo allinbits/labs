@@ -202,6 +202,16 @@ func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationComm
 						Name:        "info",
 						Description: "Show bot configuration information",
 					},
+					{
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Name:        "list-roles",
+						Description: "List all linked roles across all realms",
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Name:        "check-orphans",
+						Description: "Find orphaned roles (deleted or unlinked)",
+					},
 				},
 			},
 			// Help subcommand
@@ -492,6 +502,10 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 				h.handleAdminRefreshCommandsCommand(s, i)
 			case "info":
 				h.handleAdminInfoCommand(s, i)
+			case "list-roles":
+				h.handleAdminListRolesCommand(s, i)
+			case "check-orphans":
+				h.handleAdminCheckOrphansCommand(s, i)
 			}
 		}
 	}
@@ -873,32 +887,42 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 		Description: "Link your Discord account to gno.land and sync your realm roles!",
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:  "📎 Link Commands",
-				Value: "`/gnolinker link address <address>` - Link your Discord to a gno.land address\n`/gnolinker link role <role> <realm>` - Link realm role to Discord role (Gno.land Admin)",
+				Name: "📎 Link Commands",
+				Value: "`/gnolinker link address <address>` - Link your Discord to a gno.land address\n" +
+					"`/gnolinker link role <role> <realm>` - Link realm role to Discord role (Gno.land Admin)",
 			},
 			{
-				Name:  "🔓 Unlink Commands",
-				Value: "`/gnolinker unlink address` - Unlink your Discord from your gno.land address\n`/gnolinker unlink role <role> <realm>` - Unlink realm role from Discord role (Gno.land Admin)",
+				Name: "🔓 Unlink Commands",
+				Value: "`/gnolinker unlink address` - Unlink your Discord from your gno.land address\n" +
+					"`/gnolinker unlink role <role> <realm>` - Unlink realm role from Discord role (Gno.land Admin)",
 			},
 			{
-				Name:  "✅ Verify Commands",
-				Value: "`/gnolinker verify address` - Check your account linking status\n`/gnolinker verify role <role> <realm>` - Check role linking status",
+				Name: "✅ Verify Commands",
+				Value: "`/gnolinker verify address` - Check your account linking status\n" +
+					"`/gnolinker verify role <role> <realm>` - Check role linking status",
 			},
 			{
-				Name:  "🔄 Sync Commands",
-				Value: "`/gnolinker sync roles <realm>` - Sync your realm roles\n`/gnolinker sync user <realm> <user>` - Sync another user's roles (Gno.land Admin)",
+				Name: "🔄 Sync Commands",
+				Value: "`/gnolinker sync roles <realm>` - Sync your realm roles\n" +
+					"`/gnolinker sync user <realm> <user>` - Sync another user's roles (Gno.land Admin)",
 			},
 			{
-				Name:  "⚙️ Guild Admin Commands",
-				Value: "`/gnolinker admin refresh-commands` - Re-register slash commands (Discord Admin)\n`/gnolinker admin info` - Show bot configuration (Discord Admin)",
+				Name: "⚙️ Guild Admin Commands",
+				Value: "`/gnolinker admin refresh-commands` - Re-register slash commands (Discord Admin)\n" +
+					"`/gnolinker admin info` - Show bot configuration (Discord Admin)\n" +
+					"`/gnolinker admin list-roles` - List all linked roles across all realms (Discord Admin)\n" +
+					"`/gnolinker admin check-orphans` - Find orphaned roles (deleted or unlinked) (Discord Admin)",
 			},
 			{
-				Name:  "🔑 Permission Types",
-				Value: "**Gno.land Admin**: Requires configured admin role for realm management\n**Discord Admin**: Requires Administrator permission or server owner",
+				Name: "🔑 Permission Types",
+				Value: "**Gno.land Admin**: Requires configured admin role for realm management\n" +
+					"**Discord Admin**: Requires Administrator permission or server owner",
 			},
 			{
-				Name:  "ℹ️ How it works",
-				Value: "1. Link your Discord to gno.land address\n2. Gno.land admin links realm roles to Discord roles\n3. Sync your roles to get Discord permissions",
+				Name: "ℹ️ How it works",
+				Value: "1. Link your Discord to gno.land address\n" +
+					"2. Gno.land admin links realm roles to Discord roles\n" +
+					"3. Sync your roles to get Discord permissions",
 			},
 		},
 		Color: 0x5865F2,

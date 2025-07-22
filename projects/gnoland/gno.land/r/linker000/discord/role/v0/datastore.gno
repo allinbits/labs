@@ -6,7 +6,7 @@ import (
 	"gno.land/p/demo/avl"
 )
 
-// datastore keeps a *Claim database indexed by key/value store optimized for 3 types of queries
+// datastore keeps a *Claim database indexed by key/value store optimized for 4 types of queries
 // byPathRoleGuild is keyed by realmPath|roleName|guildID, if you know these 3 pieces of information
 // you can quickly find the discordRoleID linked to this realm and discord server
 // byGuildRole is keyed by discordGuildID|discordRoleID, if you know the discord server and role information
@@ -14,10 +14,13 @@ import (
 // byGuildRealm is a nested AVL tree keyed by RealmPath and Guild, contains a nested AVL tree that
 // keeps track of all registered roles for that realm and discord server combination, making it easier
 // to perform membership lookups
+// byGuild is a nested AVL tree keyed by guildID, contains a nested AVL tree that
+// keeps track of all claims for that guild, making it easy to get all realm roles for a guild
 type datastore struct {
 	byPathRoleGuild *avl.Tree
 	byGuildRole     *avl.Tree
 	byPathGuild     *avl.Tree
+	byGuild         *avl.Tree
 }
 
 func newDatastore() *datastore {
@@ -25,6 +28,7 @@ func newDatastore() *datastore {
 		byPathRoleGuild: avl.NewTree(),
 		byGuildRole:     avl.NewTree(),
 		byPathGuild:     avl.NewTree(),
+		byGuild:         avl.NewTree(),
 	}
 }
 
@@ -41,6 +45,7 @@ func (ds *datastore) set(claim *Claim) error {
 	ds.byPathRoleGuild.Set(claim.PathRoleGuildKey(), claim)
 	ds.byGuildRole.Set(claim.GuildRoleKey(), claim)
 	ds.addRoleToPathGuild(claim.roleName, claim.realmPath, claim.discordGuildID)
+	ds.addClaimToGuild(claim)
 	return nil
 }
 
@@ -51,6 +56,7 @@ func (ds *datastore) removeByPathRoleGuild(realmPath, roleName, guildID string) 
 		claim := value.(*Claim)
 		ds.removeByGuildRole(claim.discordGuildID, claim.discordRoleID)
 		ds.removeRoleFromPathGuild(claim.roleName, claim.realmPath, claim.discordGuildID)
+		ds.removeClaimFromGuild(claim)
 	}
 }
 
@@ -62,6 +68,7 @@ func (ds *datastore) removeByGuildRole(guildID, roleID string) {
 		key := fmtPathRoleGuildKey(claim.realmPath, claim.roleName, claim.discordGuildID)
 		ds.byPathRoleGuild.Remove(key)
 		ds.removeRoleFromPathGuild(claim.roleName, claim.realmPath, claim.discordGuildID)
+		ds.removeClaimFromGuild(claim)
 	}
 }
 
@@ -114,6 +121,42 @@ func (ds *datastore) listRolesByPathGuild(realmPath, guildID string) []string {
 	results := []string{}
 	roles.Iterate("", "", func(key string, _ any) bool {
 		results = append(results, key)
+		return false
+	})
+	return results
+}
+
+func (ds *datastore) addClaimToGuild(claim *Claim) {
+	value, ok := ds.byGuild.Get(claim.discordGuildID)
+	if !ok {
+		ds.byGuild.Set(claim.discordGuildID, avl.NewTree())
+		value, _ = ds.byGuild.Get(claim.discordGuildID)
+	}
+	claims := value.(*avl.Tree)
+	// Use a unique key combining path, role, and guild for the nested tree
+	claimKey := claim.PathRoleGuildKey()
+	claims.Set(claimKey, claim)
+}
+
+func (ds *datastore) removeClaimFromGuild(claim *Claim) {
+	value, ok := ds.byGuild.Get(claim.discordGuildID)
+	if !ok {
+		return
+	}
+	claims := value.(*avl.Tree)
+	claimKey := claim.PathRoleGuildKey()
+	claims.Remove(claimKey)
+}
+
+func (ds *datastore) listClaimsByGuild(guildID string) []*Claim {
+	value, ok := ds.byGuild.Get(guildID)
+	if !ok {
+		return []*Claim{}
+	}
+	claims := value.(*avl.Tree)
+	results := []*Claim{}
+	claims.Iterate("", "", func(_ string, value any) bool {
+		results = append(results, value.(*Claim))
 		return false
 	})
 	return results

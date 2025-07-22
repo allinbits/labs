@@ -106,3 +106,19 @@ func ListLinkedRoles(realmPath, guildID string) []LinkedRealmRole {
 func ListLinkedRolesJSON(realmPath, guildID string) string {
 	return linkedRealmRolesToJSON(ListLinkedRoles(realmPath, guildID))
 }
+
+// ListAllRolesByGuild takes a discord guildID and returns all LinkedRealmRoles
+// for that guild, regardless of realm path.
+func ListAllRolesByGuild(guildID string) []LinkedRealmRole {
+	results := []LinkedRealmRole{}
+	claims := ds.listClaimsByGuild(guildID)
+	for _, claim := range claims {
+		results = append(results, claim.RealmRoleDetails())
+	}
+	return results
+}
+
+// ListAllRolesByGuildJSON returns a json encoded string for ListAllRolesByGuild.
+func ListAllRolesByGuildJSON(guildID string) string {
+	return linkedRealmRolesToJSON(ListAllRolesByGuild(guildID))
+}

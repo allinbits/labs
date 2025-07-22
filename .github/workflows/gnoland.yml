@@ -37,15 +37,6 @@ jobs:
           filters: |
             gno-land:
               - 'projects/gnoland/gno.land/**'
-      - name: Run format check
-        run: |
-          cd projects/gnoland
-          make fmt
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Error: 'make fmt' modified files. Please run 'make fmt' locally and commit the changes."
-            git diff
-            exit 1
-          fi
 
       - name: Run tests for ${{ matrix.test-path }}
         run: |

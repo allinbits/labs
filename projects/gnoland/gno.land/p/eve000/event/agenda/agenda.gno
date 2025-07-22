@@ -2,6 +2,7 @@ package agenda
 
 import (
 	"net/url"
+	"strings"
 	"time"
 
 	"gno.land/p/demo/ufmt"
@@ -11,14 +12,16 @@ import (
 )
 
 type Agenda struct {
-	Name        string
-	Location    *location.Location
-	StartDate   time.Time
-	EndDate     time.Time
-	Banner      *component.Content
-	Description string
-	Sessions    []*session.Session
-	renderOpts  map[string]interface{}
+	Name           string
+	Location       *location.Location
+	StartDate      time.Time
+	EndDate        time.Time
+	Status         component.EventStatus
+	AttendanceMode component.EventAttendanceMode
+	Banner         *component.Content
+	Description    string
+	Sessions       []*session.Session
+	renderOpts     map[string]interface{}
 }
 
 var _ component.Component = (*Agenda)(nil)
@@ -44,11 +47,15 @@ func (a *Agenda) ToMarkdown(_ ...component.Content) string {
 	if _, ok := a.RenderOpts()["Location"]; ok && a.Location != nil {
 		markdown += "### " + a.Location.Name + "\n\n"
 	}
-	if FormatDate(a.StartDate) == FormatDate(a.EndDate) {
-		markdown += FormatDate(a.StartDate) + "\n\n"
-	} else {
-		markdown += FormatDate(a.StartDate) + " - " + FormatDate(a.EndDate) + "\n\n"
+
+	if a.Status == component.EventScheduled {
+		if FormatDate(a.StartDate) == FormatDate(a.EndDate) {
+			markdown += FormatDate(a.StartDate) + "\n\n"
+		} else {
+			markdown += FormatDate(a.StartDate) + " - " + FormatDate(a.EndDate) + "\n\n"
+		}
 	}
+
 	markdown += a.Description + "\n\n"
 
 	if a.Banner != nil && a.Banner.Published {
@@ -134,10 +141,18 @@ func (a *Agenda) ToSVGFragment(y *int) string {
 	*y += 10
 	svg += component.RenderSVGLine(y, "subtitle", "", a.Location.Name)
 	*y += 10
-	if a.StartDate == a.EndDate {
-		svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate))
+	if a.Status == component.EventCancelled {
+		svg += component.RenderSVGLine(y, "text", "label", "Status: Canceled")
+	}
+	if a.Status != component.EventPostponed {
+		if a.StartDate == a.EndDate {
+			svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate))
+		} else {
+			svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate)+" - "+FormatDate(a.EndDate))
+		}
 	} else {
-		svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate)+" - "+FormatDate(a.EndDate))
+		label := strings.TrimPrefix(string(a.Status), "https://schema.org/")
+		svg += component.RenderSVGLine(y, "text", "", "Status: "+label)
 	}
 	*y += 20
 	svg += component.RenderSVGLine(y, "text", "", a.Description)

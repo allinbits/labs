@@ -11,9 +11,9 @@ import (
 )
 
 func init() {
-    renderOpts := map[string]interface{}{
-        "Svg":       struct{}{},
-    }
+	renderOpts := map[string]interface{}{
+		"Svg": struct{}{},
+	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 	// register app w/ /events api
 }
@@ -110,16 +110,18 @@ var Sessions = map[string]*session.Session{
 }
 
 var gnolandlaunch = &event.Event{
-	Name:     "Gnoland Launch",
-	Location: locations["gnowhere"],
-	// StartDate:   time.Date(2025, 7, 25, 0, 0, 0, 0, time.UTC),
-	// EndDate:     time.Date(2025, 7, 25, 23, 59, 59, 0, time.UTC),
-	Description: "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
-	Sessions: []*session.Session{
+	Name:      "Gnoland Launch",
+	Location:  locations["gnowhere"],
+	StartDate: time.Date(2025, 7, 21, 0, 0, 0, 0, time.UTC),
+	// EndDate:     time.Date(2025, 7, 21, 23, 59, 59, 0, time.UTC),
+	Description:    "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
+	Status:         component.EventPostponed, // Not yet scheduled
+	AttendanceMode: component.OnlineEventAttendanceMode,
+	Sessions:       []*session.Session{
 		// TODO: add finalized sessions here
-		Sessions["keynote"],
-		Sessions["generics"],
-		Sessions["concurrency"],
-		Sessions["apis"],
+		// Sessions["keynote"],
+		// Sessions["generics"],
+		// Sessions["concurrency"],
+		// Sessions["apis"],
 	},
 }

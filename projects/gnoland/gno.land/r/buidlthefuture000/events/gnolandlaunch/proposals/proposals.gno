@@ -86,8 +86,8 @@ var EventTopics = map[string]proposal.Topic{
 }
 
 var opts = map[string]interface{}{
-    "Location": struct{}{},
-    "Schedule": struct{}{},
+	"Location": struct{}{},
+	"Schedule": struct{}{},
 }
 
 // Initial proposals

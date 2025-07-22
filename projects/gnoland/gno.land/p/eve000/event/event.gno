@@ -3,6 +3,7 @@ package event
 import (
 	"std"
 	"strconv"
+	"strings"
 	"time"
 
 	"gno.land/p/demo/avl"
@@ -56,14 +57,17 @@ type Storage struct {
 }
 
 type Event struct {
-	Name        string
-	Location    *location.Location
-	StartDate   time.Time
-	EndDate     time.Time
-	Description string
-	Sessions    []*session.Session
-	renderOpts  map[string]interface{}
-	storage     *Storage
+	Name           string
+	Location       *location.Location
+	StartDate      time.Time
+	EndDate        time.Time
+	Description    string
+	Sessions       []*session.Session
+	Status         component.EventStatus
+	AttendanceMode component.EventAttendanceMode
+	Images         []string
+	renderOpts     map[string]interface{}
+	storage        *Storage
 }
 
 var _ component.Component = (*Event)(nil)
@@ -168,6 +172,7 @@ func (evt *Event) Agenda(heading *component.Content) *agenda.Agenda {
 		Location:    evt.Location,
 		StartDate:   evt.StartDate,
 		EndDate:     evt.EndDate,
+		Status:      evt.Status,
 		Description: evt.Description,
 		Sessions:    evt.Sessions,
 	}
@@ -202,38 +207,83 @@ func (evt *Event) ToAnchor() string {
 }
 
 func (evt *Event) ToMarkdown(heading ...component.Content) string {
-    if len(heading) == 0 {
-        heading = append(heading, component.Content{ Published: false})
-    }
+	if len(heading) == 0 {
+		heading = append(heading, component.Content{Published: false})
+	}
 	return evt.Agenda(&heading[0]).ToMarkdown()
 }
 
 func (evt *Event) ToSvgDataUrl() string {
-    heading := &component.Content{ Published: false }
+	heading := &component.Content{Published: false}
 	return evt.Agenda(heading).ToSvgDataUrl()
 }
 
 func (evt *Event) ToSVG() string {
-    heading := &component.Content{ Published: false }
+	heading := &component.Content{Published: false}
 	return evt.Agenda(heading).ToSVG()
+}
+
+func (evt *Event) AssertValid() {
+	if evt.Name == "" {
+		panic("event name cannot be empty")
+	}
+	if evt.Location == nil {
+		panic("event location cannot be nil")
+	}
+	if evt.StartDate.IsZero() {
+		panic("event start date cannot be zero")
+	}
+	if evt.EndDate.IsZero() {
+		panic("event end date cannot be zero")
+	}
 }
 
 const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
 
+// FIXME: check schema.org to conform to secondary rules for Cancelled, Postponed, Rescheduled events
+
 func (evt *Event) ToJson() string {
-	return `{
-    "@context": "https://schema.org",
-    "@type": "Event",
-    "name": "` + ufmt.Sprintf("%s", evt.Name) + `",
-    "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",
-    "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",
-    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", // FIXME: make this a feature of the event
-    "eventStatus": "https://schema.org/EventScheduled",
-    "location": { // FIXME: make this conditional? or make sure virtual events are representable
-        "@type": "Place",
-        "name": "` + ufmt.Sprintf("%s", evt.Location.Name) + `"
-    },
-    "image": [],
-    "description": "` + ufmt.Sprintf("%s", evt.Description) + `"
-	}`
+	var sb strings.Builder
+	sb.WriteString(`{
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": "` + ufmt.Sprintf("%s", evt.Name) + `",`)
+
+	if evt.Status == component.EventPostponed {
+		sb.WriteString(`
+        "previousStartDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",`)
+	} else {
+		sb.WriteString(`
+        "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",`)
+		sb.WriteString(`
+        "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",`)
+	}
+
+	sb.WriteString(`
+        "eventAttendanceMode": "` + ufmt.Sprintf("%s", evt.AttendanceMode) + `",
+        "eventStatus": "` + ufmt.Sprintf("%s", evt.Status) + `",`)
+
+	if evt.AttendanceMode != component.OfflineEventAttendanceMode && evt.Location != nil {
+		sb.WriteString(`
+        "location": {
+            "@type": "Place",
+            "name": "` + ufmt.Sprintf("%s", evt.Location.Name) + `"
+        },`)
+	}
+
+	// Add images if available
+	sb.WriteString(`
+        "image": [`)
+	for i, img := range evt.Images {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(`"` + ufmt.Sprintf("%s", img) + `"`)
+	}
+	sb.WriteString(`],`)
+
+	sb.WriteString(`
+        "description": "` + ufmt.Sprintf("%s", evt.Description) + `"
+    }`)
+	return sb.String()
 }

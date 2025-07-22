@@ -1,9 +1,9 @@
 package onsite
 
 import (
-"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event"
 )
 
 func LiveEvent() *event.Event {
-    return app.LiveEvent()
+	return app.LiveEvent()
 }

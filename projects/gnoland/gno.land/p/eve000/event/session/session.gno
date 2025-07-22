@@ -73,8 +73,8 @@ func (s *Session) ToMarkdown(_ ...component.Content) string {
 	markdown += " " + s.StartTime.Format(time.Kitchen)
 	markdown += "-> " + s.EndTime.Format(time.Kitchen)
 	if _, ok := s.RenderOpts()["Speaker"]; ok && s.Speaker != nil && s.Speaker.Name != "" {
-        markdown += " | [Speaker - " + s.Speaker.Name + "](" + s.Speaker.ToAnchor() + ")"
-    }
+		markdown += " | [Speaker - " + s.Speaker.Name + "](" + s.Speaker.ToAnchor() + ")"
+	}
 	if _, ok := s.RenderOpts()["Location"]; ok && s.Location != nil {
 		markdown += " | [Location - " + s.Location.Name + "](" + component.StringToAnchor(s.Location.Name) + ")\n"
 	}

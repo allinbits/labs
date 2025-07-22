@@ -16,14 +16,19 @@ Labs Net is our dedicated testnet environment:
 - **Deploy** and interact with Gno packages
 - **Innovate** without mainnet constraints
 
-## Coming Soon
+# Project Menu
 
-We're actively developing new features and resources for Labs Net. Stay tuned for:
+### gno.land/p
+- [eve000/event/](/p/eve000/event/) - eve000 provides a gnolang component library for events
+- [metamodel000](/p/metamodel000/) - metamodel000 provides petri net metamodels for gnolang
+- [rss000/feed](/p/rss000/feed/) - RSS service
 
-- Enhanced developer tools
-- Tutorial content
-- Sample applications
-- Community showcases
-
+### gno.land/r
+- [buidlthefuture000](/r/buidlthefuture000) - BUIDL THE FUTURE project landing page
+- [buidlthefuture000/events/](/r/buidlthefuture000/events) - BTF Events Index
+- [cdn000](/r/cdn000) - CDN for static files (proxy for jsDelivr e.g. /gh/BUIDLTHEFUTURE/events@main/static/)
+- [frames000](/r/frames000) - Frames for Gno - build js widgets as gnomark HtmlElements
+- [metamodel000](/r/metamodel000) - Library of metamodels for gnolang (WIP)
+- [stackdump000/home](/r/stackdump000/home) - Stackdump home page
 `
 }

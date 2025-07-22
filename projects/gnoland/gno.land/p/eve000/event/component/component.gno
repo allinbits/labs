@@ -241,3 +241,25 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 
 	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }
+
+// REVIEW: consider support for embedding the Schedule schema
+// https://schema.org/Schedule
+// https://schema.org/eventSchedule
+
+type EventStatus string
+
+const (
+	EventScheduled   EventStatus = "https://schema.org/EventScheduled"
+	EventCancelled   EventStatus = "https://schema.org/EventCancelled"
+	EventMovedOnline EventStatus = "https://schema.org/EventMovedOnline"
+	EventPostponed   EventStatus = "https://schema.org/EventPostponed"
+	EventRescheduled EventStatus = "https://schema.org/EventRescheduled"
+)
+
+type EventAttendanceMode string
+
+const (
+	OfflineEventAttendanceMode EventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode"
+	OnlineEventAttendanceMode  EventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode"
+	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
+)

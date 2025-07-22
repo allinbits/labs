@@ -23,6 +23,9 @@ func TestNewDatastore(t *testing.T) {
 	if ds.byPathGuild == nil {
 		t.Errorf("byPathGuild should be initialized")
 	}
+	if ds.byGuild == nil {
+		t.Errorf("byGuild should be initialized")
+	}
 }
 
 // TestDatastoreSet tests the set method with various scenarios
@@ -497,5 +500,132 @@ func TestDatastoreComplexScenario(t *testing.T) {
 	}
 	if ds.getByGuildRole("guild456", "role_user") == nil {
 		t.Errorf("user should still exist")
+	}
+}
+
+// TestDatastoreByGuild tests the new byGuild index functionality
+func TestDatastoreByGuild(t *testing.T) {
+	ds := newDatastore()
+	alice := testutils.TestAddress("alice")
+	bob := testutils.TestAddress("bob")
+	charlie := testutils.TestAddress("charlie")
+
+	// Test 1: Non-existent guild should return empty slice
+	result := ds.listClaimsByGuild("guild456")
+	if len(result) != 0 {
+		t.Errorf("non-existent guild should return empty slice, got: %v", result)
+	}
+
+	// Test 2: Add multiple claims for same guild but different realms/roles
+	claim1 := &Claim{
+		timestamp:        time.Now(),
+		discordAccountID: "user123",
+		discordGuildID:   "guild456",
+		discordRoleID:    "role_admin",
+		addr:             alice,
+		roleName:         "admin",
+		realmPath:        "gno.land/r/demo/app1",
+	}
+	claim2 := &Claim{
+		timestamp:        time.Now(),
+		discordAccountID: "user456",
+		discordGuildID:   "guild456", // same guild
+		discordRoleID:    "role_mod",
+		addr:             bob,
+		roleName:         "moderator",
+		realmPath:        "gno.land/r/demo/app2", // different realm
+	}
+	claim3 := &Claim{
+		timestamp:        time.Now(),
+		discordAccountID: "user789",
+		discordGuildID:   "guild456", // same guild
+		discordRoleID:    "role_user",
+		addr:             charlie,
+		roleName:         "user",
+		realmPath:        "gno.land/r/demo/app1", // same realm as claim1
+	}
+	claim4 := &Claim{
+		timestamp:        time.Now(),
+		discordAccountID: "user999",
+		discordGuildID:   "guild789", // different guild
+		discordRoleID:    "role_admin2",
+		addr:             alice,
+		roleName:         "admin",
+		realmPath:        "gno.land/r/demo/app3",
+	}
+
+	// Add all claims
+	if err := ds.set(claim1); err != nil {
+		t.Errorf("adding claim1 should succeed: %v", err)
+	}
+	if err := ds.set(claim2); err != nil {
+		t.Errorf("adding claim2 should succeed: %v", err)
+	}
+	if err := ds.set(claim3); err != nil {
+		t.Errorf("adding claim3 should succeed: %v", err)
+	}
+	if err := ds.set(claim4); err != nil {
+		t.Errorf("adding claim4 should succeed: %v", err)
+	}
+
+	// Test 3: List all claims for guild456
+	result = ds.listClaimsByGuild("guild456")
+	if len(result) != 3 {
+		t.Errorf("expected 3 claims for guild456, got: %v", len(result))
+	}
+
+	// Verify all claims are present
+	foundClaims := make(map[string]bool)
+	for _, claim := range result {
+		key := claim.realmPath + "|" + claim.roleName
+		foundClaims[key] = true
+	}
+	if !foundClaims["gno.land/r/demo/app1|admin"] {
+		t.Errorf("should find app1 admin claim")
+	}
+	if !foundClaims["gno.land/r/demo/app2|moderator"] {
+		t.Errorf("should find app2 moderator claim")
+	}
+	if !foundClaims["gno.land/r/demo/app1|user"] {
+		t.Errorf("should find app1 user claim")
+	}
+
+	// Test 4: List claims for guild789
+	result = ds.listClaimsByGuild("guild789")
+	if len(result) != 1 {
+		t.Errorf("expected 1 claim for guild789, got: %v", len(result))
+	}
+	if result[0].realmPath != "gno.land/r/demo/app3" || result[0].roleName != "admin" {
+		t.Errorf("unexpected claim for guild789: %v", result[0])
+	}
+
+	// Test 5: Remove a claim and verify byGuild is updated
+	ds.removeByPathRoleGuild("gno.land/r/demo/app1", "admin", "guild456")
+
+	result = ds.listClaimsByGuild("guild456")
+	if len(result) != 2 {
+		t.Errorf("expected 2 claims for guild456 after removal, got: %v", len(result))
+	}
+
+	// Verify the removed claim is not in the list
+	foundRemoved := false
+	for _, claim := range result {
+		if claim.realmPath == "gno.land/r/demo/app1" && claim.roleName == "admin" {
+			foundRemoved = true
+		}
+	}
+	if foundRemoved {
+		t.Errorf("removed claim should not be in the list")
+	}
+
+	// Test 6: Remove by guild-role and verify byGuild is updated
+	ds.removeByGuildRole("guild456", "role_mod")
+
+	result = ds.listClaimsByGuild("guild456")
+	if len(result) != 1 {
+		t.Errorf("expected 1 claim for guild456 after second removal, got: %v", len(result))
+	}
+	if result[0].realmPath != "gno.land/r/demo/app1" || result[0].roleName != "user" {
+		t.Errorf("unexpected remaining claim: %v", result[0])
 	}
 }

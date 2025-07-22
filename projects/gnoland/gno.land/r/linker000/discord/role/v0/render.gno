@@ -80,6 +80,7 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 
 	w.Write("# Role Claim Manager\n")
 	w.Write("View your Claim details from the discord linker bot. Sign the transaction with the magic link to link these roles to your server.\n")
+	w.Write("You **must** sign the transaction with the magic link to link these roles to your server.\n")
 
 	claim, err := validateEncodedClaim(encodedClaim, true)
 	if err != nil {
@@ -89,9 +90,16 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 	}
 
 	w.Write(ufmt.Sprintf(`
-## Easy Actions:
+## Magic Link to Link your Discord Guild Role to this Realm.
 
-- [Claim Linked Discord Role](%v)
+Use the link below to link your Discord role to your Realm. This will create a transaction that links the role to your Realm.
+
+[Claim Linked Discord Role](%v)
+
+## Other Actions:
+
+Use this link to unlink the role from your Realm, or to confirm the link is connected to your Realm.
+
 - [Remove Linked Discord Role](%v)
 - [Confirm link](/r/linker000/discord/role/v0:link/d/%v/%v)
 

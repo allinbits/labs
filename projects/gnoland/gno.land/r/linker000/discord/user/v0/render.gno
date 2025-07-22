@@ -28,8 +28,12 @@ func Render(path string) string {
 
 func renderHome(w *mux.ResponseWriter, r *mux.Request) {
 	w.Write("# DiscordLinker Home\n\n")
-	w.Write("Welcome. This smart contract is used to link your Discord ID to your gno address.\n\n")
-	w.Write("To get started, go to the discord bot on the gno.land discord server and type `!help` for additional information.\n")
+	w.Write("Welcome. This realm is used to link your Discord ID to your gno address.\n\n")
+
+	w.Write("You can link your Discord ID to your gno address by adding `:link/d/{id}` to this URL. or\n\n")
+	w.Write("You can link your gno address to your Discord ID by using adding `:link/g/{addr}` to this URL.\n\n")
+
+	w.Write("To get started, go to the discord bot on the gno.land discord server and type `/gnolinker help` for additional information.\n")
 }
 
 func renderLinkByDiscordID(w *mux.ResponseWriter, r *mux.Request) {
@@ -73,14 +77,36 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 	}
 
 	w.Write(ufmt.Sprintf(`
-## Easy Actions:
+## Easy Action:
 
-- [Claim Linked Accounts](%v)
-- [Remove Link by Claim](%v)
+[Claim Linked Accounts](%v)
+
+## What you are linking
+
+This will link your Discord ID to your Gno address, allowing you to use your Discord ID to interact with Gno applications.
+
+### discordID
+
+%v
+
+### Gno Address
+
+%v
+
+`, txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
+		claim.discordID,
+		string(claim.addr)))
+
+	w.Write(ufmt.Sprintf(`
+## Other Actions:
+
+- [Remove Linked Account by Gno Address](%v) - Use this to unlink from your discord ID only using your gno address.
+- [Remove Link by Claim](%v) - Use this to unlink from your discord ID, even if you've lost access to your old gno address.
 - [Confirm link](/r/linker000/discord/user/v0:link/g/%v)
 
 `,
-		txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
+
+		txlink.NewLink("Unlink").AddArgs("encodedClaim", encodedClaim).URL(),
 		txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
 		string(claim.addr),
 	))

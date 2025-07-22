@@ -76,7 +76,7 @@ func NewBot(config Config,
 		queryRegistry := events.CreateCoreQueryRegistry(logger, eventHandlers)
 
 		// Create query processor manager
-		queryProcessorManager = events.NewQueryProcessorManager(queryRegistry, configManager.GetStore(), queryClient, logger)
+		queryProcessorManager = events.NewQueryProcessorManager(queryRegistry, configManager.GetStore(), queryClient, eventHandlers, logger)
 	} else {
 		logger.Info("Event monitoring disabled", "graphql_endpoint", config.GraphQLEndpoint, "enable_monitoring", config.EnableEventMonitoring)
 	}

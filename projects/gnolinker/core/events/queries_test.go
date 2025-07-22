@@ -22,9 +22,6 @@ func TestCreateCoreQueryRegistry(t *testing.T) {
 	expectedQueries := []string{
 		UserEventsQueryID,
 		RoleEventsQueryID,
-		VerifyHighPriorityQueryID,
-		VerifyMediumPriorityQueryID,
-		VerifyLowPriorityQueryID,
 	}
 
 	for _, queryID := range expectedQueries {
@@ -70,17 +67,6 @@ func TestQueryConstants(t *testing.T) {
 		t.Errorf("Expected RoleEventsQueryID to be 'role_events', got '%s'", RoleEventsQueryID)
 	}
 
-	if VerifyHighPriorityQueryID != "verify_high_priority" {
-		t.Errorf("Expected VerifyHighPriorityQueryID to be 'verify_high_priority', got '%s'", VerifyHighPriorityQueryID)
-	}
-
-	if VerifyMediumPriorityQueryID != "verify_medium_priority" {
-		t.Errorf("Expected VerifyMediumPriorityQueryID to be 'verify_medium_priority', got '%s'", VerifyMediumPriorityQueryID)
-	}
-
-	if VerifyLowPriorityQueryID != "verify_low_priority" {
-		t.Errorf("Expected VerifyLowPriorityQueryID to be 'verify_low_priority', got '%s'", VerifyLowPriorityQueryID)
-	}
 }
 
 func TestQueryIntervals(t *testing.T) {
@@ -105,32 +91,6 @@ func TestQueryIntervals(t *testing.T) {
 		t.Errorf("Expected role events interval to be 5s, got %v", roleQuery.Interval)
 	}
 
-	// Test high priority verify interval (should be fastest)
-	verifyHighQuery, exists := registry.GetQuery(VerifyHighPriorityQueryID)
-	if !exists {
-		t.Fatal("Verify high priority query not found")
-	}
-	if verifyHighQuery.Interval != 1*time.Minute {
-		t.Errorf("Expected verify high priority interval to be 1m, got %v", verifyHighQuery.Interval)
-	}
-
-	// Test medium priority verify interval
-	verifyMediumQuery, exists := registry.GetQuery(VerifyMediumPriorityQueryID)
-	if !exists {
-		t.Fatal("Verify medium priority query not found")
-	}
-	if verifyMediumQuery.Interval != 5*time.Minute {
-		t.Errorf("Expected verify medium priority interval to be 5m, got %v", verifyMediumQuery.Interval)
-	}
-
-	// Test low priority verify interval (should be slowest)
-	verifyLowQuery, exists := registry.GetQuery(VerifyLowPriorityQueryID)
-	if !exists {
-		t.Fatal("Verify low priority query not found")
-	}
-	if verifyLowQuery.Interval != 30*time.Minute {
-		t.Errorf("Expected verify low priority interval to be 30m, got %v", verifyLowQuery.Interval)
-	}
 }
 
 func TestQueryTypes(t *testing.T) {
@@ -155,22 +115,6 @@ func TestQueryTypes(t *testing.T) {
 		t.Errorf("Expected role events to be EventStreamQuery, got %s", roleQuery.QueryType)
 	}
 
-	// Test verify query types - all should be periodic check
-	verifyQueries := []string{
-		VerifyHighPriorityQueryID,
-		VerifyMediumPriorityQueryID,
-		VerifyLowPriorityQueryID,
-	}
-
-	for _, queryID := range verifyQueries {
-		verifyQuery, exists := registry.GetQuery(queryID)
-		if !exists {
-			t.Fatalf("Verify query %s not found", queryID)
-		}
-		if verifyQuery.QueryType != PeriodicCheckQuery {
-			t.Errorf("Expected %s to be PeriodicCheckQuery, got %s", queryID, verifyQuery.QueryType)
-		}
-	}
 }
 
 func TestNewQueryExecutor(t *testing.T) {

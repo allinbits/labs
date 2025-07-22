@@ -19,40 +19,43 @@ const saveCallbackKey contextKey = "saveCallback"
 
 // QueryProcessor manages query execution for a specific guild
 type QueryProcessor struct {
-	guildID       string
-	registry      *QueryRegistry
-	store         storage.ConfigStore
-	queryClient   *graphql.QueryClient
-	queryExecutor *QueryExecutor
-	logger        core.Logger
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wg            sync.WaitGroup
-	running       bool
-	mutex         sync.RWMutex
+	guildID               string
+	registry              *QueryRegistry
+	store                 storage.ConfigStore
+	queryClient           *graphql.QueryClient
+	queryExecutor         *QueryExecutor
+	verificationScheduler *VerificationScheduler
+	logger                core.Logger
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	wg                    sync.WaitGroup
+	running               bool
+	mutex                 sync.RWMutex
 }
 
 // QueryProcessorManager manages all query processors
 type QueryProcessorManager struct {
-	processors  map[string]*QueryProcessor
-	registry    *QueryRegistry
-	store       storage.ConfigStore
-	queryClient *graphql.QueryClient
-	logger      core.Logger
-	ctx         context.Context
-	cancel      context.CancelFunc
-	wg          sync.WaitGroup
-	mutex       sync.RWMutex
+	processors    map[string]*QueryProcessor
+	registry      *QueryRegistry
+	store         storage.ConfigStore
+	queryClient   *graphql.QueryClient
+	eventHandlers *EventHandlers
+	logger        core.Logger
+	ctx           context.Context
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
+	mutex         sync.RWMutex
 }
 
 // NewQueryProcessorManager creates a new query processor manager
-func NewQueryProcessorManager(registry *QueryRegistry, store storage.ConfigStore, queryClient *graphql.QueryClient, logger core.Logger) *QueryProcessorManager {
+func NewQueryProcessorManager(registry *QueryRegistry, store storage.ConfigStore, queryClient *graphql.QueryClient, eventHandlers *EventHandlers, logger core.Logger) *QueryProcessorManager {
 	return &QueryProcessorManager{
-		processors:  make(map[string]*QueryProcessor),
-		registry:    registry,
-		store:       store,
-		queryClient: queryClient,
-		logger:      logger,
+		processors:    make(map[string]*QueryProcessor),
+		registry:      registry,
+		store:         store,
+		queryClient:   queryClient,
+		eventHandlers: eventHandlers,
+		logger:        logger,
 	}
 }
 
@@ -109,7 +112,7 @@ func (qpm *QueryProcessorManager) AddGuild(guildID string) error {
 		return fmt.Errorf("processor for guild %s already exists", guildID)
 	}
 
-	processor := NewQueryProcessor(guildID, qpm.registry, qpm.store, qpm.queryClient, qpm.logger)
+	processor := NewQueryProcessor(guildID, qpm.registry, qpm.store, qpm.queryClient, qpm.eventHandlers, qpm.logger)
 	qpm.processors[guildID] = processor
 
 	if qpm.ctx != nil {
@@ -163,14 +166,15 @@ func (qpm *QueryProcessorManager) startProcessorsForExistingGuilds() error {
 }
 
 // NewQueryProcessor creates a new query processor for a guild
-func NewQueryProcessor(guildID string, registry *QueryRegistry, store storage.ConfigStore, queryClient *graphql.QueryClient, logger core.Logger) *QueryProcessor {
+func NewQueryProcessor(guildID string, registry *QueryRegistry, store storage.ConfigStore, queryClient *graphql.QueryClient, eventHandlers *EventHandlers, logger core.Logger) *QueryProcessor {
 	return &QueryProcessor{
-		guildID:       guildID,
-		registry:      registry,
-		store:         store,
-		queryClient:   queryClient,
-		queryExecutor: NewQueryExecutor(queryClient, logger),
-		logger:        logger,
+		guildID:               guildID,
+		registry:              registry,
+		store:                 store,
+		queryClient:           queryClient,
+		queryExecutor:         NewQueryExecutor(queryClient, logger),
+		verificationScheduler: NewVerificationScheduler(guildID, store, eventHandlers, logger),
+		logger:                logger,
 	}
 }
 
@@ -192,6 +196,14 @@ func (qp *QueryProcessor) Start(ctx context.Context) error {
 	qp.wg.Add(1)
 	go qp.queryLoop()
 
+	// Start verification scheduler
+	if qp.verificationScheduler != nil {
+		if err := qp.verificationScheduler.Start(qp.ctx); err != nil {
+			qp.logger.Error("Failed to start verification scheduler", "guild_id", qp.guildID, "error", err)
+			// Continue anyway - queries can still run
+		}
+	}
+
 	qp.logger.Info("Query processor started", "guild_id", qp.guildID)
 	return nil
 }
@@ -206,6 +218,13 @@ func (qp *QueryProcessor) Stop() error {
 	}
 
 	qp.logger.Info("Stopping query processor", "guild_id", qp.guildID)
+
+	// Stop verification scheduler first
+	if qp.verificationScheduler != nil {
+		if err := qp.verificationScheduler.Stop(); err != nil {
+			qp.logger.Error("Failed to stop verification scheduler", "guild_id", qp.guildID, "error", err)
+		}
+	}
 
 	if qp.cancel != nil {
 		qp.cancel()
@@ -248,18 +267,35 @@ func (qp *QueryProcessor) processQueries() {
 		return
 	}
 
-	// Ensure core queries are enabled by default
-	coreQueries := []string{"user_events", "role_events", "verify_high_priority", "verify_medium_priority", "verify_low_priority"}
+	// Clean up old verification queries that are no longer used
+	// These are now handled by VerificationScheduler
+	obsoleteQueries := []string{"verify_high_priority", "verify_medium_priority", "verify_low_priority", "verify_members"}
+	configModified := false
+	for _, queryID := range obsoleteQueries {
+		if _, exists := config.GetQueryState(queryID); exists {
+			qp.logger.Info("Removing obsolete verification query from config", "guild_id", qp.guildID, "query_id", queryID)
+			config.DisableQuery(queryID)
+			delete(config.QueryStates, queryID)
+			configModified = true
+		}
+	}
+
+	// Ensure core event queries are enabled by default
+	// Note: Verification is now handled by VerificationScheduler, not as queries
+	coreQueries := []string{"user_events", "role_events"}
 	for _, queryID := range coreQueries {
 		if _, exists := config.GetQueryState(queryID); !exists {
 			qp.logger.Info("Enabling core query for guild", "guild_id", qp.guildID, "query_id", queryID)
 			config.EnsureQueryState(queryID, true)
+			configModified = true
 		}
 	}
 
-	// Save the updated config if we added any queries
-	if err := qp.store.Set(qp.guildID, config); err != nil {
-		qp.logger.Error("Failed to save config after enabling core queries", "guild_id", qp.guildID, "error", err)
+	// Save the updated config if we made any changes
+	if configModified {
+		if err := qp.store.Set(qp.guildID, config); err != nil {
+			qp.logger.Error("Failed to save config after updating queries", "guild_id", qp.guildID, "error", err)
+		}
 	}
 
 	// Get enabled queries

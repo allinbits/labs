@@ -63,30 +63,12 @@ type Event struct {
 	EndDate        time.Time
 	Description    string
 	Sessions       []*session.Session
-	Status         string
-	AttendanceMode string
+	Status         component.EventStatus
+	AttendanceMode component.EventAttendanceMode
 	Images         []string
 	renderOpts     map[string]interface{}
 	storage        *Storage
 }
-
-type EventStatus string
-
-const (
-	EventScheduled   EventStatus = "https://schema.org/EventScheduled"
-	EventCancelled   EventStatus = "https://schema.org/EventCancelled"
-	EventMovedOnline EventStatus = "https://schema.org/EventMovedOnline"
-	EventPostponed   EventStatus = "https://schema.org/EventPostponed"
-	EventRescheduled EventStatus = "https://schema.org/EventRescheduled"
-)
-
-type EventAttendanceMode string
-
-const (
-	OfflineEventAttendanceMode EventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode"
-	OnlineEventAttendanceMode  EventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode"
-	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
-)
 
 var _ component.Component = (*Event)(nil)
 
@@ -190,6 +172,7 @@ func (evt *Event) Agenda(heading *component.Content) *agenda.Agenda {
 		Location:    evt.Location,
 		StartDate:   evt.StartDate,
 		EndDate:     evt.EndDate,
+		Status:      evt.Status,
 		Description: evt.Description,
 		Sessions:    evt.Sessions,
 	}
@@ -240,30 +223,6 @@ func (evt *Event) ToSVG() string {
 	return evt.Agenda(heading).ToSVG()
 }
 
-func IsValidStatus(status string) bool {
-	switch status {
-	case string(EventScheduled),
-		string(EventCancelled),
-		string(EventMovedOnline),
-		string(EventPostponed),
-		string(EventRescheduled):
-		return true
-	default:
-		return false
-	}
-}
-
-func IsValidAttendanceMode(attendanceMode string) bool {
-	switch attendanceMode {
-	case string(OfflineEventAttendanceMode),
-		string(OnlineEventAttendanceMode),
-		string(MixedEventAttendanceMode):
-		return true
-	default:
-		return false
-	}
-}
-
 func (evt *Event) AssertValid() {
 	if evt.Name == "" {
 		panic("event name cannot be empty")
@@ -277,32 +236,34 @@ func (evt *Event) AssertValid() {
 	if evt.EndDate.IsZero() {
 		panic("event end date cannot be zero")
 	}
-	if !IsValidStatus(evt.Status) {
-		panic("invalid event status: " + evt.Status)
-	}
-	if !IsValidAttendanceMode(evt.AttendanceMode) {
-		panic("invalid event attendance mode: " + evt.AttendanceMode)
-	}
 }
 
 const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
 
-// REVIEW: consider support for embedding the Schedule schema
-// https://schema.org/Schedule
-// https://schema.org/eventSchedule
+// FIXME: check schema.org to conform to secondary rules for Cancelled, Postponed, Rescheduled events
 
 func (evt *Event) ToJson() string {
 	var sb strings.Builder
 	sb.WriteString(`{
         "@context": "https://schema.org",
         "@type": "Event",
-        "name": "` + ufmt.Sprintf("%s", evt.Name) + `",
-        "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",
-        "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",
+        "name": "` + ufmt.Sprintf("%s", evt.Name) + `",`)
+
+	if evt.Status == component.EventPostponed {
+		sb.WriteString(`
+        "previousStartDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",`)
+	} else {
+		sb.WriteString(`
+        "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",`)
+		sb.WriteString(`
+        "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",`)
+	}
+
+	sb.WriteString(`
         "eventAttendanceMode": "` + ufmt.Sprintf("%s", evt.AttendanceMode) + `",
         "eventStatus": "` + ufmt.Sprintf("%s", evt.Status) + `",`)
 
-	if evt.AttendanceMode != string(OfflineEventAttendanceMode) && evt.Location != nil {
+	if evt.AttendanceMode != component.OfflineEventAttendanceMode && evt.Location != nil {
 		sb.WriteString(`
         "location": {
             "@type": "Place",

@@ -57,11 +57,13 @@ var Sessions = map[string]*session.Session{
 }
 
 var gnolandlaunch = &event.Event{
-	Name:        "IRL Meetup",
-	Location:    locations["gnowhere"],
-	StartDate:   time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC),
-	EndDate:     time.Date(2025, 8, 29, 0, 0, 0, 0, time.UTC),
-	Description: "Join this event to become a beta tester for Gnoland, help us think about planning the launch, and provide feedback on the platform. \n\n This is a pre-planning event to gather ideas and feedback from the community.",
+	Name:           "IRL Meetup",
+	Location:       locations["gnowhere"],
+	StartDate:      time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC),
+	EndDate:        time.Date(2025, 8, 29, 0, 0, 0, 0, time.UTC),
+	Status:         component.EventMovedOnline, // it was planned as an IRL event example, but it was moved online ;-P
+	AttendanceMode: component.OfflineEventAttendanceMode,
+	Description:    "Join this event to become a beta tester for Gnoland, help us think about planning the launch, and provide feedback on the platform. \n\n This is a pre-planning event to gather ideas and feedback from the community.",
 	Sessions: []*session.Session{
 		Sessions["kickoff"],
 		Sessions["summit"],

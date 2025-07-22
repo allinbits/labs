@@ -52,8 +52,8 @@ func (s *Speaker) ToMarkdown(_ ...component.Content) string {
 		markdown += "![Picture](" + s.PictureURL + ")\n\n"
 	}
 	if s.Address != "" {
-        markdown += "Address: " + s.Address + "\n\n"
-    }
+		markdown += "Address: " + s.Address + "\n\n"
+	}
 	return markdown
 }
 

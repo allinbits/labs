@@ -145,7 +145,7 @@ func (*Acl) ResetRoles() {
 	proposers = avl.NewTree()
 	reviewers = avl.NewTree()
 	accessChecks = map[string]func(string) bool{
-		"beta":  waitlist.Has, // extra beta role
+		"beta":      waitlist.Has, // extra beta role
 		"waitlist":  waitlist.Has,
 		"proposer":  proposers.Has,
 		"reviewer":  reviewers.Has,

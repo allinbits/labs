@@ -32,10 +32,10 @@ This is a simple example of a Gnomark frame.
 ### How to Build Frames
 - You can build your own frames by implementing a public interface for your realm.
 ` + "```\n" +
-`func RenderFrame(path string) string { // frame.gno.services calls this public function
+	`func RenderFrame(path string) string { // frame.gno.services calls this public function
  	return frame // json encoded frame
  }` +
-"\n```" + `
+	"\n```" + `
 - The frame should return a JSON object with the following structure:
 
 ` + "```\n" + frame + "\n```" + `

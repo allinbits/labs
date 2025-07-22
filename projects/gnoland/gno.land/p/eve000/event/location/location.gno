@@ -42,11 +42,11 @@ func (l *Location) ToAnchor() string {
 func (l *Location) ToMarkdown(_ ...component.Content) string {
 	md := "### " + l.Name + "\n"
 	if l.Address != "" {
-	    md += "\n [" + l.Address + "](https://www.google.com/maps/search/?api=1&query=" + url.QueryEscape(l.Address) + ")\n"
+		md += "\n [" + l.Address + "](https://www.google.com/maps/search/?api=1&query=" + url.QueryEscape(l.Address) + ")\n"
 	}
 	if l.Coordinates != "" {
-	    coords :=  strings.ReplaceAll(l.Coordinates, " ", "")
-	    md += "\n [Coordinates " + coords + "](https://www.google.com/maps/?q=" + coords + ")\n"
+		coords := strings.ReplaceAll(l.Coordinates, " ", "")
+		md += "\n [Coordinates " + coords + "](https://www.google.com/maps/?q=" + coords + ")\n"
 	}
 	if l.Description != "" {
 		md += "\n\n" + l.Description + "\n"

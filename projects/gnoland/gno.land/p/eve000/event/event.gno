@@ -3,6 +3,7 @@ package event
 import (
 	"std"
 	"strconv"
+	"strings"
 	"time"
 
 	"gno.land/p/demo/avl"
@@ -56,15 +57,36 @@ type Storage struct {
 }
 
 type Event struct {
-	Name        string
-	Location    *location.Location
-	StartDate   time.Time
-	EndDate     time.Time
-	Description string
-	Sessions    []*session.Session
-	renderOpts  map[string]interface{}
-	storage     *Storage
+	Name           string
+	Location       *location.Location
+	StartDate      time.Time
+	EndDate        time.Time
+	Description    string
+	Sessions       []*session.Session
+	Status         string
+	AttendanceMode string
+	Images         []string
+	renderOpts     map[string]interface{}
+	storage        *Storage
 }
+
+type EventStatus string
+
+const (
+	EventScheduled   EventStatus = "https://schema.org/EventScheduled"
+	EventCancelled   EventStatus = "https://schema.org/EventCancelled"
+	EventMovedOnline EventStatus = "https://schema.org/EventMovedOnline"
+	EventPostponed   EventStatus = "https://schema.org/EventPostponed"
+	EventRescheduled EventStatus = "https://schema.org/EventRescheduled"
+)
+
+type EventAttendanceMode string
+
+const (
+	OfflineEventAttendanceMode EventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode"
+	OnlineEventAttendanceMode  EventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode"
+	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
+)
 
 var _ component.Component = (*Event)(nil)
 
@@ -202,38 +224,105 @@ func (evt *Event) ToAnchor() string {
 }
 
 func (evt *Event) ToMarkdown(heading ...component.Content) string {
-    if len(heading) == 0 {
-        heading = append(heading, component.Content{ Published: false})
-    }
+	if len(heading) == 0 {
+		heading = append(heading, component.Content{Published: false})
+	}
 	return evt.Agenda(&heading[0]).ToMarkdown()
 }
 
 func (evt *Event) ToSvgDataUrl() string {
-    heading := &component.Content{ Published: false }
+	heading := &component.Content{Published: false}
 	return evt.Agenda(heading).ToSvgDataUrl()
 }
 
 func (evt *Event) ToSVG() string {
-    heading := &component.Content{ Published: false }
+	heading := &component.Content{Published: false}
 	return evt.Agenda(heading).ToSVG()
+}
+
+func IsValidStatus(status string) bool {
+	switch status {
+	case string(EventScheduled),
+		string(EventCancelled),
+		string(EventMovedOnline),
+		string(EventPostponed),
+		string(EventRescheduled):
+		return true
+	default:
+		return false
+	}
+}
+
+func IsValidAttendanceMode(attendanceMode string) bool {
+	switch attendanceMode {
+	case string(OfflineEventAttendanceMode),
+		string(OnlineEventAttendanceMode),
+		string(MixedEventAttendanceMode):
+		return true
+	default:
+		return false
+	}
+}
+
+func (evt *Event) AssertValid() {
+	if evt.Name == "" {
+		panic("event name cannot be empty")
+	}
+	if evt.Location == nil {
+		panic("event location cannot be nil")
+	}
+	if evt.StartDate.IsZero() {
+		panic("event start date cannot be zero")
+	}
+	if evt.EndDate.IsZero() {
+		panic("event end date cannot be zero")
+	}
+	if !IsValidStatus(evt.Status) {
+		panic("invalid event status: " + evt.Status)
+	}
+	if !IsValidAttendanceMode(evt.AttendanceMode) {
+		panic("invalid event attendance mode: " + evt.AttendanceMode)
+	}
 }
 
 const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
 
+// REVIEW: consider support for embedding the Schedule schema
+// https://schema.org/Schedule
+// https://schema.org/eventSchedule
+
 func (evt *Event) ToJson() string {
-	return `{
-    "@context": "https://schema.org",
-    "@type": "Event",
-    "name": "` + ufmt.Sprintf("%s", evt.Name) + `",
-    "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",
-    "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",
-    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", // FIXME: make this a feature of the event
-    "eventStatus": "https://schema.org/EventScheduled",
-    "location": { // FIXME: make this conditional? or make sure virtual events are representable
-        "@type": "Place",
-        "name": "` + ufmt.Sprintf("%s", evt.Location.Name) + `"
-    },
-    "image": [],
-    "description": "` + ufmt.Sprintf("%s", evt.Description) + `"
-	}`
+	var sb strings.Builder
+	sb.WriteString(`{
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": "` + ufmt.Sprintf("%s", evt.Name) + `",
+        "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",
+        "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",
+        "eventAttendanceMode": "` + ufmt.Sprintf("%s", evt.AttendanceMode) + `",
+        "eventStatus": "` + ufmt.Sprintf("%s", evt.Status) + `",`)
+
+	if evt.AttendanceMode != string(OfflineEventAttendanceMode) && evt.Location != nil {
+		sb.WriteString(`
+        "location": {
+            "@type": "Place",
+            "name": "` + ufmt.Sprintf("%s", evt.Location.Name) + `"
+        },`)
+	}
+
+	// Add images if available
+	sb.WriteString(`
+        "image": [`)
+	for i, img := range evt.Images {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(`"` + ufmt.Sprintf("%s", img) + `"`)
+	}
+	sb.WriteString(`],`)
+
+	sb.WriteString(`
+        "description": "` + ufmt.Sprintf("%s", evt.Description) + `"
+    }`)
+	return sb.String()
 }

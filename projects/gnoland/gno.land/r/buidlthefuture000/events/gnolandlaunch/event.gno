@@ -11,9 +11,9 @@ import (
 )
 
 func init() {
-    renderOpts := map[string]interface{}{
-        "Svg":       struct{}{},
-    }
+	renderOpts := map[string]interface{}{
+		"Svg": struct{}{},
+	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 	// register app w/ /events api
 }

@@ -30,12 +30,13 @@ type GuildQueryState struct {
 
 // GuildConfig represents the configuration for a Discord guild
 type GuildConfig struct {
-	GuildID        string                      `json:"guild_id"`
-	AdminRoleID    string                      `json:"admin_role_id,omitempty"`
-	VerifiedRoleID string                      `json:"verified_role_id,omitempty"`
-	Settings       map[string]string           `json:"settings,omitempty"`
-	QueryStates    map[string]*GuildQueryState `json:"query_states,omitempty"`
-	LastUpdated    time.Time                   `json:"last_updated"`
+	GuildID         string                      `json:"guild_id"`
+	AdminRoleID     string                      `json:"admin_role_id,omitempty"`
+	VerifiedRoleID  string                      `json:"verified_role_id,omitempty"`
+	Settings        map[string]string           `json:"settings,omitempty"`
+	QueryStates     map[string]*GuildQueryState `json:"query_states,omitempty"`
+	MonitoredRealms []string                    `json:"monitored_realms,omitempty"` // Cached list of realm paths with linked roles
+	LastUpdated     time.Time                   `json:"last_updated"`
 
 	// ETag is used for optimistic concurrency control
 	// Not serialized to JSON - managed by storage layer

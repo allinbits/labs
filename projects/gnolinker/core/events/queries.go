@@ -10,13 +10,10 @@ import (
 	"github.com/allinbits/labs/projects/gnolinker/core/storage"
 )
 
-// Query IDs
+// Query IDs for event stream queries
 const (
-	UserEventsQueryID           = "user_events"            // All events from user package in chronological order
-	RoleEventsQueryID           = "role_events"            // All events from role package in chronological order
-	VerifyHighPriorityQueryID   = "verify_high_priority"   // Verify online/active users frequently
-	VerifyMediumPriorityQueryID = "verify_medium_priority" // Verify recently active users
-	VerifyLowPriorityQueryID    = "verify_low_priority"    // Verify inactive/offline users
+	UserEventsQueryID = "user_events" // All events from user package in chronological order
+	RoleEventsQueryID = "role_events" // All events from role package in chronological order
 )
 
 // CreateCoreQueryRegistry creates and registers all core queries
@@ -47,115 +44,7 @@ func CreateCoreQueryRegistry(logger core.Logger, eventHandlers *EventHandlers) *
 		Enabled:      true,
 	})
 
-	// Register high priority verification query - online/active users
-	registry.RegisterQuery(&QueryDefinition{
-		QueryID:      VerifyHighPriorityQueryID,
-		Name:         "Verify High Priority Members",
-		Description:  "Verifies online/active guild members against Gno realm state",
-		QueryType:    PeriodicCheckQuery,
-		GraphQLQuery: "",              // Uses QEval to query Gno realms directly
-		Interval:     1 * time.Minute, // Check online users every minute
-		Handler:      createVerifyHighPriorityHandler(logger, eventHandlers),
-		Enabled:      true,
-	})
-
-	// Register medium priority verification query - recently active users
-	registry.RegisterQuery(&QueryDefinition{
-		QueryID:      VerifyMediumPriorityQueryID,
-		Name:         "Verify Medium Priority Members",
-		Description:  "Verifies recently active guild members against Gno realm state",
-		QueryType:    PeriodicCheckQuery,
-		GraphQLQuery: "",              // Uses QEval to query Gno realms directly
-		Interval:     5 * time.Minute, // Check recently active users every 5 minutes
-		Handler:      createVerifyMediumPriorityHandler(logger, eventHandlers),
-		Enabled:      true,
-	})
-
-	// Register low priority verification query - inactive/offline users
-	registry.RegisterQuery(&QueryDefinition{
-		QueryID:      VerifyLowPriorityQueryID,
-		Name:         "Verify Low Priority Members",
-		Description:  "Verifies inactive/offline guild members against Gno realm state incrementally",
-		QueryType:    PeriodicCheckQuery,
-		GraphQLQuery: "",               // Uses QEval to query Gno realms directly
-		Interval:     30 * time.Minute, // Check inactive users every 30 minutes
-		Handler:      createVerifyLowPriorityHandler(logger, eventHandlers),
-		Enabled:      true,
-	})
-
 	return registry
-}
-
-// createVerifyHighPriorityHandler creates a handler for high priority member verification (online/active users)
-func createVerifyHighPriorityHandler(logger core.Logger, eventHandlers *EventHandlers) QueryHandler {
-	return func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
-		logger.Info("Processing VerifyHighPriority query", "guild_id", guild.GuildID)
-
-		if eventHandlers == nil {
-			logger.Error("EventHandlers not available for VerifyHighPriority", "guild_id", guild.GuildID)
-			return nil
-		}
-
-		// Process high priority users (online/active) - no user limit
-		if err := eventHandlers.ProcessTieredVerification(ctx, guild.GuildID, state, "high", 0); err != nil {
-			logger.Error("Failed to process high priority verification",
-				"guild_id", guild.GuildID,
-				"error", err,
-			)
-			return err
-		}
-
-		logger.Info("Completed VerifyHighPriority processing", "guild_id", guild.GuildID)
-		return nil
-	}
-}
-
-// createVerifyMediumPriorityHandler creates a handler for medium priority member verification (recently active users)
-func createVerifyMediumPriorityHandler(logger core.Logger, eventHandlers *EventHandlers) QueryHandler {
-	return func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
-		logger.Info("Processing VerifyMediumPriority query", "guild_id", guild.GuildID)
-
-		if eventHandlers == nil {
-			logger.Error("EventHandlers not available for VerifyMediumPriority", "guild_id", guild.GuildID)
-			return nil
-		}
-
-		// Process medium priority users (recently active) - up to 20 users
-		if err := eventHandlers.ProcessTieredVerification(ctx, guild.GuildID, state, "medium", 20); err != nil {
-			logger.Error("Failed to process medium priority verification",
-				"guild_id", guild.GuildID,
-				"error", err,
-			)
-			return err
-		}
-
-		logger.Info("Completed VerifyMediumPriority processing", "guild_id", guild.GuildID)
-		return nil
-	}
-}
-
-// createVerifyLowPriorityHandler creates a handler for low priority member verification (inactive/offline users)
-func createVerifyLowPriorityHandler(logger core.Logger, eventHandlers *EventHandlers) QueryHandler {
-	return func(ctx context.Context, results []any, guild *storage.GuildConfig, state *storage.GuildQueryState) error {
-		logger.Info("Processing VerifyLowPriority query", "guild_id", guild.GuildID)
-
-		if eventHandlers == nil {
-			logger.Error("EventHandlers not available for VerifyLowPriority", "guild_id", guild.GuildID)
-			return nil
-		}
-
-		// Process low priority users (inactive/offline) incrementally - up to 10 users
-		if err := eventHandlers.ProcessTieredVerification(ctx, guild.GuildID, state, "low", 10); err != nil {
-			logger.Error("Failed to process low priority verification",
-				"guild_id", guild.GuildID,
-				"error", err,
-			)
-			return err
-		}
-
-		logger.Info("Completed VerifyLowPriority processing", "guild_id", guild.GuildID)
-		return nil
-	}
 }
 
 // QueryExecutor handles the execution of queries
@@ -179,8 +68,6 @@ func (qe *QueryExecutor) ExecuteQuery(ctx context.Context, queryDef *QueryDefini
 		return qe.executeUserEventsQuery(ctx, queryState)
 	case RoleEventsQueryID:
 		return qe.executeRoleEventsQuery(ctx, queryState)
-	case VerifyHighPriorityQueryID, VerifyMediumPriorityQueryID, VerifyLowPriorityQueryID:
-		return qe.executeVerifyMembersQuery(ctx, queryState)
 	default:
 		return nil, fmt.Errorf("unknown query ID: %s", queryDef.QueryID)
 	}
@@ -487,13 +374,6 @@ func (qe *QueryExecutor) executeRoleEventsQuery(ctx context.Context, queryState 
 
 	qe.logger.Debug("Retrieved role events", "count", len(results))
 	return results, nil
-}
-
-// executeVerifyMembersQuery executes the VerifyMembers query
-func (qe *QueryExecutor) executeVerifyMembersQuery(_ context.Context, _ *storage.GuildQueryState) ([]any, error) {
-	// This would implement the actual member verification logic
-	// For now, return empty results
-	return []any{}, nil
 }
 
 // createRoleEventsHandler creates a handler for role events (RoleLinked and RoleUnlinked)

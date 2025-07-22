@@ -93,9 +93,9 @@ This will link your Discord ID to your Gno address, allowing you to use your Dis
 
 %v
 
-`, txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(), 
-claim.discordID, 
-string(claim.addr)))
+`, txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
+		claim.discordID,
+		string(claim.addr)))
 
 	w.Write(ufmt.Sprintf(`
 ## Other Actions:
@@ -105,7 +105,7 @@ string(claim.addr)))
 - [Confirm link](/r/linker000/discord/user/v0:link/g/%v)
 
 `,
-		
+
 		txlink.NewLink("Unlink").AddArgs("encodedClaim", encodedClaim).URL(),
 		txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
 		string(claim.addr),

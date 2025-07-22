@@ -18,6 +18,9 @@ dev: down build
 staging: down build
 	docker compose run --rm gnodev-labs staging
 
+fmt:
+	gno fmt ./... -w
+
 # Pass test path to docker using testrunner
 test: build-test
 	@if [ -z "$(path)" ]; then \

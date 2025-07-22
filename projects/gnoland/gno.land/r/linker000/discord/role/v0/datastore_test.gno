@@ -601,7 +601,7 @@ func TestDatastoreByGuild(t *testing.T) {
 
 	// Test 5: Remove a claim and verify byGuild is updated
 	ds.removeByPathRoleGuild("gno.land/r/demo/app1", "admin", "guild456")
-	
+
 	result = ds.listClaimsByGuild("guild456")
 	if len(result) != 2 {
 		t.Errorf("expected 2 claims for guild456 after removal, got: %v", len(result))

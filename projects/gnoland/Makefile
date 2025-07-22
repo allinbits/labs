@@ -28,3 +28,14 @@ test: build-test
 	else \
 		docker run --rm gnoland-testrunner gno test -v /gnoroot/examples/$(path); \
 	fi
+
+deploy-labsnet:
+	@echo "Deploying labsnet to fly.io..."
+	fly deploy --remote-only
+
+deploy-indexer:
+	@echo "Deploying indexer to fly.io..."
+	@cd tx-indexer && fly deploy --remote-only
+
+deploy-all: deploy-labsnet deploy-indexer
+	@echo "All deployments completed."

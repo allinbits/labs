@@ -14,6 +14,44 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-path:
+          - gno.land/r/linker000/discord/role/v0
+          - gno.land/r/linker000/discord/user/v0
+          - gno.land/r/linker000/discord/keyring/v0
+          # - gno.land/r/buidlthefuture000/events/gnolandlaunch
+          # - gno.land/r/buidlthefuture000/events/gnoplan001
+          # - gno.land/r/buidlthefuture000/events/onsite001
+          # - gno.land/r/frames000
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for Caddy changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            gno-land:
+              - 'projects/gnoland/gno.land/**'
+      - name: Run format check
+        run: |
+          cd projects/gnoland
+          make fmt
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Error: 'make fmt' modified files. Please run 'make fmt' locally and commit the changes."
+            git diff
+            exit 1
+          fi
+
+      - name: Run tests for ${{ matrix.test-path }}
+        run: |
+          cd projects/gnoland
+          make test path=${{ matrix.test-path }}
+
   deploy-caddy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'

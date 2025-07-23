@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
 	"github.com/allinbits/labs/projects/gnolinker/core/config"
@@ -114,78 +115,6 @@ func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationComm
 					},
 				},
 			},
-			// Verify subcommand group
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-				Name:        "verify",
-				Description: "Verify account and role status",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "address",
-						Description: "Verify your account linking status",
-					},
-					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "role",
-						Description: "Verify role linking status",
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "role",
-								Description: "The realm role name",
-								Required:    true,
-							},
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "realm",
-								Description: "The realm path",
-								Required:    true,
-							},
-						},
-					},
-				},
-			},
-			// Sync subcommand group
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-				Name:        "sync",
-				Description: "Synchronize realm roles with Discord",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "roles",
-						Description: "Sync your realm roles",
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "realm",
-								Description: "The realm path to sync from",
-								Required:    true,
-							},
-						},
-					},
-					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "user",
-						Description: "Sync roles for another user (Admin only)",
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "realm",
-								Description: "The realm path",
-								Required:    true,
-							},
-							{
-								Type:        discordgo.ApplicationCommandOptionUser,
-								Name:        "user",
-								Description: "The user to sync roles for",
-								Required:    true,
-							},
-						},
-					},
-				},
-			},
 			// Admin subcommand group
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
@@ -213,6 +142,12 @@ func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationComm
 						Description: "Find orphaned roles (deleted or unlinked)",
 					},
 				},
+			},
+			// Status subcommand
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "status",
+				Description: "Show your personal linking status and roles",
 			},
 			// Help subcommand
 			{
@@ -449,11 +384,13 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 		return
 	}
 
-	// Handle top-level subcommands (like help)
+	// Handle top-level subcommands (like help, status)
 	if options[0].Type == discordgo.ApplicationCommandOptionSubCommand {
 		switch options[0].Name {
 		case "help":
 			h.handleHelpCommand(s, i)
+		case "status":
+			h.handleStatusCommand(s, i)
 		}
 		return
 	}
@@ -481,20 +418,6 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 				h.handleUnlinkAddressCommand(s, i)
 			case "role":
 				h.handleUnlinkRoleCommand(s, i, subcommand.Options)
-			}
-		case "verify":
-			switch subcommand.Name {
-			case "address":
-				h.handleVerifyAddressCommand(s, i)
-			case "role":
-				h.handleVerifyRoleCommand(s, i, subcommand.Options)
-			}
-		case "sync":
-			switch subcommand.Name {
-			case "roles":
-				h.handleSyncRolesCommand(s, i, subcommand.Options)
-			case "user":
-				h.handleSyncUserCommand(s, i, subcommand.Options)
 			}
 		case "admin":
 			switch subcommand.Name {
@@ -742,176 +665,28 @@ func (h *InteractionHandlers) handleUnlinkRoleCommand(s *discordgo.Session, i *d
 	}
 }
 
-func (h *InteractionHandlers) handleVerifyAddressCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// Get user ID
-	userID := i.Member.User.ID
-
-	// Defer response to prevent timeout
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Flags: discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		h.logger.Error("Failed to defer response", "error", err, "user_id", userID)
-		return
-	}
-
-	// Get guild configuration
-	guildConfig, err := h.configManager.EnsureGuildConfig(s, i.GuildID)
-	if err != nil {
-		h.logger.Error("Failed to get guild config", "error", err, "guild_id", i.GuildID)
-		h.followUpError(s, i, "Failed to get guild configuration.")
-		return
-	}
-
-	// Get linked address
-	address, err := h.userLinkingFlow.GetLinkedAddress(userID)
-	if err != nil {
-		h.logger.Error("Failed to get linked address", "error", err, "user_id", userID)
-		h.followUpError(s, i, "Failed to check linked address.")
-		return
-	}
-
-	var embed *discordgo.MessageEmbed
-	if address == "" {
-		// Remove verified role if no address is linked and role is configured
-		if guildConfig.HasVerifiedRole() {
-			if err := s.GuildMemberRoleRemove(i.GuildID, userID, guildConfig.VerifiedRoleID); err != nil {
-				h.logger.Error("Failed to remove verified role", "error", err, "user_id", userID, "role_id", guildConfig.VerifiedRoleID)
-			}
-		}
-
-		embed = &discordgo.MessageEmbed{
-			Title:       "No Linked Address",
-			Description: "Your Discord account is not linked to any gno.land address.",
-			Color:       0xff0000,
-		}
-	} else {
-		// Add verified role if address is linked and role is configured
-		if guildConfig.HasVerifiedRole() {
-			if err := s.GuildMemberRoleAdd(i.GuildID, userID, guildConfig.VerifiedRoleID); err != nil {
-				h.logger.Error("Failed to add verified role", "error", err, "user_id", userID, "role_id", guildConfig.VerifiedRoleID)
-			}
-		}
-
-		embed = &discordgo.MessageEmbed{
-			Title:       "Address Verified ✅",
-			Description: fmt.Sprintf("Your Discord account is linked to:\n`%s`", address),
-			Color:       0x00ff00,
-		}
-	}
-
-	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Embeds: &[]*discordgo.MessageEmbed{embed},
-	})
-	if err != nil {
-		h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
-	}
-}
-
-func (h *InteractionHandlers) handleSyncRolesCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
-	realmPath := options[0].StringValue()
-	userID := i.Member.User.ID
-
-	// Defer response as sync might take time
-	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Flags: discordgo.MessageFlagsEphemeral,
-		},
-	}); err != nil {
-		h.logger.Error("Failed to defer interaction response", "error", err)
-		return
-	}
-
-	// Log sync attempt
-	h.logger.Info("Starting role sync", "user_id", userID, "realm_path", realmPath, "guild_id", i.GuildID)
-
-	// Sync roles
-	statuses, err := h.syncFlow.SyncUserRoles(userID, realmPath, i.GuildID)
-	if err != nil {
-		h.logger.Error("Failed to sync user roles", "error", err, "user_id", userID, "realm_path", realmPath)
-		h.followUpError(s, i, "Failed to sync roles: "+err.Error())
-		return
-	}
-
-	h.logger.Info("Sync workflow returned statuses", "user_id", userID, "realm_path", realmPath, "status_count", len(statuses))
-
-	// Build response embed
-	embed := &discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("Role Sync Complete - %s", realmPath),
-		Description: "Your realm roles have been synchronized:",
-		Fields:      []*discordgo.MessageEmbedField{},
-		Color:       0x00ff00,
-	}
-
-	// Update Discord roles and track results
-	for _, status := range statuses {
-		// Update Discord role
-		if status.IsMember {
-			err := s.GuildMemberRoleAdd(i.GuildID, userID, status.RoleMapping.PlatformRole.ID)
-			if err != nil {
-				h.logger.Error("Failed to add role", "error", err, "user_id", userID, "role_id", status.RoleMapping.PlatformRole.ID)
-			}
-		} else {
-			err := s.GuildMemberRoleRemove(i.GuildID, userID, status.RoleMapping.PlatformRole.ID)
-			if err != nil {
-				h.logger.Error("Failed to remove role", "error", err, "user_id", userID, "role_id", status.RoleMapping.PlatformRole.ID)
-			}
-		}
-
-		statusEmoji := "❌"
-		if status.IsMember {
-			statusEmoji = "✅"
-		}
-
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("%s %s", statusEmoji, status.RoleMapping.RealmRoleName),
-			Value:  fmt.Sprintf("Discord: %s", status.RoleMapping.PlatformRole.Name),
-			Inline: false,
-		})
-	}
-
-	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Embeds: &[]*discordgo.MessageEmbed{embed},
-	}); err != nil {
-		h.logger.Error("Failed to edit interaction response", "error", err)
-	}
-}
-
 func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	embed := &discordgo.MessageEmbed{
 		Title:       "GnoLinker Help",
-		Description: "Link your Discord account to gno.land and sync your realm roles!",
+		Description: "Link your Discord account to gno.land and sync your realm roles automatically!",
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: "📎 Link Commands",
+				Name: "👤 User Commands",
 				Value: "`/gnolinker link address <address>` - Link your Discord to a gno.land address\n" +
-					"`/gnolinker link role <role> <realm>` - Link realm role to Discord role (Gno.land Admin)",
+					"`/gnolinker unlink address` - Unlink your Discord from your gno.land address\n" +
+					"`/gnolinker status` - Show your linking status and roles",
 			},
 			{
-				Name: "🔓 Unlink Commands",
-				Value: "`/gnolinker unlink address` - Unlink your Discord from your gno.land address\n" +
-					"`/gnolinker unlink role <role> <realm>` - Unlink realm role from Discord role (Gno.land Admin)",
-			},
-			{
-				Name: "✅ Verify Commands",
-				Value: "`/gnolinker verify address` - Check your account linking status\n" +
-					"`/gnolinker verify role <role> <realm>` - Check role linking status",
-			},
-			{
-				Name: "🔄 Sync Commands",
-				Value: "`/gnolinker sync roles <realm>` - Sync your realm roles\n" +
-					"`/gnolinker sync user <realm> <user>` - Sync another user's roles (Gno.land Admin)",
+				Name: "🎭 Role Management (Gno.land Admin)",
+				Value: "`/gnolinker link role <role> <realm>` - Link realm role to Discord role\n" +
+					"`/gnolinker unlink role <role> <realm>` - Unlink realm role from Discord role",
 			},
 			{
 				Name: "⚙️ Guild Admin Commands",
-				Value: "`/gnolinker admin refresh-commands` - Re-register slash commands (Discord Admin)\n" +
-					"`/gnolinker admin info` - Show bot configuration (Discord Admin)\n" +
-					"`/gnolinker admin list-roles` - List all linked roles across all realms (Discord Admin)\n" +
-					"`/gnolinker admin check-orphans` - Find orphaned roles (deleted or unlinked) (Discord Admin)",
+				Value: "`/gnolinker admin refresh-commands` - Re-register slash commands\n" +
+					"`/gnolinker admin info` - Show bot configuration and managed roles\n" +
+					"`/gnolinker admin list-roles` - List all linked roles across all realms\n" +
+					"`/gnolinker admin check-orphans` - Find orphaned roles (deleted or unlinked)",
 			},
 			{
 				Name: "🔑 Permission Types",
@@ -922,7 +697,13 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 				Name: "ℹ️ How it works",
 				Value: "1. Link your Discord to gno.land address\n" +
 					"2. Gno.land admin links realm roles to Discord roles\n" +
-					"3. Sync your roles to get Discord permissions",
+					"3. Roles sync automatically when you link and periodically thereafter",
+			},
+			{
+				Name: "✨ What's New",
+				Value: "• Automatic role syncing - no manual sync needed!\n" +
+					"• Use `/gnolinker status` to see all your roles\n" +
+					"• Admin info now shows all managed role mappings",
 			},
 		},
 		Color: 0x5865F2,
@@ -997,116 +778,121 @@ func (h *InteractionHandlers) handleLinkRoleCommand(s *discordgo.Session, i *dis
 	}
 }
 
-func (h *InteractionHandlers) handleVerifyRoleCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
-	roleName := options[0].StringValue()
-	realmPath := options[1].StringValue()
-
-	// Get linked role
-	roleMapping, err := h.roleLinkingFlow.GetLinkedRole(realmPath, roleName, i.GuildID)
-	if err != nil {
-		h.logger.Error("Failed to get linked role", "error", err, "role_name", roleName, "realm_path", realmPath)
-		h.respondError(s, i, "Failed to check linked role.")
-		return
-	}
-
-	embed := &discordgo.MessageEmbed{
-		Title: "Role Linking Status",
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Realm Role",
-				Value:  fmt.Sprintf("`%s` @ `%s`", roleName, realmPath),
-				Inline: true,
-			},
-			{
-				Name:   "Discord Role",
-				Value:  fmt.Sprintf("<@&%s>", roleMapping.PlatformRole.ID),
-				Inline: true,
-			},
-		},
-		Color: 0x00ff00,
-	}
-
-	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Embeds: []*discordgo.MessageEmbed{embed},
-			Flags:  discordgo.MessageFlagsEphemeral,
-		},
-	}); err != nil {
-		h.logger.Error("Failed to respond to interaction", "error", err)
-	}
-}
-
-func (h *InteractionHandlers) handleSyncUserCommand(s *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) {
-	// Check role admin permissions (for managing other users' realm roles)
+func (h *InteractionHandlers) handleStatusCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userID := i.Member.User.ID
-	isRoleAdmin, err := h.hasRoleAdminPermission(s, i.GuildID, userID)
-	if err != nil || !isRoleAdmin {
-		h.respondError(s, i, "You need gno.land admin permissions to sync other users' roles. Contact a server admin to get the configured admin role.")
-		return
-	}
 
-	realmPath := options[0].StringValue()
-	targetUser := options[1].UserValue(s)
-
-	// Defer response
-	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	// Defer response to prevent timeout
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Flags: discordgo.MessageFlagsEphemeral,
 		},
-	}); err != nil {
-		h.logger.Error("Failed to defer interaction response", "error", err)
-		return
-	}
-
-	// Sync roles
-	statuses, err := h.syncFlow.SyncUserRoles(targetUser.ID, realmPath, i.GuildID)
+	})
 	if err != nil {
-		h.logger.Error("Failed to sync user roles", "error", err, "target_user_id", targetUser.ID, "realm_path", realmPath)
-		h.followUpError(s, i, "Failed to sync roles: "+err.Error())
+		h.logger.Error("Failed to defer response", "error", err, "user_id", userID)
 		return
 	}
 
-	// Build response
-	embed := &discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("Synced Roles for %s", targetUser.Username),
-		Description: fmt.Sprintf("Realm: `%s`", realmPath),
-		Fields:      []*discordgo.MessageEmbedField{},
-		Color:       0x00ff00,
+	// Get linked address
+	linkedAddress, err := h.userLinkingFlow.GetLinkedAddress(userID)
+	if err != nil {
+		h.logger.Error("Failed to get linked address", "error", err, "user_id", userID)
+		h.followUpError(s, i, "Failed to check linked address.")
+		return
 	}
 
-	// Update Discord roles for target user
-	for _, status := range statuses {
-		// Update Discord role
-		if status.IsMember {
-			err := s.GuildMemberRoleAdd(i.GuildID, targetUser.ID, status.RoleMapping.PlatformRole.ID)
-			if err != nil {
-				h.logger.Error("Failed to add role", "error", err, "target_user_id", targetUser.ID, "role_id", status.RoleMapping.PlatformRole.ID)
-			}
-		} else {
-			err := s.GuildMemberRoleRemove(i.GuildID, targetUser.ID, status.RoleMapping.PlatformRole.ID)
-			if err != nil {
-				h.logger.Error("Failed to remove role", "error", err, "target_user_id", targetUser.ID, "role_id", status.RoleMapping.PlatformRole.ID)
-			}
-		}
+	// Create embed for status
+	embed := &discordgo.MessageEmbed{
+		Title:  "Your GnoLinker Status",
+		Color:  0x5865F2,
+		Fields: []*discordgo.MessageEmbedField{},
+	}
 
-		statusEmoji := "❌"
-		if status.IsMember {
-			statusEmoji = "✅"
-		}
-
+	// Show linked address status
+	if linkedAddress == "" {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("%s %s", statusEmoji, status.RoleMapping.RealmRoleName),
-			Value:  fmt.Sprintf("Discord: %s", status.RoleMapping.PlatformRole.Name),
+			Name:   "🔗 Linked Address",
+			Value:  "❌ Not linked to any gno.land address",
+			Inline: false,
+		})
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   "ℹ️ How to Link",
+			Value:  "Use `/gnolinker link address <your-address>` to link your account",
+			Inline: false,
+		})
+	} else {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   "🔗 Linked Address",
+			Value:  fmt.Sprintf("✅ `%s`", linkedAddress),
+			Inline: false,
+		})
+
+		// Get all realm roles for this address
+		allRoles := []string{}
+		allDiscordRoles := []string{}
+
+		// Get all realms we have role mappings for
+		guildID := i.GuildID
+		roleMappings, err := h.roleLinkingFlow.ListAllRolesByGuild(guildID)
+		if err != nil {
+			h.logger.Error("Failed to get role mappings", "error", err)
+		} else {
+			// Group by realm
+			realmRoles := make(map[string][]string)
+			for _, mapping := range roleMappings {
+				// Check if user has this role
+				hasRole, err := h.roleLinkingFlow.HasRealmRole(mapping.RealmPath, mapping.RealmRoleName, linkedAddress)
+				if err != nil {
+					h.logger.Error("Failed to check user role", "error", err, "realm", mapping.RealmPath, "role", mapping.RealmRoleName)
+					continue
+				}
+				if hasRole {
+					realmRoles[mapping.RealmPath] = append(realmRoles[mapping.RealmPath], mapping.RealmRoleName)
+					allDiscordRoles = append(allDiscordRoles, fmt.Sprintf("<@&%s>", mapping.PlatformRole.ID))
+				}
+			}
+
+			// Build roles display
+			for realm, roles := range realmRoles {
+				for _, role := range roles {
+					allRoles = append(allRoles, fmt.Sprintf("`%s` @ `%s`", role, realm))
+				}
+			}
+		}
+
+		// Show realm roles
+		if len(allRoles) > 0 {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name:   "🎭 Your Realm Roles",
+				Value:  strings.Join(allRoles, "\n"),
+				Inline: false,
+			})
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name:   "🏷️ Discord Roles Assigned",
+				Value:  strings.Join(allDiscordRoles, " "),
+				Inline: false,
+			})
+		} else {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name:   "🎭 Your Realm Roles",
+				Value:  "No realm roles found",
+				Inline: false,
+			})
+		}
+
+		// Add last sync info
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   "🔄 Sync Status",
+			Value:  "Roles are automatically synced when you link your account and periodically thereafter",
 			Inline: false,
 		})
 	}
 
-	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	// Send response
+	if _, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{embed},
 	}); err != nil {
-		h.logger.Error("Failed to edit interaction response", "error", err)
+		h.logger.Error("Failed to edit response", "error", err, "user_id", userID)
 	}
 }
 
@@ -1486,6 +1272,45 @@ func (h *InteractionHandlers) handleAdminInfoCommand(s *discordgo.Session, i *di
 		Value:  "Multi-guild configuration enabled",
 		Inline: false,
 	})
+
+	// Role mappings info
+	roleMappings, err := h.roleLinkingFlow.ListAllRolesByGuild(i.GuildID)
+	if err != nil {
+		h.logger.Error("Failed to get role mappings", "error", err)
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "🎭 Managed Roles",
+			Value:  "Failed to retrieve role mappings",
+			Inline: false,
+		})
+	} else if len(roleMappings) == 0 {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "🎭 Managed Roles",
+			Value:  "No realm roles linked yet",
+			Inline: false,
+		})
+	} else {
+		// Group role mappings by realm
+		realmMappings := make(map[string][]*core.RoleMapping)
+		for _, mapping := range roleMappings {
+			realmMappings[mapping.RealmPath] = append(realmMappings[mapping.RealmPath], mapping)
+		}
+
+		// Build role mappings display
+		var roleDisplay strings.Builder
+		for realm, mappings := range realmMappings {
+			roleDisplay.WriteString(fmt.Sprintf("**%s**\n", realm))
+			for _, mapping := range mappings {
+				roleDisplay.WriteString(fmt.Sprintf("• `%s` → <@&%s>\n", mapping.RealmRoleName, mapping.PlatformRole.ID))
+			}
+			roleDisplay.WriteString("\n")
+		}
+
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("🎭 Managed Roles (%d total)", len(roleMappings)),
+			Value:  roleDisplay.String(),
+			Inline: false,
+		})
+	}
 
 	embed := &discordgo.MessageEmbed{
 		Title:       "Bot Configuration",

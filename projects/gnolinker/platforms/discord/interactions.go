@@ -43,77 +43,25 @@ func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationComm
 		Name:        "gnolinker",
 		Description: "Link your Discord account to gno.land and manage realm roles",
 		Options: []*discordgo.ApplicationCommandOption{
-			// Link subcommand group
+			// Link subcommand
 			{
-				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "link",
-				Description: "Link accounts and roles",
+				Description: "Link your Discord account to a gno.land address",
 				Options: []*discordgo.ApplicationCommandOption{
 					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Type:        discordgo.ApplicationCommandOptionString,
 						Name:        "address",
-						Description: "Link your Discord account to a gno.land address",
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "address",
-								Description: "Your gno.land address",
-								Required:    true,
-							},
-						},
-					},
-					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "role",
-						Description: "Link a realm role to a Discord role (Admin only)",
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "role",
-								Description: "The realm role name",
-								Required:    true,
-							},
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "realm",
-								Description: "The realm path",
-								Required:    true,
-							},
-						},
+						Description: "Your gno.land address",
+						Required:    true,
 					},
 				},
 			},
-			// Unlink subcommand group
+			// Unlink subcommand
 			{
-				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "unlink",
-				Description: "Unlink accounts and roles",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "address",
-						Description: "Unlink your Discord account from your gno.land address",
-					},
-					{
-						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "role",
-						Description: "Unlink a realm role from a Discord role (Admin only)",
-						Options: []*discordgo.ApplicationCommandOption{
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "role",
-								Description: "The realm role name",
-								Required:    true,
-							},
-							{
-								Type:        discordgo.ApplicationCommandOptionString,
-								Name:        "realm",
-								Description: "The realm path",
-								Required:    true,
-							},
-						},
-					},
-				},
+				Description: "Unlink your Discord account from your gno.land address",
 			},
 			// Admin subcommand group
 			{
@@ -123,13 +71,46 @@ func (h *InteractionHandlers) GetExpectedCommands() []*discordgo.ApplicationComm
 				Options: []*discordgo.ApplicationCommandOption{
 					{
 						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "refresh-commands",
-						Description: "Re-register slash commands for this guild",
+						Name:        "info",
+						Description: "Show bot configuration information",
 					},
 					{
 						Type:        discordgo.ApplicationCommandOptionSubCommand,
-						Name:        "info",
-						Description: "Show bot configuration information",
+						Name:        "link-role",
+						Description: "Link a realm role to a Discord role",
+						Options: []*discordgo.ApplicationCommandOption{
+							{
+								Type:        discordgo.ApplicationCommandOptionString,
+								Name:        "role",
+								Description: "The realm role name",
+								Required:    true,
+							},
+							{
+								Type:        discordgo.ApplicationCommandOptionString,
+								Name:        "realm",
+								Description: "The realm path",
+								Required:    true,
+							},
+						},
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Name:        "unlink-role",
+						Description: "Unlink a realm role from a Discord role",
+						Options: []*discordgo.ApplicationCommandOption{
+							{
+								Type:        discordgo.ApplicationCommandOptionString,
+								Name:        "role",
+								Description: "The realm role name",
+								Required:    true,
+							},
+							{
+								Type:        discordgo.ApplicationCommandOptionString,
+								Name:        "realm",
+								Description: "The realm path",
+								Required:    true,
+							},
+						},
 					},
 					{
 						Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -384,13 +365,17 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 		return
 	}
 
-	// Handle top-level subcommands (like help, status)
+	// Handle top-level subcommands (like help, status, link, unlink)
 	if options[0].Type == discordgo.ApplicationCommandOptionSubCommand {
 		switch options[0].Name {
 		case "help":
 			h.handleHelpCommand(s, i)
 		case "status":
 			h.handleStatusCommand(s, i)
+		case "link":
+			h.handleLinkAddressCommand(s, i, options[0].Options)
+		case "unlink":
+			h.handleUnlinkAddressCommand(s, i)
 		}
 		return
 	}
@@ -405,26 +390,14 @@ func (h *InteractionHandlers) handleSlashCommand(s *discordgo.Session, i *discor
 		subcommand := group.Options[0]
 
 		switch group.Name {
-		case "link":
-			switch subcommand.Name {
-			case "address":
-				h.handleLinkAddressCommand(s, i, subcommand.Options)
-			case "role":
-				h.handleLinkRoleCommand(s, i, subcommand.Options)
-			}
-		case "unlink":
-			switch subcommand.Name {
-			case "address":
-				h.handleUnlinkAddressCommand(s, i)
-			case "role":
-				h.handleUnlinkRoleCommand(s, i, subcommand.Options)
-			}
 		case "admin":
 			switch subcommand.Name {
-			case "refresh-commands":
-				h.handleAdminRefreshCommandsCommand(s, i)
 			case "info":
 				h.handleAdminInfoCommand(s, i)
+			case "link-role":
+				h.handleLinkRoleCommand(s, i, subcommand.Options)
+			case "unlink-role":
+				h.handleUnlinkRoleCommand(s, i, subcommand.Options)
 			case "list-roles":
 				h.handleAdminListRolesCommand(s, i)
 			case "check-orphans":
@@ -672,19 +645,15 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name: "👤 User Commands",
-				Value: "`/gnolinker link address <address>` - Link your Discord to a gno.land address\n" +
-					"`/gnolinker unlink address` - Unlink your Discord from your gno.land address\n" +
+				Value: "`/gnolinker link <address>` - Link your Discord to a gno.land address\n" +
+					"`/gnolinker unlink` - Unlink your Discord from your gno.land address\n" +
 					"`/gnolinker status` - Show your linking status and roles",
 			},
 			{
-				Name: "🎭 Role Management (Gno.land Admin)",
-				Value: "`/gnolinker link role <role> <realm>` - Link realm role to Discord role\n" +
-					"`/gnolinker unlink role <role> <realm>` - Unlink realm role from Discord role",
-			},
-			{
-				Name: "⚙️ Guild Admin Commands",
-				Value: "`/gnolinker admin refresh-commands` - Re-register slash commands\n" +
-					"`/gnolinker admin info` - Show bot configuration and managed roles\n" +
+				Name: "⚙️ Admin Commands",
+				Value: "`/gnolinker admin info` - Show bot configuration and managed roles\n" +
+					"`/gnolinker admin link-role <role> <realm>` - Link realm role to Discord role\n" +
+					"`/gnolinker admin unlink-role <role> <realm>` - Unlink realm role from Discord role\n" +
 					"`/gnolinker admin list-roles` - List all linked roles across all realms\n" +
 					"`/gnolinker admin check-orphans` - Find orphaned roles (deleted or unlinked)",
 			},
@@ -703,6 +672,7 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 				Name: "✨ What's New",
 				Value: "• Automatic role syncing - no manual sync needed!\n" +
 					"• Use `/gnolinker status` to see all your roles\n" +
+					"• Role management moved to admin commands for clarity\n" +
 					"• Admin info now shows all managed role mappings",
 			},
 		},
@@ -1147,54 +1117,6 @@ func (h *InteractionHandlers) hasGuildAdminPermission(s *discordgo.Session, guil
 
 // Admin command handlers
 
-func (h *InteractionHandlers) handleAdminRefreshCommandsCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// Check guild admin permissions (for Discord server management)
-	userID := i.Member.User.ID
-	isGuildAdmin, err := h.hasGuildAdminPermission(s, i.GuildID, userID)
-	if err != nil || !isGuildAdmin {
-		h.respondError(s, i, "You need Discord admin permissions (Administrator role or server owner) to refresh commands.")
-		return
-	}
-
-	// Defer response
-	if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Flags: discordgo.MessageFlagsEphemeral,
-		},
-	}); err != nil {
-		h.logger.Error("Failed to defer interaction response", "error", err)
-		return
-	}
-
-	// Re-sync slash commands for this guild
-	if err := h.SyncSlashCommands(s, i.GuildID); err != nil {
-		h.logger.Error("Failed to refresh commands", "guild_id", i.GuildID, "error", err)
-		embed := &discordgo.MessageEmbed{
-			Title:       "Command Refresh Failed",
-			Description: "Failed to refresh slash commands. Please try again.",
-			Color:       0xff0000,
-		}
-		if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-			Embeds: &[]*discordgo.MessageEmbed{embed},
-		}); err != nil {
-			h.logger.Error("Failed to edit interaction response", "error", err)
-		}
-		return
-	}
-
-	embed := &discordgo.MessageEmbed{
-		Title:       "Commands Refreshed",
-		Description: "Successfully refreshed slash commands for this guild.",
-		Color:       0x00ff00,
-	}
-
-	if _, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Embeds: &[]*discordgo.MessageEmbed{embed},
-	}); err != nil {
-		h.logger.Error("Failed to edit interaction response", "error", err)
-	}
-}
 
 func (h *InteractionHandlers) handleAdminInfoCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Check guild admin permissions (for viewing Discord server bot info)

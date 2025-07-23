@@ -41,7 +41,7 @@ func (a *Agenda) ToAnchor() string {
 	return component.StringToAnchor(a.Name)
 }
 
-func (a *Agenda) ToMarkdown(_ ...component.Content) string {
+func (a *Agenda) ToMarkdown(body ...component.Content) string {
 	markdown := "## " + a.Name + "\n\n"
 
 	if _, ok := a.RenderOpts()["Location"]; ok && a.Location != nil {
@@ -58,8 +58,14 @@ func (a *Agenda) ToMarkdown(_ ...component.Content) string {
 
 	markdown += a.Description + "\n\n"
 
-	if a.Banner != nil && a.Banner.Published {
-		markdown += a.Banner.Markdown + "\n\n"
+	if len(body) > 0 {
+		for _, content := range body {
+			if content.Published {
+				markdown += content.Render() + "\n\n"
+			}
+		}
+	} else if a.Banner != nil && a.Banner.Published {
+		markdown += a.Banner.Render() + "\n\n"
 	}
 
 	markdown += "## Agenda \n\n"

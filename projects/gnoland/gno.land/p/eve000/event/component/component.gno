@@ -55,6 +55,7 @@ func RenderComponent(path string, c Component) (out string) {
 type Content struct {
 	Published bool
 	Markdown  string
+	Callback  func(string) string
 }
 
 func (c *Content) SetPublished(published bool) {
@@ -63,6 +64,36 @@ func (c *Content) SetPublished(published bool) {
 
 func (c *Content) SetMarkdown(markdown string) {
 	c.Markdown = markdown
+}
+
+// Render displays stored content or calls the callback function if provided.
+func (c *Content) Render(p ...string) string {
+	path := ""
+	if len(p) == 1 {
+		path = p[0]
+	}
+	u, err := url.Parse(path)
+	if err != nil {
+		panic("invalid path in Content.Render: " + path)
+	}
+	format := u.Query().Get("format")
+	if format == "json" {
+		if c.Callback != nil {
+			return c.Callback(path)
+		}
+		return "{\"markdown\": \"" + escapeHtml(c.Markdown) + "\", \"published\": " + strconv.FormatBool(c.Published) + "}"
+	}
+	if c.Markdown == "" && c.Callback == nil {
+		return ""
+	}
+	if c.Published {
+		if c.Callback != nil {
+			return c.Callback(path)
+		} else {
+			return c.Markdown
+		}
+	}
+	return ""
 }
 
 func StringToAnchor(text string) string {

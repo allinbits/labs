@@ -65,9 +65,16 @@ func renderLinkByGnoAddr(w *mux.ResponseWriter, r *mux.Request) {
 
 func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 	encodedClaim := r.GetVar("encodedClaim")
+	
+	// Check if this is an unlink operation
+	isUnlink := r.Query.Get("unlink") == "true"
 
 	w.Write("# User Claim Manager\n")
-	w.Write("View your Claim details from the discord linker bot. Sign the transaction with the magic link to link these identities.\n")
+	if isUnlink {
+		w.Write("View your Claim details from the discord linker bot. Sign the transaction with the magic link to unlink these identities.\n")
+	} else {
+		w.Write("View your Claim details from the discord linker bot. Sign the transaction with the magic link to link these identities.\n")
+	}
 
 	claim, err := validateEncodedClaim(encodedClaim, true)
 	if err != nil {
@@ -76,7 +83,29 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 		return
 	}
 
-	w.Write(ufmt.Sprintf(`
+	if isUnlink {
+		w.Write(ufmt.Sprintf(`
+## Easy Action:
+
+[Unlink Accounts](%v)
+
+## What you are unlinking
+
+This will unlink your Discord ID from your Gno address, removing the connection between these identities.
+
+### discordID
+
+%v
+
+### Gno Address
+
+%v
+
+`, txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
+			claim.discordID,
+			string(claim.addr)))
+	} else {
+		w.Write(ufmt.Sprintf(`
 ## Easy Action:
 
 [Claim Linked Accounts](%v)
@@ -94,10 +123,12 @@ This will link your Discord ID to your Gno address, allowing you to use your Dis
 %v
 
 `, txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
-		claim.discordID,
-		string(claim.addr)))
+			claim.discordID,
+			string(claim.addr)))
+	}
 
-	w.Write(ufmt.Sprintf(`
+	if !isUnlink {
+		w.Write(ufmt.Sprintf(`
 ## Other Actions:
 
 - [Remove Linked Account by Gno Address](%v) - Use this to unlink from your discord ID only using your gno address.
@@ -106,10 +137,11 @@ This will link your Discord ID to your Gno address, allowing you to use your Dis
 
 `,
 
-		txlink.NewLink("Unlink").AddArgs("encodedClaim", encodedClaim).URL(),
-		txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
-		string(claim.addr),
-	))
+			txlink.NewLink("Unlink").AddArgs("encodedClaim", encodedClaim).URL(),
+			txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
+			string(claim.addr),
+		))
+	}
 
 	w.Write(ufmt.Sprintf(`
 ## Raw Encoded Claim

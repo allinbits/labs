@@ -28,6 +28,7 @@ Labs Net is our dedicated testnet environment:
 - [buidlthefuture000/events/](/r/buidlthefuture000/events) - BTF Events Index
 - [cdn000](/r/cdn000) - CDN for static files (proxy for jsDelivr e.g. /gh/BUIDLTHEFUTURE/events@main/static/)
 - [frames000](/r/frames000) - Frames for Gno - build js widgets as gnomark HtmlElements
+- [linker000](/r/linker000) - Gno Linker - a tool for linking Gno Addresses to External Resources
 - [metamodel000](/r/metamodel000) - Library of metamodels for gnolang (WIP)
 - [stackdump000/home](/r/stackdump000/home) - Stackdump home page
 `

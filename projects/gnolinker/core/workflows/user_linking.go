@@ -62,5 +62,12 @@ func (w *UserLinkingWorkflowImpl) GetLinkedAddress(platformID string) (string, e
 // GetClaimURL returns the URL where users can submit their claim
 func (w *UserLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
 	// Format: https://baseurl/r/linker000/discord/user/v0:claim/signature
-	return fmt.Sprintf("%s/%s:claim/%s", w.config.BaseURL, w.config.UserContract, claim.Signature)
+	url := fmt.Sprintf("%s/%s:claim/%s", w.config.BaseURL, w.config.UserContract, claim.Signature)
+
+	// Add query parameter for unlink operations
+	if claim.Type == core.ClaimTypeUserUnlink {
+		url += "?unlink=true"
+	}
+
+	return url
 }

@@ -77,10 +77,18 @@ func renderListLinkedRoles(w *mux.ResponseWriter, r *mux.Request) {
 
 func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 	encodedClaim := r.GetVar("encodedClaim")
+	
+	// Check if this is an unlink operation
+	isUnlink := r.Query.Get("unlink") == "true"
 
 	w.Write("# Role Claim Manager\n")
-	w.Write("View your Claim details from the discord linker bot. Sign the transaction with the magic link to link these roles to your server.\n")
-	w.Write("You **must** sign the transaction with the magic link to link these roles to your server.\n")
+	if isUnlink {
+		w.Write("View your Claim details from the discord linker bot. Sign the transaction with the magic link to unlink these roles from your server.\n")
+		w.Write("You **must** sign the transaction with the magic link to unlink these roles from your server.\n")
+	} else {
+		w.Write("View your Claim details from the discord linker bot. Sign the transaction with the magic link to link these roles to your server.\n")
+		w.Write("You **must** sign the transaction with the magic link to link these roles to your server.\n")
+	}
 
 	claim, err := validateEncodedClaim(encodedClaim, true)
 	if err != nil {
@@ -89,7 +97,19 @@ func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 		return
 	}
 
-	w.Write(ufmt.Sprintf(`
+	if isUnlink {
+		w.Write(ufmt.Sprintf(`
+## Magic Link to Unlink your Discord Guild Role from this Realm.
+
+Use the link below to unlink your Discord role from your Realm. This will create a transaction that removes the link between the role and your Realm.
+
+[Unlink Discord Role](%v)
+
+`,
+			txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
+		))
+	} else {
+		w.Write(ufmt.Sprintf(`
 ## Magic Link to Link your Discord Guild Role to this Realm.
 
 Use the link below to link your Discord role to your Realm. This will create a transaction that links the role to your Realm.
@@ -104,11 +124,12 @@ Use this link to unlink the role from your Realm, or to confirm the link is conn
 - [Confirm link](/r/linker000/discord/role/v0:link/d/%v/%v)
 
 `,
-		txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
-		txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
-		claim.discordGuildID,
-		claim.discordRoleID,
-	))
+			txlink.NewLink("Link").AddArgs("encodedClaim", encodedClaim).URL(),
+			txlink.NewLink("UnlinkByClaim").AddArgs("encodedClaim", encodedClaim).URL(),
+			claim.discordGuildID,
+			claim.discordRoleID,
+		))
+	}
 
 	w.Write(ufmt.Sprintf(`
 ## Raw Encoded Claim

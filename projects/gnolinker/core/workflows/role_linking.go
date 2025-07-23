@@ -121,5 +121,12 @@ func (w *RoleLinkingWorkflowImpl) HasRealmRole(realmPath, roleName, address stri
 // GetClaimURL returns the URL where organizers can submit their claim
 func (w *RoleLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
 	// Format: https://baseurl/r/linker000/discord/role/v0:claim/signature
-	return fmt.Sprintf("%s/%s:claim/%s", w.config.BaseURL, w.config.RoleContract, claim.Signature)
+	url := fmt.Sprintf("%s/%s:claim/%s", w.config.BaseURL, w.config.RoleContract, claim.Signature)
+
+	// Add query parameter for unlink operations
+	if claim.Type == core.ClaimTypeRoleUnlink {
+		url += "?unlink=true"
+	}
+
+	return url
 }

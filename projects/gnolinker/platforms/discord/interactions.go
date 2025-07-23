@@ -1117,7 +1117,6 @@ func (h *InteractionHandlers) hasGuildAdminPermission(s *discordgo.Session, guil
 
 // Admin command handlers
 
-
 func (h *InteractionHandlers) handleAdminInfoCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Check guild admin permissions (for viewing Discord server bot info)
 	userID := i.Member.User.ID

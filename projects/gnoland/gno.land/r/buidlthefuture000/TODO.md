@@ -1,6 +1,6 @@
 - [ ] add URL pointer for aiblabs etc..  for calendar events
 - [ ] fix/test the `/events` api
-- [ ] add version number to bottom of /events api
+- [ ] add version number to bottom of /events page
 - [ ] Double check updatable content blocks - 'banner' for agenda
 - [ ] self-audit patch permissions for each event's realm
 - [ ] make sure HasRole and RenderCalendar are available at proper realms

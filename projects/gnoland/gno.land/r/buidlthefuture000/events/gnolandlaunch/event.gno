@@ -117,11 +117,11 @@ var gnolandlaunch = &event.Event{
 	Description:    "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
 	Status:         component.EventPostponed, // Not yet scheduled
 	AttendanceMode: component.OnlineEventAttendanceMode,
-	Sessions:       []*session.Session{
+	Sessions: []*session.Session{
 		// TODO: add finalized sessions here
-		// Sessions["keynote"],
-		// Sessions["generics"],
-		// Sessions["concurrency"],
-		// Sessions["apis"],
+		Sessions["keynote"],
+		Sessions["generics"],
+		Sessions["concurrency"],
+		Sessions["apis"],
 	},
 }

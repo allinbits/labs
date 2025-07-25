@@ -1,6 +1,8 @@
 package event
 
 import (
+	"net/url"
+	"regexp"
 	"std"
 	"strconv"
 	"strings"
@@ -179,6 +181,128 @@ func (evt *Event) Agenda(heading *component.Content) *agenda.Agenda {
 	a.SetBanner(heading)
 	a.SetRenderOpts(evt.renderOpts)
 	return a
+}
+
+func (evt *Event) RenderCalendar(path string) string {
+	var b strings.Builder
+	w := makeWriter(&b)
+
+	q := parseQuery(path)
+	sessionIDs := q["session"]
+	format := strings.ToLower(q.Get("format"))
+
+	useAll := len(sessionIDs) == 0
+	allowed := make(map[string]bool)
+	for _, id := range sessionIDs {
+		allowed[id] = true
+	}
+	include := func(id string) bool { return useAll || allowed[id] }
+
+	sessions := evt.GetSessions()
+
+	switch format {
+	case "json":
+		b.WriteString("[")
+		first := true
+		if !first {
+			b.WriteString(",")
+		}
+		b.WriteString(evt.ToJson())
+		first = false
+		for i, s := range sessions {
+			id := Pad3(strconv.Itoa(i))
+			if !include(id) {
+				continue
+			}
+			if !first {
+				b.WriteString(",")
+			}
+			b.WriteString(s.ToJson())
+			first = false
+		}
+		b.WriteString("]")
+		return b.String()
+
+	case "ics":
+		w("BEGIN:VCALENDAR")
+		w("VERSION:2.0")
+		w("CALSCALE:GREGORIAN")
+		w("PRODID:-//gno.land//Launch Calendar//EN")
+		w("METHOD:PUBLISH\n")
+
+		w("BEGIN:VEVENT")
+		w(f("UID:event-%s@%s", slugify(evt.Name), "gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar"))
+		w("SEQUENCE:0")
+		w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
+		w(f("DTSTART;VALUE=DATE:%s", evt.StartDate.Format("20060102")))
+		w(f("DTEND;VALUE=DATE:%s", evt.StartDate.AddDate(0, 0, 1).Format("20060102"))) // 👈 Fix: DTEND is exclusive
+		w(f("SUMMARY:%s", evt.Name))
+		w(f("DESCRIPTION:%s", evt.Description))
+		w(f("LOCATION:%s", evt.Location.Name))
+		w("END:VEVENT\n")
+
+		for i, s := range sessions {
+			id := Pad3(strconv.Itoa(i))
+			if !include(id) {
+				continue
+			}
+
+			w("BEGIN:VEVENT")
+			w(f("UID:%s-%d@%s",
+				slugify(s.Title)[:5],
+				s.StartTime.Unix(),
+				"gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar",
+			))
+			w(f("SEQUENCE:%d", s.Sequence))
+			w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
+			w(f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")))
+			w(f("DTEND:%s", s.EndTime.UTC().Format("20060102T150000Z")))
+			w(f("SUMMARY:%s", s.Title))
+			w(f("DESCRIPTION:%s", s.Description))
+			w(f("LOCATION:%s", s.Location.Name))
+			if s.Cancelled {
+				w("STATUS:CANCELLED")
+			}
+			w("END:VEVENT\n")
+		}
+
+		w("END:VCALENDAR")
+		return b.String()
+
+	default:
+		w(f("# %s\n\n%s", evt.Name, evt.Description))
+		for i, s := range sessions {
+			id := Pad3(strconv.Itoa(i))
+			if !include(id) {
+				continue
+			}
+			w(s.ToMarkdown())
+		}
+		return b.String()
+	}
+}
+
+func parseQuery(path string) url.Values {
+	if len(path) > 0 && path[0] == '?' {
+		u, err := url.Parse(std.CurrentRealm().PkgPath() + path)
+		if err == nil {
+			return u.Query()
+		}
+	}
+	return url.Values{}
+}
+
+func makeWriter(b *strings.Builder) func(string) {
+	return func(s string) {
+		b.WriteString(s + "\n")
+	}
+}
+
+func slugify(s string) string {
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	lower := strings.ToLower(s)
+	slug := re.ReplaceAllString(lower, "-")
+	return strings.Trim(slug, "-")
 }
 
 func Pad3(s string) string {

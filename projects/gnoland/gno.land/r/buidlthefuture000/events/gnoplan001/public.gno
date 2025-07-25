@@ -12,3 +12,7 @@ func LiveEvent() *event.Event {
 func JoinBeta() {
 	app.JoinWaitlist() // waitlist is re-used for beta program
 }
+
+func RenderCalendar(path string) string {
+	return LiveEvent().RenderCalendar(path)
+}

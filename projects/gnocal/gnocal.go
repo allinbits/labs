@@ -80,7 +80,7 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path := strconv.Quote("?" + r.URL.RawQuery)
-	stringToken, _, err := s.gnoClient.QEval(calendarPath, f(`RenderCal(%s)`, path))
+	stringToken, _, err := s.gnoClient.QEval(calendarPath, f(`RenderCalendar(%s)`, path))
 	if err != nil {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusInternalServerError)

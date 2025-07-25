@@ -45,7 +45,7 @@ gnolinker/
 ### Core Workflows
 
 1. **User Linking**: Links chat user IDs to Gno addresses via cryptographic claims
-2. **Role Linking**: Maps Gno realm roles to chat platform roles (organizer-only)
+2. **Role Linking**: Maps Gno realm roles to chat platform roles (admin-only)
 3. **Sync**: Reconciles role membership between Gno realms and chat platforms
 
 ### Gno Integration

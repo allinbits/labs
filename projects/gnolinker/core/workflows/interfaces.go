@@ -19,13 +19,13 @@ type UserLinkingWorkflow interface {
 	GetClaimURL(claim *core.Claim) string
 }
 
-// RoleLinkingWorkflow handles the role mapping flow for organizers
+// RoleLinkingWorkflow handles the role mapping flow for admins
 type RoleLinkingWorkflow interface {
 	// GenerateClaim creates a signed claim for linking a realm role to a platform role
-	GenerateClaim(organizerID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error)
+	GenerateClaim(userID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error)
 
 	// GenerateUnlinkClaim creates a signed claim for unlinking a realm role from a platform role
-	GenerateUnlinkClaim(organizerID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error)
+	GenerateUnlinkClaim(userID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error)
 
 	// GetLinkedRole retrieves the role mapping for a specific realm role
 	GetLinkedRole(realmPath, roleName, platformGuildID string) (*core.RoleMapping, error)
@@ -39,7 +39,7 @@ type RoleLinkingWorkflow interface {
 	// HasRealmRole checks if an address has a specific role in the realm
 	HasRealmRole(realmPath, roleName, address string) (bool, error)
 
-	// GetClaimURL returns the URL where organizers can submit their claim
+	// GetClaimURL returns the URL where admins can submit their claim
 	GetClaimURL(claim *core.Claim) string
 }
 

@@ -541,7 +541,7 @@ func (h *InteractionHandlers) handleUnlinkRoleCommand(s *discordgo.Session, i *d
 	userID := i.Member.User.ID
 	isRoleAdmin, err := h.hasRoleAdminPermission(s, i.GuildID, userID)
 	if err != nil || !isRoleAdmin {
-		h.respondError(s, i, "You need gno.land admin permissions to unlink realm roles. Contact a server admin to get the configured admin role.")
+		h.respondError(s, i, "You need either the configured admin role or Discord admin permissions to unlink realm roles.")
 		return
 	}
 
@@ -659,13 +659,13 @@ func (h *InteractionHandlers) handleHelpCommand(s *discordgo.Session, i *discord
 			},
 			{
 				Name: "🔑 Permission Types",
-				Value: "**Gno.land Admin**: Requires configured admin role for realm management\n" +
-					"**Discord Admin**: Requires Administrator permission or server owner",
+				Value: "**Role Management**: Requires EITHER the configured admin role OR Discord admin permissions (Administrator/Owner)\n" +
+					"**Bot Configuration**: Requires Discord admin permissions (Administrator/Owner)",
 			},
 			{
 				Name: "ℹ️ How it works",
 				Value: "1. Link your Discord to gno.land address\n" +
-					"2. Gno.land admin links realm roles to Discord roles\n" +
+					"2. Admin (with configured role OR Discord admin) links realm roles to Discord roles\n" +
 					"3. Roles sync automatically when you link and periodically thereafter",
 			},
 			{
@@ -698,7 +698,7 @@ func (h *InteractionHandlers) handleLinkRoleCommand(s *discordgo.Session, i *dis
 	userID := i.Member.User.ID
 	isRoleAdmin, err := h.hasRoleAdminPermission(s, i.GuildID, userID)
 	if err != nil || !isRoleAdmin {
-		h.respondError(s, i, "You need gno.land admin permissions to link realm roles. Contact a server admin to get the configured admin role.")
+		h.respondError(s, i, "You need either the configured admin role or Discord admin permissions to link realm roles.")
 		return
 	}
 
@@ -1078,20 +1078,28 @@ func (h *InteractionHandlers) hasRole(s *discordgo.Session, guildID, userID, rol
 
 // Check if user has role admin permissions (for gno.land realm management)
 func (h *InteractionHandlers) hasRoleAdminPermission(s *discordgo.Session, guildID, userID string) (bool, error) {
-	// Get guild configuration
+	// First check if user is a guild admin (owner or has Administrator permission)
+	isGuildAdmin, err := h.hasGuildAdminPermission(s, guildID, userID)
+	if err != nil {
+		return false, fmt.Errorf("failed to check guild admin permission: %w", err)
+	}
+	if isGuildAdmin {
+		return true, nil
+	}
+
+	// If not a guild admin, check if they have the configured admin role
 	guildConfig, err := h.configManager.GetGuildConfig(guildID)
 	if err != nil {
-		// If no config exists, fall back to Discord permissions
-		return h.hasGuildAdminPermission(s, guildID, userID)
+		return false, fmt.Errorf("failed to get guild configuration: %w", err)
 	}
 
-	// If admin role is configured, check it
-	if guildConfig.HasAdminRole() {
-		return h.hasRole(s, guildID, userID, guildConfig.AdminRoleID)
+	// Check if admin role is configured
+	if !guildConfig.HasAdminRole() {
+		return false, nil
 	}
 
-	// If no admin role configured, fall back to Discord permissions
-	return h.hasGuildAdminPermission(s, guildID, userID)
+	// Check if user has the configured admin role
+	return h.hasRole(s, guildID, userID, guildConfig.AdminRoleID)
 }
 
 // Check if user has guild admin permissions (for Discord server management)

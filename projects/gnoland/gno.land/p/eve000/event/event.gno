@@ -17,6 +17,8 @@ import (
 	"gno.land/p/eve000/event/speaker"
 )
 
+var _ component.EventSchedule = (*Event)(nil)
+
 type Api interface {
 	AddOrganizer(addr std.Address)
 	AddProposer(addr, sender std.Address)
@@ -25,12 +27,10 @@ type Api interface {
 	AdminRemoveRole(role string, addr std.Address)
 	AdminSetRole(role string, addr std.Address)
 	AssertAtLeastRole(role string, sender std.Address)
-	Destroy(markdown string)
 	HasRole(role string, addr std.Address) bool
 	JoinAsAttendee()
 	JoinWaitlist()
 	ListRoles() []string
-	Publish(markdown string)
 	RegisterEvent(evt *Event, opts map[string]interface{}) string
 	RemoveOrganizer(addr std.Address)
 	RemoveProposer(addr, sender std.Address)
@@ -46,7 +46,6 @@ type Api interface {
 	SetContent(key, markdown string)
 	SetPatchLevel(level int)
 	SetRoleHandler(role string, fn func(string) bool)
-	Unpublish(key string)
 	UnsetRoleHandler(role string)
 }
 
@@ -71,8 +70,6 @@ type Event struct {
 	renderOpts     map[string]interface{}
 	storage        *Storage
 }
-
-var _ component.Component = (*Event)(nil)
 
 func (evt *Event) SetEventName(name string) {
 	evt.Name = name
@@ -167,13 +164,7 @@ func (evt *Event) GetSessions() []*session.Session {
 	})
 	return sessions
 }
-
-// RenderFlyer renders the event flyer with optional body content.
-func (evt *Event) RenderFlyer(body ...component.Content) string {
-	return evt.Flyer().ToMarkdown(body...)
-}
-
-func (evt *Event) Flyer() *flyer.Flyer {
+func (evt *Event) Flyer() component.Component {
 	f := &flyer.Flyer{
 		Name:        evt.Name,
 		Location:    evt.Location,
@@ -185,6 +176,10 @@ func (evt *Event) Flyer() *flyer.Flyer {
 	}
 	f.SetRenderOpts(evt.renderOpts)
 	return f
+}
+
+func (evt *Event) RenderMarkdown(body ...component.Content) string {
+	return evt.Flyer().ToMarkdown(body...)
 }
 
 func (evt *Event) RenderCalendar(path string) string {
@@ -334,21 +329,7 @@ func (evt *Event) ToAnchor() string {
 	return component.StringToAnchor(evt.Name)
 }
 
-func (evt *Event) ToMarkdown(body ...component.Content) string {
-	return evt.Flyer().ToMarkdown(body...)
-}
-
-func (evt *Event) ToSvgDataUrl() string {
-	return evt.Flyer().ToSvgDataUrl()
-}
-
-func (evt *Event) ToSVG() string {
-	return evt.Flyer().ToSVG()
-}
-
 const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
-
-// FIXME: check schema.org to conform to secondary rules for Cancelled, Postponed, Rescheduled events
 
 func (evt *Event) ToJson() string {
 	var sb strings.Builder

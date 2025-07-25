@@ -7,8 +7,6 @@ import (
 	"gno.land/p/eve000/event/component"
 )
 
-// FIXME: add address field
-
 type Speaker struct {
 	Name        string
 	Address     string
@@ -52,7 +50,7 @@ func (s *Speaker) ToMarkdown(_ ...component.Content) string {
 		markdown += "![Picture](" + s.PictureURL + ")\n\n"
 	}
 	if s.Address != "" {
-		markdown += "Address: " + s.Address + "\n\n"
+		markdown += "Address: [" + s.Address + "]( /u/" + s.Address + ")\n\n"
 	}
 	return markdown
 }

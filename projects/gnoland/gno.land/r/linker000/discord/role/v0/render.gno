@@ -77,7 +77,7 @@ func renderListLinkedRoles(w *mux.ResponseWriter, r *mux.Request) {
 
 func renderClaim(w *mux.ResponseWriter, r *mux.Request) {
 	encodedClaim := r.GetVar("encodedClaim")
-	
+
 	// Check if this is an unlink operation
 	isUnlink := r.Query.Get("unlink") == "true"
 

@@ -1,13 +1,10 @@
 package onsite
 
 import (
-	"net/url"
 	"std"
 
 	"gno.land/p/eve000/event"
-	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/register"
-	"gno.land/p/eve000/event/session"
 )
 
 type App struct{}
@@ -17,99 +14,17 @@ var (
 
 	app = &App{}
 
-	staticContent = &component.Content{
-		Published: false,
-		Markdown:  "This page has been disabled",
-	}
-	eventMap = &component.Content{
-		Published: false,
-		Markdown:  "This page has been disabled",
-	}
-
 	realmAllowPrefix = []string{} // realms prefixes that have access to update the registry
 	registry         = &register.Registry{}
 )
 
-func notEmpty(value string) bool {
-	return value != ""
-}
-
-func Render(path string) (out string) {
-	return app.Render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
-}
-
-func getQueryParam(q url.Values, param string) (string, bool) {
-	if q == nil {
-		return "", false
-	}
-	value := q.Get(param)
-	if value == "" {
-		return "", false
-	}
-	return value, true
-}
-
-func hasQueryParam(q url.Values, param string) bool {
-	_, ok := getQueryParam(q, param)
-	return ok
-}
-
 func (*App) Render(path string) (out string) {
-	fullURL := std.CurrentRealm().PkgPath() + path
-	u, err := url.Parse(fullURL)
-	if err != nil {
-		panic("Error Parsing URL")
-	}
-	q := u.Query()
-	event_id := q.Get("event")
-	if event_id == "" {
-		event_id = registry.LiveEventId
-	}
-
-	event := registry.GetEvent(event_id)
-	switch {
-	case hasQueryParam(q, "session"):
-		return component.RenderComponent(path, event.GetSession(q.Get("session")))
-	case hasQueryParam(q, "location"):
-		return component.RenderComponent(path, event.GetLocation(q.Get("location")))
-	case hasQueryParam(q, "speaker"):
-		return component.RenderComponent(path, event.GetSpeaker(q.Get("speaker")))
-	default:
-		return event.RenderFlyer(banner)
-	}
-}
-
-func (*App) Publish(markdown string) {
-	assertAccess()
-	staticContent.Published = true
-	staticContent.Markdown = markdown
-}
-
-func (*App) Destroy(markdown string) {
-	app.Publish(markdown)
-	registry = register.NewRegistry(registry.RenderOpts) // reset the registry to a new instance
-}
-
-func (*App) Unpublish(key string) {
-	assertAccess()
-	switch key {
-	case "map":
-		eventMap.Published = false
-	case "published":
-		staticContent.Published = false
-	case "banner":
-		banner.Published = false
-	default:
-		panic("invalid key: " + key)
-	}
+	return registry.Render(path, banner)
 }
 
 func (*App) SetContent(key, markdown string) {
 	assertAccess()
 	switch key {
-	case "published":
-		staticContent.SetPublished(true)
-		staticContent.SetMarkdown(markdown)
 	case "banner":
 		banner.SetPublished(true)
 		banner.SetMarkdown(markdown)
@@ -202,13 +117,6 @@ func (*App) AssertAtLeastRole(role string, sender std.Address) {
 func (*App) RenderList(role string) string {
 	return acl.RenderList(role)
 }
-
 func (*App) RenderAcl(path string) string {
 	return acl.Render(path)
-}
-
-// REVIEW: should this be added to event.Api interface?
-func (*App) GetSession(id int) *session.Session {
-	// FIXME
-	return registry.GetEvent(registry.LiveEventId).GetSession(string(id))
 }

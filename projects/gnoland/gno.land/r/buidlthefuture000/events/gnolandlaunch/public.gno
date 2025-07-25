@@ -11,3 +11,7 @@ func LiveEvent() *event.Event {
 func JoinWaitlist() {
 	app.JoinWaitlist()
 }
+
+func RenderCalendar(path string) string {
+	return LiveEvent().RenderCalendar(path)
+}

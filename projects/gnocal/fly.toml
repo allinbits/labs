@@ -13,6 +13,7 @@ GO_VERSION = '1.24.3'
 [env]
 GNOCAL__GNOLAND_RPC_URL = 'tcp://labsnet.internal:26657'
 GNOCAL__SERVER_ADDRESS = '0.0.0.0:8080'
+GNOCAL__BASEURL = 'https://aiblabs.net'
 
 [http_service]
 internal_port = 8080

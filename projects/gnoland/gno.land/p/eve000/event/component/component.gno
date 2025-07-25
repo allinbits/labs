@@ -12,6 +12,7 @@ import (
 
 const DtFmt = "Mon Jan 2"
 
+// Component is an interface for event components that can be rendered in various formats.
 type Component interface {
 	ToAnchor() string
 	ToMarkdown(...Content) string
@@ -67,33 +68,18 @@ func (c *Content) SetMarkdown(markdown string) {
 }
 
 // Render displays stored content or calls the callback function if provided.
-func (c *Content) Render(p ...string) string {
-	path := ""
-	if len(p) == 1 {
-		path = p[0]
-	}
-	u, err := url.Parse(path)
-	if err != nil {
-		panic("invalid path in Content.Render: " + path)
-	}
-	format := u.Query().Get("format")
-	if format == "json" {
-		if c.Callback != nil {
-			return c.Callback(path)
-		}
-		return "{\"markdown\": \"" + escapeHtml(c.Markdown) + "\", \"published\": " + strconv.FormatBool(c.Published) + "}"
-	}
-	if c.Markdown == "" && c.Callback == nil {
+func (c *Content) Render(path ...string) string {
+	if !c.Published || c.Markdown == "" && c.Callback == nil {
 		return ""
 	}
-	if c.Published {
-		if c.Callback != nil {
-			return c.Callback(path)
+	if c.Callback != nil {
+		if len(path) > 0 {
+			return c.Callback(path[0])
 		} else {
-			return c.Markdown
+			return c.Callback("")
 		}
 	}
-	return ""
+	return c.Markdown
 }
 
 func StringToAnchor(text string) string {

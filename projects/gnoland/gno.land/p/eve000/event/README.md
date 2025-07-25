@@ -6,9 +6,9 @@ Eve Package provides a structured, reusable set of components designed for build
 
 These components can be used independently or integrated into larger Eve applications:
 
-### Agenda
+### Flyer
 
-A featured component of Eve is the Agenda component. Once an organizer has all session dates and times finalized, they can create an agenda to share with the attendees. The agenda provides all relevant information like the Title, Description, Speaker(s), Location, & c. to the attendees. 
+A featured component of Eve is the Flyer component. Once an organizer has all session dates and times finalized, they can create an flyer to share with the attendees. The agenda provides all relevant information like the Title, Description, Speaker(s), Location, & c. to the attendees. 
 
 ### Calendar
 
@@ -39,7 +39,7 @@ Register is not a component but actually the storage for everything. Before the 
 
 ### Session
 
-Session is an important component because it is the building block of the Agenda component. Sessions have a Title, Format, Title, and Speaker(s). Once an organizer has amassed enough of these session components then can mix-and-match them into an agenda, and publish the finalized schedule (to an agenda) when ready. 
+Session is an important component because it is the building block of the Flyer component. Sessions have a Title, Format, Title, and Speaker(s). Once an organizer has amassed enough of these session components then can mix-and-match them into an agenda, and publish the finalized schedule (to an agenda) when ready. 
 
 ### Speaker
 
@@ -47,7 +47,7 @@ If your sessions are going to have speakers, you can make them components so the
 
 ## Important Note on Component File Structure
 
-In each component file (i.e., Event, Session, Speaker, Location, Agenda), the methods should be structured in the following specific order to maintain consistency and clarity:
+In each component file (i.e., Event, Session, Speaker, Location, Flyer), the methods should be structured in the following specific order to maintain consistency and clarity:
 
 1. **`ToAnchor()`** – Generates a web-compatible anchor link to easily navigate to specific components on a webpage.
 2. **`ToMarkdown()`** – Provides a Markdown-formatted representation suitable for web display or documentation.

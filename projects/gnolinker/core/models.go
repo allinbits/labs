@@ -16,7 +16,7 @@ type RoleMapping struct {
 	RealmRoleName string
 	PlatformRole  PlatformRole
 	LinkedAt      time.Time
-	LinkedBy      string // Platform ID of the organizer who linked it
+	LinkedBy      string // Platform ID of the admin who linked it
 }
 
 // PlatformRole is an abstraction for platform-specific roles

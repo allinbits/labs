@@ -25,31 +25,21 @@ func NewRoleLinkingWorkflow(client *contracts.GnoClient, config WorkflowConfig) 
 }
 
 // GenerateClaim creates a signed claim for linking a realm role to a platform role
-func (w *RoleLinkingWorkflowImpl) GenerateClaim(organizerID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error) {
-	// First, get the organizer's linked Gno address
-	gnoAddress, err := w.gnoClient.GetLinkedAddress(organizerID)
+func (w *RoleLinkingWorkflowImpl) GenerateClaim(userID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error) {
+	// Get the user's linked Gno address for the claim
+	gnoAddress, err := w.gnoClient.GetLinkedAddress(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get organizer's linked address: %w", err)
+		return nil, fmt.Errorf("failed to get linked address: %w", err)
 	}
 
 	if gnoAddress == "" {
-		return nil, fmt.Errorf("organizer has not linked their Gno address")
-	}
-
-	// Check if the organizer has the organizer role in the realm
-	hasOrgRole, err := w.gnoClient.HasRole(realmPath, "organizer", gnoAddress)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check organizer role: %w", err)
-	}
-
-	if !hasOrgRole {
-		return nil, fmt.Errorf("user is not an organizer for realm %s", realmPath)
+		return nil, fmt.Errorf("user has not linked their Gno address")
 	}
 
 	// Generate the claim
 	timestamp := time.Now()
 	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v",
-		timestamp.Unix(), organizerID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
+		timestamp.Unix(), userID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
 	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
 	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
 
@@ -62,31 +52,21 @@ func (w *RoleLinkingWorkflowImpl) GenerateClaim(organizerID, platformGuildID, pl
 }
 
 // GenerateUnlinkClaim creates a signed claim for unlinking a realm role from a platform role
-func (w *RoleLinkingWorkflowImpl) GenerateUnlinkClaim(organizerID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error) {
-	// First, get the organizer's linked Gno address
-	gnoAddress, err := w.gnoClient.GetLinkedAddress(organizerID)
+func (w *RoleLinkingWorkflowImpl) GenerateUnlinkClaim(userID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error) {
+	// Get the user's linked Gno address for the claim
+	gnoAddress, err := w.gnoClient.GetLinkedAddress(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get organizer's linked address: %w", err)
+		return nil, fmt.Errorf("failed to get linked address: %w", err)
 	}
 
 	if gnoAddress == "" {
-		return nil, fmt.Errorf("organizer has not linked their Gno address")
-	}
-
-	// Check if the organizer has the organizer role in the realm
-	hasOrgRole, err := w.gnoClient.HasRole(realmPath, "organizer", gnoAddress)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check organizer role: %w", err)
-	}
-
-	if !hasOrgRole {
-		return nil, fmt.Errorf("user is not an organizer for realm %s", realmPath)
+		return nil, fmt.Errorf("user has not linked their Gno address")
 	}
 
 	// Generate the unlink claim
 	timestamp := time.Now()
 	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v",
-		timestamp.Unix(), organizerID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
+		timestamp.Unix(), userID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
 	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
 	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
 
@@ -118,7 +98,7 @@ func (w *RoleLinkingWorkflowImpl) HasRealmRole(realmPath, roleName, address stri
 	return w.gnoClient.HasRole(realmPath, roleName, address)
 }
 
-// GetClaimURL returns the URL where organizers can submit their claim
+// GetClaimURL returns the URL where admins can submit their claim
 func (w *RoleLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
 	// Format: https://baseurl/r/linker000/discord/role/v0:claim/signature
 	url := fmt.Sprintf("%s/%s:claim/%s", w.config.BaseURL, w.config.RoleContract, claim.Signature)

@@ -19,7 +19,7 @@ func init() {
 }
 
 // banner content block is shown in the top section of the event page
-var banner = &component.Content{
+var banner = component.Content{
 	Published: true,
 	Markdown: "\n\n#### Status: Accepting Session Proposals\n #### expected dates: Sept 2025 \n\n" +
 		component.TxlinkButton("Join Waitlist", "JoinWaitlist"),

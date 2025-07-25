@@ -1,4 +1,4 @@
-package agenda
+package flyer
 
 import (
 	"strings"
@@ -11,8 +11,8 @@ import (
 	"gno.land/p/eve000/event/speaker"
 )
 
-func sampleAgenda() *Agenda {
-	return &Agenda{
+func sampleFlyer() *Flyer {
+	return &Flyer{
 		Name:        "UNIX Legends",
 		Location:    &location.Location{Name: "Main Theater"},
 		StartDate:   time.Date(2025, 4, 3, 0, 0, 0, 0, time.UTC),
@@ -37,16 +37,16 @@ func sampleAgenda() *Agenda {
 	}
 }
 
-func TestAgendaToAnchor(t *testing.T) {
-	a := sampleAgenda()
+func TestFlyerToAnchor(t *testing.T) {
+	a := sampleFlyer()
 	expected := "#unix-legends"
 	if anchor := a.ToAnchor(); anchor != expected {
 		t.Fatalf("ToAnchor mismatch: expected %q, got %q", expected, anchor)
 	}
 }
 
-func TestAgendaToMarkdown(t *testing.T) {
-	a := sampleAgenda()
+func TestFlyerToMarkdown(t *testing.T) {
+	a := sampleFlyer()
 	md := a.ToMarkdown()
 	if !strings.Contains(md, "## UNIX Legends") {
 		t.Fatal("Markdown output missing agenda title")
@@ -65,8 +65,8 @@ func TestAgendaToMarkdown(t *testing.T) {
 	}
 }
 
-func TestAgendaToJson(t *testing.T) {
-	a := sampleAgenda()
+func TestFlyerToJson(t *testing.T) {
+	a := sampleFlyer()
 	json := a.ToJson()
 	if !strings.Contains(json, `"Name":"UNIX Legends"`) {
 		t.Fatal("JSON missing agenda name")
@@ -79,8 +79,8 @@ func TestAgendaToJson(t *testing.T) {
 	}
 }
 
-func TestAgendaToSVG(t *testing.T) {
-	a := sampleAgenda()
+func TestFlyerToSVG(t *testing.T) {
+	a := sampleFlyer()
 	svg := a.ToSVG()
 	if !strings.Contains(svg, `<svg`) || !strings.Contains(svg, `UNIX Legends`) {
 		t.Fatal("SVG output missing structure or title")
@@ -90,16 +90,16 @@ func TestAgendaToSVG(t *testing.T) {
 	}
 }
 
-func TestAgendaToSvgDataUrl(t *testing.T) {
-	a := sampleAgenda()
+func TestFlyerToSvgDataUrl(t *testing.T) {
+	a := sampleFlyer()
 	dataUrl := a.ToSvgDataUrl()
 	if !strings.HasPrefix(dataUrl, "data:image/svg+xml;utf8,") {
 		t.Fatalf("SVG data URL missing prefix: %s", dataUrl[:60])
 	}
 }
 
-func TestAgendaRenderIncludesSVG(t *testing.T) {
-	a := sampleAgenda()
+func TestFlyerRenderIncludesSVG(t *testing.T) {
+	a := sampleFlyer()
 	render := a.Render()
 	if !strings.Contains(render, "data:image/svg+xml;utf8,") {
 		t.Fatal("Render output missing SVG data URL")

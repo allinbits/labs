@@ -75,7 +75,7 @@ func (*App) Render(path string) (out string) {
 	case hasQueryParam(q, "speaker"):
 		return component.RenderComponent(path, event.GetSpeaker(q.Get("speaker")))
 	default:
-		return component.RenderComponent(path, event.Agenda(banner))
+		return event.RenderFlyer(banner)
 	}
 }
 
@@ -107,9 +107,6 @@ func (*App) Unpublish(key string) {
 func (*App) SetContent(key, markdown string) {
 	assertAccess()
 	switch key {
-	case "map":
-		eventMap.SetPublished(true)
-		eventMap.SetMarkdown(markdown)
 	case "published":
 		staticContent.SetPublished(true)
 		staticContent.SetMarkdown(markdown)

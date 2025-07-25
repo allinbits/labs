@@ -10,8 +10,8 @@ import (
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event/agenda"
 	"gno.land/p/eve000/event/component"
+	"gno.land/p/eve000/event/flyer"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
 	"gno.land/p/eve000/event/speaker"
@@ -168,8 +168,13 @@ func (evt *Event) GetSessions() []*session.Session {
 	return sessions
 }
 
-func (evt *Event) Agenda(heading *component.Content) *agenda.Agenda {
-	a := &agenda.Agenda{
+// RenderFlyer renders the event flyer with optional body content.
+func (evt *Event) RenderFlyer(body ...component.Content) string {
+	return evt.Flyer().ToMarkdown(body...)
+}
+
+func (evt *Event) Flyer() *flyer.Flyer {
+	f := &flyer.Flyer{
 		Name:        evt.Name,
 		Location:    evt.Location,
 		StartDate:   evt.StartDate,
@@ -178,9 +183,8 @@ func (evt *Event) Agenda(heading *component.Content) *agenda.Agenda {
 		Description: evt.Description,
 		Sessions:    evt.Sessions,
 	}
-	a.SetBanner(heading)
-	a.SetRenderOpts(evt.renderOpts)
-	return a
+	f.SetRenderOpts(evt.renderOpts)
+	return f
 }
 
 func (evt *Event) RenderCalendar(path string) string {
@@ -330,36 +334,16 @@ func (evt *Event) ToAnchor() string {
 	return component.StringToAnchor(evt.Name)
 }
 
-func (evt *Event) ToMarkdown(heading ...component.Content) string {
-	if len(heading) == 0 {
-		heading = append(heading, component.Content{Published: false})
-	}
-	return evt.Agenda(&heading[0]).ToMarkdown()
+func (evt *Event) ToMarkdown(body ...component.Content) string {
+	return evt.Flyer().ToMarkdown(body...)
 }
 
 func (evt *Event) ToSvgDataUrl() string {
-	heading := &component.Content{Published: false}
-	return evt.Agenda(heading).ToSvgDataUrl()
+	return evt.Flyer().ToSvgDataUrl()
 }
 
 func (evt *Event) ToSVG() string {
-	heading := &component.Content{Published: false}
-	return evt.Agenda(heading).ToSVG()
-}
-
-func (evt *Event) AssertValid() {
-	if evt.Name == "" {
-		panic("event name cannot be empty")
-	}
-	if evt.Location == nil {
-		panic("event location cannot be nil")
-	}
-	if evt.StartDate.IsZero() {
-		panic("event start date cannot be zero")
-	}
-	if evt.EndDate.IsZero() {
-		panic("event end date cannot be zero")
-	}
+	return evt.Flyer().ToSVG()
 }
 
 const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"

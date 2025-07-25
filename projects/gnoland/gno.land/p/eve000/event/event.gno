@@ -27,12 +27,10 @@ type Api interface {
 	AdminRemoveRole(role string, addr std.Address)
 	AdminSetRole(role string, addr std.Address)
 	AssertAtLeastRole(role string, sender std.Address)
-	Destroy(markdown string)
 	HasRole(role string, addr std.Address) bool
 	JoinAsAttendee()
 	JoinWaitlist()
 	ListRoles() []string
-	Publish(markdown string)
 	RegisterEvent(evt *Event, opts map[string]interface{}) string
 	RemoveOrganizer(addr std.Address)
 	RemoveProposer(addr, sender std.Address)
@@ -48,7 +46,6 @@ type Api interface {
 	SetContent(key, markdown string)
 	SetPatchLevel(level int)
 	SetRoleHandler(role string, fn func(string) bool)
-	Unpublish(key string)
 	UnsetRoleHandler(role string)
 }
 

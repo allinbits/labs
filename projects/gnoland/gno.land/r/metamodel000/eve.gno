@@ -18,7 +18,6 @@ The relationships between these files are as follows:
 - **boundby**: App is bound by the rules of the ACL.
 `
 
-
 func init() {
 	eveModel := eve()
 

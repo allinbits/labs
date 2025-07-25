@@ -80,11 +80,6 @@ func AssertAtLeastRole(realmPath string, role string, sender std.Address) {
 	Eve(realmPath).AssertAtLeastRole(role, sender)
 }
 
-// Destroy removes all data in the event realm and publishes a markdown message in it's place.
-func Destroy(realmPath string, markdown string) {
-	Eve(realmPath).Destroy(markdown)
-}
-
 // HasRole checks if the given address has the specified role in the event realm.
 func HasRole(realmPath string, role string, addr std.Address) bool {
 	return Eve(realmPath).HasRole(role, addr)
@@ -103,11 +98,6 @@ func JoinWaitlist(realmPath string) {
 // ListRoles returns a list of roles in the event realm.
 func ListRoles(realmPath string) []string {
 	return Eve(realmPath).ListRoles()
-}
-
-// Publish publishes a markdown message in the event realm.
-func Publish(realmPath string, markdown string) {
-	Eve(realmPath).Publish(markdown)
 }
 
 // RegisterEvent registers an event in the event realm with the given options.
@@ -178,11 +168,6 @@ func SetPatchLevel(realmPath string, level int) {
 // SetRoleHandler sets a handler function for a specific role in the event realm.
 func SetRoleHandler(realmPath string, role string, fn func(string) bool) {
 	Eve(realmPath).SetRoleHandler(role, fn)
-}
-
-// Unpublish removes the content associated with the given key in the event realm.
-func Unpublish(realmPath string, key string) {
-	Eve(realmPath).Unpublish(key)
 }
 
 // UnsetRoleHandler removes the handler function for a specific role in the event realm.

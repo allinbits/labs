@@ -4,10 +4,12 @@ import (
 	"std"
 	"strconv"
 	"strings"
+	"net/url"
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event/component"
 )
 
 type Registry struct {
@@ -16,6 +18,48 @@ type Registry struct {
 	RenderOpts  map[string]interface{}
 	patchLevel  int    // current patch level, used for debugging and content management
 	patchRealm  string // realm that is allowed to update the patch level, used for debugging and content management
+}
+
+func getQueryParam(q url.Values, param string) (string, bool) {
+	if q == nil {
+		return "", false
+	}
+	value := q.Get(param)
+	if value == "" {
+		return "", false
+	}
+	return value, true
+}
+
+func hasQueryParam(q url.Values, param string) bool {
+	_, ok := getQueryParam(q, param)
+	return ok
+}
+
+func (r *Registry) Render(path string, body ...component.Content) string {
+	fullURL := std.CurrentRealm().PkgPath() + path // REVIEW: is this really needed?
+	u, err := url.Parse(fullURL)
+	if err != nil {
+		panic("Error Parsing URL")
+	}
+	q := u.Query()
+	event_id := q.Get("event")
+	if event_id == "" {
+		event_id = r.LiveEventId
+	}
+	evt := r.GetEvent(event_id)
+	switch {
+	case hasQueryParam(q, "session"):
+		return component.RenderComponent(path, evt.GetSession(q.Get("session")))
+	case hasQueryParam(q, "location"):
+		return component.RenderComponent(path, evt.GetLocation(q.Get("location")))
+	case hasQueryParam(q, "speaker"):
+		return component.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
+	case hasQueryParam(q, "flyer"):
+		return component.RenderComponent(path, evt.Flyer())
+	default:
+		return evt.RenderMarkdown(body...)
+	}
 }
 
 func NewRegistry(renderOpts map[string]interface{}) *Registry {

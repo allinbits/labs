@@ -8,19 +8,8 @@ import (
 )
 
 var (
-	featuredRealm = ""
 	eventRealms   = avl.NewTree()
 )
-
-// REVIEW: consider removing this if it is not used for anything else
-// SetFeaturedRealm sets the featured realm for the events package.
-func SetFeaturedRealm(realm string) {
-	assertAccess()
-	if realm == "" {
-		panic("cannot set empty featured realm")
-	}
-	featuredRealm = realm
-}
 
 // AddEventRealm adds an event realm to the global eventRealms tree.
 func AddEventRealm(eveApi event.Api) {
@@ -75,7 +64,6 @@ func AdminSetRole(realmPath string, role string, addr std.Address) {
 	Eve(realmPath).AdminSetRole(role, addr)
 }
 
-// FIXME: remove this deprecated func
 func AssertAtLeastRole(realmPath string, role string, sender std.Address) {
 	Eve(realmPath).AssertAtLeastRole(role, sender)
 }

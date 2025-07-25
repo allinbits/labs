@@ -20,6 +20,11 @@ type EventSchedule interface {
 	Flyer() Component
 }
 
+type Page interface {
+	ToJson() string
+	RenderMarkdown(body ...Content) string
+}
+
 // Event is a schema.org compatible status string
 type EventStatus string
 
@@ -48,6 +53,24 @@ type Component interface {
 	ToSVG() string
 	ToSvgDataUrl() string
 	RenderOpts() map[string]interface{}
+}
+
+func RenderPage(format string, c Page, body ...Content) string {
+	if format == "json" {
+		var sb strings.Builder
+		sb.WriteString("```\n\n" + c.ToJson() + "\n\n```")
+		if len(body) > 0 {
+			sb.WriteString("\n\n---\n\n")
+		}
+		for _, content := range body {
+			if content.Published {
+				sb.WriteString("\n\n" + content.Render() + "\n\n")
+				sb.WriteString("---\n\n")
+			}
+		}
+		return sb.String()
+	}
+	return c.RenderMarkdown(body...)
 }
 
 func RenderComponent(path string, c Component) (out string) {

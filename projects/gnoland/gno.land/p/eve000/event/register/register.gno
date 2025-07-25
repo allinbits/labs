@@ -1,10 +1,10 @@
 package register
 
 import (
+	"net/url"
 	"std"
 	"strconv"
 	"strings"
-	"net/url"
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
@@ -58,7 +58,7 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 	case hasQueryParam(q, "flyer"):
 		return component.RenderComponent(path, evt.Flyer())
 	default:
-		return evt.RenderMarkdown(body...)
+		return component.RenderPage(q.Get("format"), evt, body...)
 	}
 }
 

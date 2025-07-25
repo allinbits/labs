@@ -74,8 +74,10 @@ func (*App) Render(path string) (out string) {
 		return component.RenderComponent(path, event.GetLocation(q.Get("location")))
 	case hasQueryParam(q, "speaker"):
 		return component.RenderComponent(path, event.GetSpeaker(q.Get("speaker")))
+	case hasQueryParam(q, "flyer"):
+		return component.RenderComponent(path, event.Flyer())
 	default:
-		return event.RenderFlyer(banner)
+		return event.RenderMarkdown(banner)
 	}
 }
 

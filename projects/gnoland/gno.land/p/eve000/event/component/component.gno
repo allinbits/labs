@@ -12,6 +12,34 @@ import (
 
 const DtFmt = "Mon Jan 2"
 
+// EventSchedule is an interface for event schedules that are rendered in md, json or ICS format.
+type EventSchedule interface {
+	ToJson() string
+	RenderCalendar(string) string
+	RenderMarkdown(body ...Content) string
+	Flyer() Component
+}
+
+// Event is a schema.org compatible status string
+type EventStatus string
+
+const (
+	EventScheduled   EventStatus = "https://schema.org/EventScheduled"
+	EventCancelled   EventStatus = "https://schema.org/EventCancelled"
+	EventMovedOnline EventStatus = "https://schema.org/EventMovedOnline"
+	EventPostponed   EventStatus = "https://schema.org/EventPostponed"
+	EventRescheduled EventStatus = "https://schema.org/EventRescheduled"
+)
+
+// EventAttendanceMode is a schema.org compatible attendance mode string
+type EventAttendanceMode string
+
+const (
+	OfflineEventAttendanceMode EventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode"
+	OnlineEventAttendanceMode  EventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode"
+	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
+)
+
 // Component is an interface for event components that can be rendered in various formats.
 type Component interface {
 	ToAnchor() string
@@ -193,31 +221,6 @@ func LinkTag(name string) string {
 	return "[" + name + "](?tag=" + TagString(name) + ")"
 }
 
-func TagToName(tag string) string {
-	tag = strings.ReplaceAll(tag, "-", " ")
-	words := strings.Fields(tag)
-	for i, word := range words {
-		if len(word) > 0 {
-			words[i] = strings.ToUpper(string(word[0])) + word[1:]
-		}
-	}
-	return strings.Join(words, " ")
-}
-
-// FIXME: is this used or should it be replaced by query parameters?
-func IdFromPath(path string) int {
-	parts := strings.Split(path, ":")
-	if len(parts) < 2 {
-		panic("invalid path")
-	}
-	id, err := strconv.Atoi(parts[1])
-	if err != nil {
-		panic("invalid id")
-	}
-	return id
-}
-
-// REVIEW: consider using another library for HTML escaping if there is a better one
 func escapeHtml(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")
@@ -258,25 +261,3 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 
 	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }
-
-// REVIEW: consider support for embedding the Schedule schema
-// https://schema.org/Schedule
-// https://schema.org/eventSchedule
-
-type EventStatus string
-
-const (
-	EventScheduled   EventStatus = "https://schema.org/EventScheduled"
-	EventCancelled   EventStatus = "https://schema.org/EventCancelled"
-	EventMovedOnline EventStatus = "https://schema.org/EventMovedOnline"
-	EventPostponed   EventStatus = "https://schema.org/EventPostponed"
-	EventRescheduled EventStatus = "https://schema.org/EventRescheduled"
-)
-
-type EventAttendanceMode string
-
-const (
-	OfflineEventAttendanceMode EventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode"
-	OnlineEventAttendanceMode  EventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode"
-	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
-)

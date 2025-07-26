@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	eventRealms   = avl.NewTree()
+	eventRealms = avl.NewTree()
 )
 
 // AddEventRealm adds an event realm to the global eventRealms tree.

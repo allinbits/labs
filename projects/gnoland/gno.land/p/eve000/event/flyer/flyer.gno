@@ -2,6 +2,7 @@ package flyer
 
 import (
 	"net/url"
+	"std"
 	"strings"
 	"time"
 
@@ -53,6 +54,11 @@ func (a *Flyer) ToMarkdown(body ...component.Content) string {
 	}
 
 	markdown += a.Description + "\n\n"
+
+	if calHost, ok := a.RenderOpts()["CalendarHost"]; ok {
+		fullURL := std.CurrentRealm().PkgPath() + "?format=ics"
+		markdown += "[➕📅 Add to Calendar](" + calHost.(string) + "/" + fullURL + ")\n\n"
+	}
 
 	if len(body) > 0 {
 		for _, content := range body {

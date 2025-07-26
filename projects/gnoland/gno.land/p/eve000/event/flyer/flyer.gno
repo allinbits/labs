@@ -11,7 +11,6 @@ import (
 	"gno.land/p/eve000/event/session"
 )
 
-// Flyer represents an event flyer with details such as name, location, dates, status, and sessions.
 type Flyer struct {
 	Name           string
 	Location       *location.Location

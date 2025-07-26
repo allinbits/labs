@@ -1,22 +1,66 @@
-# Eve
+# Eve Events
 
-Eve Package provides a structured, reusable set of components designed for building event-driven applications and presentations.
+Eve provides a reusable foundation for building, rendering, and managing event-related UI components Gnolang.
+
+It aims for schema.org compatibility, flexible rendering (Markdown, JSON, SVG), and user interaction (buttons, links, [ICalendar](https://en.wikipedia.org/wiki/ICalendar)).
 
 ## Components Overview
 
-These components can be used independently or integrated into larger Eve applications:
+The Eve package provides a set of components that can be used to create and manage event attendance, schedules, and speaker information on gno.land.
+
+Components are configurable using the `RenderOpts` struct.
+
+```go
+RenderOpts := RenderOpts{
+    "location": struct{}{}, // Enable Location component
+    "speaker": struct{}{}, // Enable Speaker component
+    "svg": struct{}{}, // Enable SVG rendering of the Flyer component
+}
+```
 
 ### Flyer
 
-A featured component of Eve is the Flyer component. Once an organizer has all session dates and times finalized, they can create an flyer to share with the attendees. The agenda provides all relevant information like the Title, Description, Speaker(s), Location, & c. to the attendees. 
+The Flyer component is the centerpiece of the Eve package, designed to represent an event flyer document.
+
+It includes various components such as Event, Session, Speaker, and Location, allowing for a comprehensive representation of an event.
+
+Enable SVG view of the flyer this by setting `RenderOpts{ "svg": struct{}{} }`
 
 ### Calendar
 
-The Calendar is not fully implemented and I wouldn't consider it a "Component" yet. but if you go to an Event\_Id/calendar you will see a calendar. 
+ICS support is provided for calendar events, enabling users to create and manage event schedules in a standardized format.
 
-### Component
+Enabled by default - the realm exposes `RenderCalendar` method which can be used to render the event schedule in ICS format.
 
-This file implements the Component interface. \
+### Location
+
+If your event is going to have physical or virtual locations like a room number in a building or a stream link, you can use the Location component to store that information.
+
+Enable Location this by setting `RenderOpts{ "location": struct{}{} }`
+
+### Session
+
+Session is an important component because it is the building block of the Flyer component.
+Sessions have a Title, Format, Title, and Speaker(s).
+
+### Speaker
+
+If your sessions are going to have speakers, you can use the Speaker component to store that information.
+Speakers can have a Name, Bio, and Image URL.
+
+Enable Speaker this by setting `RenderOpts{ "speaker": struct{}{} }`
+
+### Flyer
+
+The Flyer component is the main representation of an event, encapsulating all relevant information into a single view.
+
+NOTE: The Flyer supports nesting content when it is rendered as markdown.
+
+This allows content to be stored outside the Flyer component itself, and instead passed in as a variadic parameter to the `RenderMarkdown` method.
+
+## Component Interfaces
+
+The Eve package is built around the `Component` interface, which provides methods for rendering components in different formats.
 
 ```go
 type Component interface {
@@ -25,36 +69,43 @@ type Component interface {
     ToJson() string
     ToSVG() string
     ToSvgDataUrl() string
-
+    RenderOpts() map[string]interface{}
 }
 ```
 
-### Location
+Components are rendered by passing in the path, this allows each component view to alter rendering based on the context of the path.
+One example of this is support for `?format=json` which can allow the inspection of each component in JSON format.
 
-If your event is going to have physical or virtual locations like a room number in a building or a stream link, you can use the Location component to store that information.&#x20;
+```go
+func RenderComponent(path string, c Component) string
+```
 
-### Register
+Implementing the `Page` interface only requires the `ToJson()` and `RenderMarkdown()` methods.
+The `RenderMarkdown` method is used to render the page in Markdown format, which can be useful for documentation or web display.
 
-Register is not a component but actually the storage for everything. Before the organizer has even created an event, the registry is initialized to store all of the organizers events and the information therein. 
+```go
+type Page interface {
+    ToJson() string // schema.org compatible
+    RenderMarkdown(...Content) string
+}
+```
 
-### Session
+RenderPage offers a similar functionality to `RenderComponent`, but it is specifically designed for rendering pages.
+It also supports dual jsonm and markdown rendering based on the format specified.
 
-Session is an important component because it is the building block of the Flyer component. Sessions have a Title, Format, Title, and Speaker(s). Once an organizer has amassed enough of these session components then can mix-and-match them into an agenda, and publish the finalized schedule (to an agenda) when ready. 
+```go
+func RenderPage(format string, c Page, body ...Content) string
+```
 
-### Speaker
+EventSchedule puts it all together exposing the flyer and calendar rendering capabilities.
 
-If your sessions are going to have speakers, you can make them components so they render as first class objects and can even be indexed, tagged, and linked to their other relevant work. 
+```go
+type EventSchedule interface {
+   ToJson() string // schema.org compatible
+   RenderMarkdown(...Content) string
+   RenderCalendar(string) string
+   Flyer() Component
+}
+```
 
-## Important Note on Component File Structure
-
-In each component file (i.e., Event, Session, Speaker, Location, Flyer), the methods should be structured in the following specific order to maintain consistency and clarity:
-
-1. **`ToAnchor()`** – Generates a web-compatible anchor link to easily navigate to specific components on a webpage.
-2. **`ToMarkdown()`** – Provides a Markdown-formatted representation suitable for web display or documentation.
-3. **`ToJson()`** – Outputs the component data structured as JSON, facilitating integration with APIs or frontend frameworks.
-4. **`ToSVG()`** – Creates the SVG markup for visual representation.
-   - **`ComponentSvg()`** (where applicable) – Helper methods to construct detailed SVG elements.
-5. **`ToSvgDataUrl()`** encodes SVG markup into a data URL for embedding directly in HTML or Markdown.
-
-## SVG Embedding
-
+Notice that the `RenderMarkdown` method accepts a variadic parameter of type `Content` allowing for nesting content within the page.

@@ -10,23 +10,47 @@ import (
 	"gno.land/p/moul/txlink"
 )
 
-const DtFmt = "Mon Jan 2"
+// Interfaces
 
-// EventSchedule is an interface for event schedules that are rendered in md, json or ICS format.
 type EventSchedule interface {
-	ToJson() string
-	RenderCalendar(string) string
+	ToJson() string // schema.org compatible
 	RenderMarkdown(body ...Content) string
+	RenderCalendar(string) string
 	Flyer() Component
 }
 
 type Page interface {
-	ToJson() string
+	ToJson() string // schema.org compatible
 	RenderMarkdown(body ...Content) string
 }
 
+type Component interface {
+	ToAnchor() string
+	ToMarkdown(...Content) string
+	ToJson() string // freeform JSON representation
+	ToSVG() string
+	ToSvgDataUrl() string
+	RenderOpts() map[string]interface{}
+}
+
+// Types
+
 // Event is a schema.org compatible status string
 type EventStatus string
+
+// EventAttendanceMode is a schema.org compatible attendance mode string
+type EventAttendanceMode string
+
+// Content is a user-editable content struct.
+type Content struct {
+	Published bool
+	Markdown  string
+	Callback  func(string) string
+}
+
+// Constants
+
+const DtFmt = "Mon Jan 2"
 
 const (
 	EventScheduled   EventStatus = "https://schema.org/EventScheduled"
@@ -36,24 +60,38 @@ const (
 	EventRescheduled EventStatus = "https://schema.org/EventRescheduled"
 )
 
-// EventAttendanceMode is a schema.org compatible attendance mode string
-type EventAttendanceMode string
-
 const (
 	OfflineEventAttendanceMode EventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode"
 	OnlineEventAttendanceMode  EventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode"
 	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
 )
 
-// Component is an interface for event components that can be rendered in various formats.
-type Component interface {
-	ToAnchor() string
-	ToMarkdown(...Content) string
-	ToJson() string
-	ToSVG() string
-	ToSvgDataUrl() string
-	RenderOpts() map[string]interface{}
+// Methods
+
+func (c *Content) SetPublished(published bool) {
+	c.Published = published
 }
+
+func (c *Content) SetMarkdown(markdown string) {
+	c.Markdown = markdown
+}
+
+// Render displays stored content or calls the callback function if provided.
+func (c *Content) Render(path ...string) string {
+	if !c.Published || c.Markdown == "" && c.Callback == nil {
+		return ""
+	}
+	if c.Callback != nil {
+		if len(path) > 0 {
+			return c.Callback(path[0])
+		} else {
+			return c.Callback("")
+		}
+	}
+	return c.Markdown
+}
+
+// Functions
 
 func RenderPage(format string, c Page, body ...Content) string {
 	if format == "json" {
@@ -103,36 +141,6 @@ func RenderComponent(path string, c Component) (out string) {
 	return sb.String()
 }
 
-// Content is a user-editable content struct.
-type Content struct {
-	Published bool
-	Markdown  string
-	Callback  func(string) string
-}
-
-func (c *Content) SetPublished(published bool) {
-	c.Published = published
-}
-
-func (c *Content) SetMarkdown(markdown string) {
-	c.Markdown = markdown
-}
-
-// Render displays stored content or calls the callback function if provided.
-func (c *Content) Render(path ...string) string {
-	if !c.Published || c.Markdown == "" && c.Callback == nil {
-		return ""
-	}
-	if c.Callback != nil {
-		if len(path) > 0 {
-			return c.Callback(path[0])
-		} else {
-			return c.Callback("")
-		}
-	}
-	return c.Markdown
-}
-
 func StringToAnchor(text string) string {
 	text = strings.ToLower(text)
 	text = strings.ReplaceAll(text, " ", "-")
@@ -169,7 +177,7 @@ func SvgHeading(width, height string) string {
 	svg += ".subtitle { font: bold 18px sans-serif; }"
 	svg += ".sessiontitle { font: bold 16px sans-serif; }"
 	svg += ".text { font: 14px sans-serif; }"
-	svg += ".label { font: bold 14px sans-serif; }" // ✅ NEW: small bold
+	svg += ".label { font: bold 14px sans-serif; }"
 	svg += ".speaker { font: 14px sans-serif; font-style: italic; }"
 	svg += ".session { font: 14px sans-serif; margin-top: 20px; }"
 	svg += "</style>"
@@ -236,7 +244,7 @@ func TagString(tag string) string {
 	tag = strings.ReplaceAll(tag, ":", "")
 	tag = strings.ReplaceAll(tag, ";", "")
 	tag = strings.ReplaceAll(tag, "!", "")
-	tag = strings.ReplaceAll(tag, "?", "")
+	tag = strings.ReplaceAll(tag, "?","")
 	return tag
 }
 

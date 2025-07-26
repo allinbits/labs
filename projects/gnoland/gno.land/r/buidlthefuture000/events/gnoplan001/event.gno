@@ -58,7 +58,7 @@ var speakerBios = map[string]*speaker.Speaker{
 	},
 }
 
-var Sessions = map[string]*session.Session{
+var sessions = map[string]*session.Session{
 	"kickoff": {
 		Title:       "Test our Tools: Gno.land and Gnoland",
 		Description: "This is a kickoff of an internal beta.",
@@ -86,7 +86,7 @@ var gnolandlaunch = &event.Event{
 	EndDate:        time.Date(2025, 8, 29, 0, 0, 0, 0, time.UTC),
 	Description:    "Join this event to become a beta tester for Gnoland, help us think about planning the launch, and provide feedback on the platform. \n\n This is a pre-planning event to gather ideas and feedback from the community.",
 	Sessions: []*session.Session{
-		Sessions["kickoff"],
-		Sessions["retro"],
+		sessions["kickoff"],
+		sessions["retro"],
 	},
 }

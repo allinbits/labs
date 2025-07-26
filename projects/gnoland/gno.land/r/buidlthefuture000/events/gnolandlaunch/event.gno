@@ -15,7 +15,6 @@ func init() {
 		"Svg": struct{}{},
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
-	// register app w/ /events api
 }
 
 // banner content block is shown in the top section of the event page
@@ -71,7 +70,7 @@ var speakerBios = map[string]*speaker.Speaker{
 	},
 }
 
-var Sessions = map[string]*session.Session{
+var sessions = map[string]*session.Session{
 	"keynote": {
 		Title:       "The Road to Web7",
 		Description: "Join us for an inspiring keynote at the Build The Future Meeting featuring Jae Kwon, visionary blockchain pioneer and creator of Gno.land.",
@@ -117,11 +116,10 @@ var gnolandlaunch = &event.Event{
 	Description:    "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
 	Status:         component.EventPostponed, // Not yet scheduled
 	AttendanceMode: component.OnlineEventAttendanceMode,
-	Sessions: []*session.Session{
-		// TODO: add finalized sessions here
-		Sessions["keynote"],
-		Sessions["generics"],
-		Sessions["concurrency"],
-		Sessions["apis"],
+	Sessions: []*session.Session{ // TODO: add finalized sessions here
+		sessions["keynote"],
+		sessions["generics"],
+		sessions["concurrency"],
+		sessions["apis"],
 	},
 }

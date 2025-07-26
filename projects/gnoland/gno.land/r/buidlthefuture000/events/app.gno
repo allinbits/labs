@@ -16,9 +16,6 @@ type App struct{}
 
 func (*App) Register(key string, block func(string) string) {
 	assertAccess()
-	if _, ok := registry.Get(key); ok {
-		// TODO emit update event
-	}
 	registry.Set(key, block)
 }
 
@@ -28,7 +25,6 @@ func (*App) Render(path string) string {
 		if block, ok := registry.Get(key); ok {
 			sb.WriteString("### " + key + "\n")
 			sb.WriteString(block.(func(string) string)(path))
-			// TODO: also render TermSet
 			sb.WriteString("\n")
 		}
 	}

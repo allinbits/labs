@@ -37,7 +37,7 @@ var locations = map[string]*location.Location{
 	},
 }
 
-var Sessions = map[string]*session.Session{
+var sessions = map[string]*session.Session{
 	"kickoff": {
 		Title:       "A Visit To Null Island",
 		Description: "Welcome to nowhere - there is nothing here, but we can still have a good time!",
@@ -65,7 +65,7 @@ var gnolandlaunch = &event.Event{
 	AttendanceMode: component.OfflineEventAttendanceMode,
 	Description:    "Join this event to become a beta tester for Gnoland, help us think about planning the launch, and provide feedback on the platform. \n\n This is a pre-planning event to gather ideas and feedback from the community.",
 	Sessions: []*session.Session{
-		Sessions["kickoff"],
-		Sessions["summit"],
+		sessions["kickoff"],
+		sessions["summit"],
 	},
 }

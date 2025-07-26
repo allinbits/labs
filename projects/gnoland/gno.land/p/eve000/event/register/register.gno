@@ -48,6 +48,8 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 		event_id = r.LiveEventId
 	}
 	evt := r.GetEvent(event_id)
+	format := q.Get("format")
+	view := q.Get("view")
 	switch {
 	case hasQueryParam(q, "session"):
 		return component.RenderComponent(path, evt.GetSession(q.Get("session")))
@@ -55,10 +57,12 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 		return component.RenderComponent(path, evt.GetLocation(q.Get("location")))
 	case hasQueryParam(q, "speaker"):
 		return component.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
-	case hasQueryParam(q, "flyer"):
+	case view == "flyer":
 		return component.RenderComponent(path, evt.Flyer())
+	case view == "calendar" || format == "ics":
+		return "```\n" + evt.RenderCalendar(path) + "\n```"
 	default:
-		return component.RenderPage(q.Get("format"), evt, body...)
+		return component.RenderPage(path, evt, body...)
 	}
 }
 
@@ -112,12 +116,12 @@ func (r *Registry) RegisterEvent(e *event.Event, opts map[string]interface{}) st
 		s.SetRenderOpts(opts)
 		e.AddSession(s)
 		s.Speaker.SetRenderOpts(opts)
-		e.AddSpeaker(s.Speaker)
+		e.AddSpeaker(s.Speaker) // REVIEW: why call addSpeaker if record was included as input?
 		s.Location.SetRenderOpts(opts)
 		e.AddLocation(s.Location)
 	}
 
-	id := event.Pad3(strconv.Itoa(r.Events.Size()))
+	id := event.Pad3(strconv.Itoa(r.Events.Size())) // 001, 002, etc.
 	r.Events.Set(id, e)
 	return id
 }

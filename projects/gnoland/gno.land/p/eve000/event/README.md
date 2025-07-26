@@ -91,10 +91,10 @@ type Page interface {
 ```
 
 RenderPage offers a similar functionality to `RenderComponent`, but it is specifically designed for rendering pages.
-It also supports dual jsonm and markdown rendering based on the format specified.
+It also supports dual json and markdown rendering based on the format specified in path.
 
 ```go
-func RenderPage(format string, c Page, body ...Content) string
+func RenderPage(path string, c Page, body ...Content) string
 ```
 
 EventSchedule puts it all together exposing the flyer and calendar rendering capabilities.

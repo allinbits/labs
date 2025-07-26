@@ -2,6 +2,7 @@ package component
 
 import (
 	"net/url"
+	"std"
 	"strconv"
 	"strings"
 	"time"
@@ -93,7 +94,9 @@ func (c *Content) Render(path ...string) string {
 
 // Functions
 
-func RenderPage(format string, c Page, body ...Content) string {
+func RenderPage(path string, c Page, body ...Content) string {
+	q := ParseQuery(path)
+	format := q.Get("format")
 	if format == "json" {
 		var sb strings.Builder
 		sb.WriteString("```\n\n" + c.ToJson() + "\n\n```")
@@ -244,12 +247,22 @@ func TagString(tag string) string {
 	tag = strings.ReplaceAll(tag, ":", "")
 	tag = strings.ReplaceAll(tag, ";", "")
 	tag = strings.ReplaceAll(tag, "!", "")
-	tag = strings.ReplaceAll(tag, "?","")
+	tag = strings.ReplaceAll(tag, "?", "")
 	return tag
 }
 
 func LinkTag(name string) string {
 	return "[" + name + "](?tag=" + TagString(name) + ")"
+}
+
+func ParseQuery(path string) url.Values {
+	if len(path) > 0 && path[0] == '?' {
+		u, err := url.Parse(std.CurrentRealm().PkgPath() + path)
+		if err == nil {
+			return u.Query()
+		}
+	}
+	return url.Values{}
 }
 
 func escapeHtml(s string) string {

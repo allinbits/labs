@@ -1,7 +1,6 @@
 package event
 
 import (
-	"net/url"
 	"regexp"
 	"std"
 	"strconv"
@@ -125,6 +124,7 @@ func (evt *Event) AddSession(sess *session.Session) {
 	if evt.storage.Sessions == nil {
 		evt.storage.Sessions = &avl.Tree{}
 	}
+	// TODO: maybe Pad3 can accept interface so extras stringconv isn't needed here
 	id := Pad3(strconv.Itoa(evt.storage.Sessions.Size()))
 	evt.storage.Sessions.Set(AvlKey("session", id), sess)
 }
@@ -187,7 +187,7 @@ func (evt *Event) RenderCalendar(path string) string {
 	var b strings.Builder
 	w := makeWriter(&b)
 
-	q := parseQuery(path)
+	q := component.ParseQuery(path)
 	sessionIDs := q["session"]
 	format := strings.ToLower(q.Get("format"))
 
@@ -202,25 +202,7 @@ func (evt *Event) RenderCalendar(path string) string {
 
 	switch format {
 	case "json":
-		b.WriteString("[")
-		first := true
-		if !first {
-			b.WriteString(",")
-		}
-		b.WriteString(evt.ToJson())
-		first = false
-		for i, s := range sessions {
-			id := Pad3(strconv.Itoa(i))
-			if !include(id) {
-				continue
-			}
-			if !first {
-				b.WriteString(",")
-			}
-			b.WriteString(s.ToJson())
-			first = false
-		}
-		b.WriteString("]")
+		b.WriteString(evt.Flyer().ToJson())
 		return b.String()
 
 	case "ics":
@@ -280,16 +262,6 @@ func (evt *Event) RenderCalendar(path string) string {
 		}
 		return b.String()
 	}
-}
-
-func parseQuery(path string) url.Values {
-	if len(path) > 0 && path[0] == '?' {
-		u, err := url.Parse(std.CurrentRealm().PkgPath() + path)
-		if err == nil {
-			return u.Query()
-		}
-	}
-	return url.Values{}
 }
 
 func makeWriter(b *strings.Builder) func(string) {

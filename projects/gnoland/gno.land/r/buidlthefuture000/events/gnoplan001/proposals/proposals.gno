@@ -1,10 +1,10 @@
 package proposals
 
 import (
+	"net/url"
 	"std"
 	"strconv"
 	"strings"
-	"net/url"
 
 	event "gno.land/r/buidlthefuture000/events/gnoplan001"
 
@@ -128,9 +128,9 @@ func Render(path string) string {
 }
 
 func SubmitProposal(title, abstract, topic, speaker string) {
-    title, _ = url.QueryUnescape(title)
-    topic, _ = url.QueryUnescape(topic)
-    speaker, _ = url.QueryUnescape(speaker)
+	title, _ = url.QueryUnescape(title)
+	topic, _ = url.QueryUnescape(topic)
+	speaker, _ = url.QueryUnescape(speaker)
 	api.AssertAtLeastRole("proposer", std.OriginCaller())
 	if topic, ok := EventTopics[topic]; ok {
 		sp := &proposal.SubmittedProposal{
@@ -146,9 +146,9 @@ func SubmitProposal(title, abstract, topic, speaker string) {
 }
 
 func ReviewProposal(title, comments, reviewer string, score int) {
-    title, _ = url.QueryUnescape(title)
-    comments, _ = url.QueryUnescape(comments)
-    reviewer, _ = url.QueryUnescape(reviewer)
+	title, _ = url.QueryUnescape(title)
+	comments, _ = url.QueryUnescape(comments)
+	reviewer, _ = url.QueryUnescape(reviewer)
 	api.AssertAtLeastRole("reviewer", std.OriginCaller())
 	for i, p := range proposals {
 		if p.GetTitle() == title {
@@ -166,8 +166,8 @@ func ReviewProposal(title, comments, reviewer string, score int) {
 }
 
 func ApproveProposal(title, approver string) {
-    title, _ = url.QueryUnescape(title)
-    approver, _ = url.QueryUnescape(approver)
+	title, _ = url.QueryUnescape(title)
+	approver, _ = url.QueryUnescape(approver)
 
 	api.AssertAtLeastRole("organizer", std.OriginCaller())
 	for i, p := range proposals {
@@ -184,14 +184,14 @@ func ApproveProposal(title, approver string) {
 }
 
 func ApproveProposals(titles []string, approver string) {
-    approver, _ = url.QueryUnescape(approver)
-    if len(titles) == 0 {
-        return
-    }
+	approver, _ = url.QueryUnescape(approver)
+	if len(titles) == 0 {
+		return
+	}
 
-    for i, title := range titles {
-        titles[i], _ = url.QueryUnescape(title)
-    }
+	for i, title := range titles {
+		titles[i], _ = url.QueryUnescape(title)
+	}
 	api.AssertAtLeastRole("organizer", std.OriginCaller())
 	for _, title := range titles {
 		ApproveProposal(title, approver)
@@ -199,9 +199,9 @@ func ApproveProposals(titles []string, approver string) {
 }
 
 func EditProposal(title, key, edit string) error {
-    title, _ = url.QueryUnescape(title)
-    key, _ = url.QueryUnescape(key)
-    edit, _ = url.QueryUnescape(edit)
+	title, _ = url.QueryUnescape(title)
+	key, _ = url.QueryUnescape(key)
+	edit, _ = url.QueryUnescape(edit)
 
 	for _, p := range proposals {
 		if p.GetTitle() != title {

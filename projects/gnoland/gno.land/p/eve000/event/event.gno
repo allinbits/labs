@@ -18,6 +18,7 @@ import (
 
 var _ component.EventSchedule = (*Event)(nil)
 var _ component.Page = (*Event)(nil)
+//var _ Api = (*Event)(nil)
 
 type Api interface {
 	AddOrganizer(addr std.Address)
@@ -129,24 +130,24 @@ func (evt *Event) AddSession(sess *session.Session) {
 	evt.storage.Sessions.Set(AvlKey("session", id), sess)
 }
 
-func (event *Event) GetSpeaker(id string) *speaker.Speaker {
-	s, ok := event.storage.Speakers.Get(AvlKey("speaker", id))
+func (evt *Event) GetSpeaker(id string) *speaker.Speaker {
+	s, ok := evt.storage.Speakers.Get(AvlKey("speaker", id))
 	if !ok {
 		panic("speaker not found: id=" + id)
 	}
 	return s.(*speaker.Speaker)
 }
 
-func (event *Event) GetLocation(id string) *location.Location {
-	l, ok := event.storage.Locations.Get(AvlKey("location", id))
+func (evt *Event) GetLocation(id string) *location.Location {
+	l, ok := evt.storage.Locations.Get(AvlKey("location", id))
 	if !ok {
 		panic("location not found: id=" + id)
 	}
 	return l.(*location.Location)
 }
 
-func (event *Event) GetSession(id string) *session.Session {
-	s, ok := event.storage.Sessions.Get(AvlKey("session", id))
+func (evt *Event) GetSession(id string) *session.Session {
+	s, ok := evt.storage.Sessions.Get(AvlKey("session", id))
 	if !ok {
 		panic("session not found: id=" + id)
 	}

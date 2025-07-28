@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	fmt.Println("Using GnoLand RPC URL:", gnolandRpcUrl)
-	fmt.Println("Using Server Adress:", gnocalAddress)
+	fmt.Println("Using Server Address:", gnocalAddress)
 
 	config := gnocal.ServerOptions{
 		GnolandRpcUrl: gnolandRpcUrl,

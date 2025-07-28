@@ -13,7 +13,7 @@ import (
 func init() {
 	renderOpts := map[string]interface{}{
 		"Svg":          struct{}{},
-		"CalendarHost": "http://127.0.0.1:8080",
+		"CalendarHost": "webcal://127.0.0.1:8080",
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 }

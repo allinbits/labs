@@ -130,6 +130,21 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RenderLandingPage(w http.ResponseWriter, r *http.Request) {
+	protocol := "http://" // TODO: force https in production
+	if r.TLS != nil {
+		protocol = "https://"
+	}
+	if query := r.URL.Query().Get("q"); query != "" {
+		if strings.HasPrefix(query, "/r/") {
+			query = protocol + r.Host + "/gno.land" + query
+		} else if strings.HasPrefix(query, "/gno.land/r/") {
+			query = protocol + r.Host + query
+		}
+		query = strings.TrimSuffix(query, "/")
+		query = strings.TrimSuffix(query, "/?format=ics")
+		http.Redirect(w, r, query, http.StatusSeeOther)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	tmplLandingPage.Execute(w, nil)

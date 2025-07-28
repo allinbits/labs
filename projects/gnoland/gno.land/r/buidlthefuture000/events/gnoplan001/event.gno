@@ -14,7 +14,7 @@ func init() {
 	renderOpts := map[string]interface{}{
 		"Speaker":       struct{}{},
 		"Svg":           struct{}{}, // FIXME verify svg appears on this Flyer
-		"RenderCalHost": "https://127.0.0.1:8080",
+		"CalendarHost": "webcal://127.0.0.1:8080",
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 }

@@ -130,15 +130,11 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RenderLandingPage(w http.ResponseWriter, r *http.Request) {
-	protocol := "http://" // TODO: force https in production
-	if r.TLS != nil {
-		protocol = "https://"
-	}
 	if query := r.URL.Query().Get("q"); query != "" {
 		if strings.HasPrefix(query, "/r/") {
-			query = protocol + r.Host + "/gno.land" + query
+			query = "webcal://" + r.Host + "/gno.land" + query
 		} else if strings.HasPrefix(query, "/gno.land/r/") {
-			query = protocol + r.Host + query
+			query = "webcal://" + r.Host + query
 		}
 		query = strings.TrimSuffix(query, "/")
 		query = strings.TrimSuffix(query, "/?format=ics")

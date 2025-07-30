@@ -2,10 +2,59 @@ package metamodel
 
 import mm "gno.land/p/metamodel000"
 
+var ticTacToeNotes=`
+This Petri net models the flow of a Tic Tac Toe game using places and transitions to represent board states and player actions. The structure supports two distinct but compatible interpretations:
+
+#### Game Board View (Compositional Model of State)
+Each place corresponds to a position on the 3×3 Tic Tac Toe board. For example:
+
+"00" is the top-left corner,
+
+"11" is the center,
+
+"22" is the bottom-right.
+
+The token at a place indicates whether that square is available or has been marked.
+
+Two types of transitions represent player actions:
+
+"X00": places an X in position "00",
+
+"O00": places an O in position "00".
+
+Each transition consumes the token from "00" (indicating it's unoccupied) and places a token in "X00" or "O00", marking that the square is now taken.
+
+#### Rewriting System View (Symbolic State Rewriting)
+This net can also be viewed as a symbolic rewriting system:
+
+The place "00" represents the symbol "00" (an unmarked cell).
+
+The transitions "X00" and "O00" represent rewrite rules:
+
+"00" → "X00"   or   "00" → "O00"
+depending on whose turn it is.
+
+Additionally, a control place called "next" tracks the current player’s turn:
+
+When "next" holds an "X" token, only transitions to "X##" are enabled.
+
+When it holds an "O" token, only "O##" transitions are enabled.
+
+Each transition also updates "next" to alternate turns:
+
+next = X → O
+next = O → X
+
+This dual lens allows the model to serve both as a game simulator and as a general symbolic rewriting engine.
+
+The Petri net’s native concurrency also reveals how multiple board positions can be independently available, but player turns enforce a strict global alternation constraint.
+`
+
+
 func init() {
 	model := ticTacToe()
 	register("TicTacToe", func(_ string) string {
-		return model.ToMarkdown()
+		return model.ToMarkdown() + ticTacToeNotes
 	})
 }
 
@@ -33,7 +82,7 @@ func ticTacToe() *mm.Model {
 		"X20": {X: 380, Y: 230},
 		"X21": {X: 460, Y: 230},
 		"X22": {X: 540, Y: 230},
-		"000": {X: 60, Y: 390},
+		"O00": {X: 60, Y: 390},
 		"O01": {X: 140, Y: 390},
 		"O02": {X: 220, Y: 390},
 		"O10": {X: 60, Y: 470},
@@ -63,8 +112,8 @@ func ticTacToe() *mm.Model {
 		{Source: "X21", Target: "next"},
 		{Source: "22", Target: "X22"},
 		{Source: "X22", Target: "next"},
-		{Source: "00", Target: "000"},
-		{Source: "next", Target: "000"},
+		{Source: "00", Target: "O00"},
+		{Source: "next", Target: "O00"},
 		{Source: "01", Target: "O01"},
 		{Source: "next", Target: "O01"},
 		{Source: "02", Target: "O02"},

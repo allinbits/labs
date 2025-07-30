@@ -120,9 +120,9 @@ func (s *Server) RenderCalFromRealm(w http.ResponseWriter, r *http.Request) {
 		out = removedRParen
 	}
 
-	// Add a URL to the ICS content
 	icsContent := strings.ReplaceAll(out, `\n`, "\n")
-	icsContent += "\nURL:" + r.URL.String()
+	// REVIEW: is metadata like this allowed
+	//icsContent += "\nURL:" + r.URL.String()
 
 	w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	w.Header().Set("Content-Disposition", "inline; filename=calendar.ics")

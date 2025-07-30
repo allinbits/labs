@@ -18,6 +18,7 @@ import (
 
 var _ component.EventSchedule = (*Event)(nil)
 var _ component.Page = (*Event)(nil)
+
 //var _ Api = (*Event)(nil)
 
 type Api interface {

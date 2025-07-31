@@ -9,6 +9,11 @@ import (
 
 // TODO: make this form populate from URL http://127.0.0.1:8888/r/metamodel000?amount=3&toAddress=g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz
 
+var transferDescription = `
+This is a model to transfer tokens from a wallet to a specified address.
+
+`
+
 var transferForm = `
 <gno-form>
     <gno-input name="amount" placeholder="3" />
@@ -19,7 +24,7 @@ var transferForm = `
 func init() {
 	exampleModel := transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3)
 	exampleModel.Binding = func(_ string) string {
-		return transferForm + exampleModel.ToMarkdown()
+		return transferDescription + transferForm + exampleModel.ToMarkdown()
 	}
 	register("transfer", exampleModel)
 }

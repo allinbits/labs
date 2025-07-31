@@ -4,12 +4,17 @@ import (
 	mm "gno.land/p/metamodel000"
 )
 
+var coffeeShopDescription = `
+This is a model of a coffee shop process, which includes the following steps:
+
+`
+
 func init() {
 	coffeeShopModel := coffeeShop()
-
-	register("coffeeShop", func(_ string) string {
-		return coffeeShopModel.ToMarkdown()
-	})
+	coffeeShopModel.Binding = func(_ string) string {
+		return coffeeShopDescription + coffeeShopModel.ToMarkdown()
+	}
+	register("coffeeShop", coffeeShopModel)
 }
 
 func coffeeShop() *mm.Model {

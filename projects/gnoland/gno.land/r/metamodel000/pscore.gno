@@ -15,11 +15,11 @@ These scores are processed by a formal optimization model
 `
 
 func init() {
-	exampleModel := pScoreVoting(100_000, proposals)
-
-	register("pscore", func(_ string) string {
-		return overview + exampleModel.ToMarkdown()
-	})
+	m := pScoreVoting(100_000, proposals)
+	m.Binding = func(_ string) string {
+		return overview + m.ToMarkdown()
+	}
+	register("pScoreVoting", m)
 }
 
 func pScoreVoting(budget int, proposals []Proposal) *mm.Model {

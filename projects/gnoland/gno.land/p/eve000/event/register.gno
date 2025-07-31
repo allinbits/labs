@@ -1,4 +1,4 @@
-package register
+package event
 
 import (
 	"net/url"
@@ -8,7 +8,6 @@ import (
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
 )
 
@@ -89,12 +88,12 @@ func (r *Registry) SetPatchLevel(level int) {
 	r.patchLevel = level
 }
 
-func (r *Registry) GetEvent(id string) *event.Event {
-	e, ok := r.Events.Get(event.AvlKey("event", id))
+func (r *Registry) GetEvent(id string) *Event {
+	e, ok := r.Events.Get(AvlKey("event", id))
 	if !ok {
 		panic("event not found" + id)
 	}
-	return e.(*event.Event)
+	return e.(*Event)
 }
 
 func (r *Registry) SetRenderOpts(opts map[string]interface{}) {
@@ -105,7 +104,7 @@ func (r *Registry) String() string {
 	return ufmt.Sprintf("Registry{LiveEventId: %v, Events Size: %v}", r.LiveEventId, r.Events.Size())
 }
 
-func (r *Registry) RegisterEvent(e *event.Event, opts map[string]interface{}) string {
+func (r *Registry) RegisterEvent(e *Event, opts map[string]interface{}) string {
 	if r.Events == nil {
 		r.Events = avl.NewTree()
 	}
@@ -121,7 +120,7 @@ func (r *Registry) RegisterEvent(e *event.Event, opts map[string]interface{}) st
 		e.AddLocation(s.Location)
 	}
 
-	id := event.Pad3(strconv.Itoa(r.Events.Size())) // 001, 002, etc.
+	id := Pad3(strconv.Itoa(r.Events.Size())) // 001, 002, etc.
 	r.Events.Set(id, e)
 	return id
 }

@@ -1,6 +1,6 @@
 // ln -s ~/w/aib/eve/projects/gnoland/gno.land/p/eve000 eve
 // gno test (maek sure you are eve-symlink branch)
-package register
+package event
 
 import (
 	"testing"
@@ -18,7 +18,7 @@ func TestRegistry(t *testing.T) {
 	spkr := &speaker.Speaker{Name: "Alice"}
 	loc := &location.Location{Name: "Main Hall"}
 	sess := &session.Session{Speaker: spkr, Location: loc}
-	evt := &event.Event{Name: "Annual Meeting", Sessions: []*session.Session{sess}}
+	evt := &Event{Name: "Annual Meeting", Sessions: []*session.Session{sess}}
 
 	// Test RegisterEvent
 	eventID := registry.RegisterEvent(evt)

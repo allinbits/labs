@@ -26,7 +26,7 @@ func NewRegistry(allowedPrefixes []string, renderOpts map[string]interface{}) *R
 	return &Registry{
 		tree:          avl.NewTree(),
 		allowPrefixes: allowedPrefixes,
-		renderOpts: renderOpts,
+		renderOpts:    renderOpts,
 	}
 }
 

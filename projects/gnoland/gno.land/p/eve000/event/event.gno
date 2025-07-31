@@ -48,8 +48,6 @@ type Api interface {
 	UnsetRoleHandler(role string)
 }
 
-var f = ufmt.Sprintf
-
 type Storage struct {
 	Sessions  *avl.Tree
 	Speakers  *avl.Tree
@@ -165,7 +163,7 @@ func (evt *Event) GetSessions() []*component.Session {
 	return sessions
 }
 func (evt *Event) Flyer() component.Component {
-	f := &component.Flyer{
+	flyer := &component.Flyer{
 		Name:        evt.Name,
 		Location:    evt.Location,
 		StartDate:   evt.StartDate,
@@ -174,8 +172,8 @@ func (evt *Event) Flyer() component.Component {
 		Description: evt.Description,
 		Sessions:    evt.Sessions,
 	}
-	f.SetRenderOpts(evt.renderOpts)
-	return f
+	flyer.SetRenderOpts(evt.renderOpts)
+	return flyer
 }
 
 func (evt *Event) RenderMarkdown(body ...component.Content) string {
@@ -183,8 +181,11 @@ func (evt *Event) RenderMarkdown(body ...component.Content) string {
 }
 
 func (evt *Event) RenderCalendar(path string) string {
+	var f = ufmt.Sprintf
 	var b strings.Builder
-	w := makeWriter(&b)
+	w := func(s string) {
+		b.WriteString(s + "\n")
+	}
 
 	q := component.ParseQuery(path)
 	sessionIDs := q["session"]
@@ -260,12 +261,6 @@ func (evt *Event) RenderCalendar(path string) string {
 			w(s.ToMarkdown())
 		}
 		return b.String()
-	}
-}
-
-func makeWriter(b *strings.Builder) func(string) {
-	return func(s string) {
-		b.WriteString(s + "\n")
 	}
 }
 

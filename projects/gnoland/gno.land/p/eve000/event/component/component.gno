@@ -305,3 +305,20 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 
 	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }
+
+func ThumbnailSvg(link string, width, height int) string {
+	if !strings.HasPrefix("data:image/svg", link) {
+		panic("ThumbnailDataUrl requires a data URL") // NOTE: nesting external images is not supported
+	}
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(width) + `" height="` + strconv.Itoa(height) + `">
+        <image href="` + link + `" width="` + strconv.Itoa(width) + `" height="` + strconv.Itoa(height) + `"/>
+    </svg>`
+}
+
+func ThumbnailDataUrl(link string, width, height int) string {
+	return "data:image/svg+xml;utf8," + url.PathEscape(ThumbnailSvg(link, width, height))
+}
+
+func ThumbnailLink(link string, width, height int) string {
+	return "![thumb](" + ThumbnailDataUrl(link, width, height) + ")"
+}

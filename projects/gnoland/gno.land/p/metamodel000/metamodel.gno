@@ -23,6 +23,75 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
+type ModelFactory func(...interface{}) *Model
+
+var _ ModelFactory = New
+
+type ModelFunc func() *Model
+
+func HasModelApi(input interface{}) bool {
+	if _, ok := input.(*Model); ok {
+		return true // Input is a Model
+	}
+	if _, ok := input.(ModelFunc); ok {
+		return true // Input is a ModelFunc
+	}
+	if _, ok := input.(ModelFactory); ok {
+		return true // Input is a ModelFactory
+	}
+	return false // No Model API found
+}
+
+func New(inputs ...interface{}) *Model {
+	m := &Model{
+		Places:      map[string]Place{},
+		Transitions: map[string]Transition{},
+		Arrows:      []Arrow{},
+	}
+
+	for _, input := range inputs {
+		switch v := input.(type) {
+		case *Model:
+			// Merge another model into the current one
+			for label, place := range v.Places {
+				m.Places[label] = place
+			}
+			for label, transition := range v.Transitions {
+				m.Transitions[label] = transition
+			}
+			m.Arrows = append(m.Arrows, v.Arrows...)
+		case map[string]Place:
+			for label, place := range v {
+				m.Places[label] = place
+			}
+		case map[string]Transition:
+			for label, transition := range v {
+				m.Transitions[label] = transition
+			}
+		case []Arrow:
+			m.Arrows = append(m.Arrows, v...)
+		default:
+			continue
+		}
+	}
+
+	offset := 0
+	for label, place := range m.Places {
+		place.Offset = offset
+		m.Places[label] = place
+		offset++
+	}
+
+	offset = 0
+	for label, transition := range m.Transitions {
+		transition.Offset = offset
+		m.Transitions[label] = transition
+		offset++
+	}
+
+	return m
+}
+
 // TokenType represents multiple token types as a slice of integers.
 type TokenType []int64
 
@@ -72,29 +141,32 @@ func S(ts ...interface{}) []TokenType {
 
 // Place represents a place in the Petri net.
 type Place struct {
-	Label    string    // Label of the place.
-	Offset   int       // Offset of the place in the Petri net.
-	Tokens   TokenType // Current number of tokens for each type.
-	Initial  TokenType // Initial number of tokens for each type.
-	Capacity TokenType // Maximum capacity for each token type (0 = unlimited).
-	X        int       // X coordinate of the place.
-	Y        int       // Y coordinate of the place.
+	Label    string      // Label of the place.
+	Offset   int         // Offset of the place in the Petri net.
+	Tokens   TokenType   // Current number of tokens for each type.
+	Initial  TokenType   // Initial number of tokens for each type.
+	Capacity TokenType   // Maximum capacity for each token type (0 = unlimited).
+	X        int         // X coordinate of the place.
+	Y        int         // Y coordinate of the place.
+	Binding  interface{} // Optional binding for the place.
 }
 
 // Arrow represents an arc in the Petri net.
 type Arrow struct {
-	Source  string    // Source place or transition.
-	Target  string    // Target place or transition.
-	Weight  TokenType // Weight for each token type.
-	Inhibit bool      // Indicates if the arc inhibits the transition.
+	Source  string      // Source place or transition.
+	Target  string      // Target place or transition.
+	Weight  TokenType   // Weight for each token type.
+	Inhibit bool        // Indicates if the arc inhibits the transition.
+	Binding interface{} // Optional binding for the arc.
 }
 
 // Transition represents a transition in the Petri net.
 type Transition struct {
-	Label  string // Label of the transition.
-	Offset int    // Offset of the transition in the Petri net.
-	X      int    // X coordinate of the transition.
-	Y      int    // Y coordinate of the transition.
+	Label   string      // Label of the transition.
+	Offset  int         // Offset of the transition in the Petri net.
+	X       int         // X coordinate of the transition.
+	Y       int         // Y coordinate of the transition.
+	Binding interface{} // Optional binding for the transition.
 }
 
 // Model represents a Petri-Net.
@@ -102,6 +174,7 @@ type Model struct {
 	Places      map[string]Place      // Map of places.
 	Transitions map[string]Transition // Map of transitions.
 	Arrows      []Arrow               // List of arcs.
+	Binding     interface{}           // Optional binding for the model.
 }
 
 func (model *Model) State() []TokenType {
@@ -401,6 +474,19 @@ func (model *Model) LegendSvg(scale ...float64) string {
 
 func (model *Model) ToDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(model.ToSvg())
+}
+
+// wrap the thumbnail data URL in a function scale 1/10
+func (model *Model) ThumbnailDataUrl() string {
+	return "data:image/svg+xml;utf8," + url.PathEscape(model.ThumbnailSvg("140", "140"))
+}
+
+func (model *Model) ThumbnailSvg(w, h string) string {
+	dataUrl := model.ToDataUrl()
+	return `<svg width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="none" stroke="#facade"/>
+		<image href="` + dataUrl + `" width="` + w + `" height="` + h + `"/>
+	</svg>`
 }
 
 func (model *Model) ToMarkdown() string {

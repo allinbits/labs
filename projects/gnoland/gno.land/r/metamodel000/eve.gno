@@ -5,7 +5,7 @@ import (
 )
 
 var folderLayout = `
-# Event Folder Layout
+
 This is the layout of an [Eve event folder](/r/buidlthefuture000/events/gnolandlaunch$source), which contains the following files:
 - **acl.gno**: Access Control List for the event.
 - **app.gno**: Application logic for the event.
@@ -21,7 +21,7 @@ The relationships between these files are as follows:
 func init() {
 	eveModel := eve()
 
-	register("Event Folder", func(_ string) string {
+	register("EventFolderLayout", func(_ string) string {
 		return folderLayout + eveModel.ToMarkdown()
 	})
 }

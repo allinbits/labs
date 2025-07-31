@@ -2,11 +2,18 @@ package metamodel
 
 import mm "gno.land/p/metamodel000"
 
+var konamiCodeDescription = `
+This is a model of the Konami Code, a famous cheat code used in many video games
+and pop culture references. The code is typically entered using a game controller and consists of a sequence of directional inputs and button presses.
+
+`
+
 func init() {
 	model := konamiCodeModel()
-	register("konamiCode", func(_ string) string {
-		return model.ToMarkdown()
-	})
+	model.Binding = func(_ string) string {
+		return konamiCodeDescription + model.ToMarkdown()
+	}
+	register("konamiCode", model)
 }
 
 func konamiCodeModel() *mm.Model {

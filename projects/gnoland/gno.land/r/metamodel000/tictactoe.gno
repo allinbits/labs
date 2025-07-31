@@ -2,6 +2,11 @@ package metamodel
 
 import mm "gno.land/p/metamodel000"
 
+var ticTacToeDescription = `
+This Petri net models the flow of a Tic Tac Toe game using places and transitions to represent board states and player actions. The structure supports two distinct but compatible interpretations:
+
+`
+
 var ticTacToeNotes = `
 This Petri net models the flow of a Tic Tac Toe game using places and transitions to represent board states and player actions. The structure supports two distinct but compatible interpretations:
 
@@ -53,7 +58,7 @@ The Petri net’s native concurrency also reveals how multiple board positions c
 func init() {
 	model := ticTacToe()
 	model.Binding = func(_ string) string {
-		return model.ToMarkdown() + ticTacToeNotes
+		return ticTacToeDescription + model.ToMarkdown() + ticTacToeNotes
 	}
 	register("TicTacToe", model)
 }

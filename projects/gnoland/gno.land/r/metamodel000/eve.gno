@@ -20,10 +20,10 @@ The relationships between these files are as follows:
 
 func init() {
 	eveModel := eve()
-
-	register("EventFolderLayout", func(_ string) string {
+	eveModel.Binding = func(_ string) string {
 		return folderLayout + eveModel.ToMarkdown()
-	})
+	}
+	register("EventFolderLayout", eveModel)
 }
 
 // eve model shows the layout of the event folder

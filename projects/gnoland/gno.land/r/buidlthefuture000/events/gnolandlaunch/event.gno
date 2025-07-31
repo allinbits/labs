@@ -5,8 +5,6 @@ import (
 
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
-	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/session"
 )
 
 func init() {
@@ -24,7 +22,7 @@ var banner = component.Content{
 		component.TxlinkButton("Join Waitlist", "JoinWaitlist"),
 }
 
-var locations = map[string]*location.Location{
+var locations = map[string]*component.Location{
 	"gnowhere": {
 		Name:        "Gnowhere",
 		Description: "",
@@ -70,7 +68,7 @@ var speakerBios = map[string]*component.Speaker{
 	},
 }
 
-var sessions = map[string]*session.Session{
+var sessions = map[string]*component.Session{
 	"keynote": {
 		Title:       "The Road to Web7",
 		Description: "Join us for an inspiring keynote at the Build The Future Meeting featuring Jae Kwon, visionary blockchain pioneer and creator of Gno.land.",
@@ -116,7 +114,7 @@ var gnolandlaunch = &event.Event{
 	Description:    "Join us as Gno.land creator Jae Kwon shares his vision of a logic-first internet—where code is law and realms are the new web.",
 	Status:         component.EventPostponed, // Not yet scheduled
 	AttendanceMode: component.OnlineEventAttendanceMode,
-	Sessions: []*session.Session{ // TODO: add finalized sessions here
+	Sessions: []*component.Session{ // TODO: add finalized sessions here
 		sessions["keynote"],
 		sessions["generics"],
 		sessions["concurrency"],

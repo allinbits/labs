@@ -1,11 +1,10 @@
-package location
+package component
 
 import (
 	"net/url"
 	"strings"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event/component"
 )
 
 type Location struct {
@@ -13,11 +12,10 @@ type Location struct {
 	Address     string
 	Coordinates string
 	Description string
-	renderOpts  map[string]interface{}
-	// REVIEW: map here?
+	renderOpts  map[string]interface{} // TODO: consider exposing this in every component
 }
 
-var _ component.Component = (*Location)(nil)
+var _ Component = (*Location)(nil)
 
 func (l *Location) SetName(name string) {
 	l.Name = name
@@ -36,10 +34,10 @@ func (l *Location) SetDescription(description string) {
 }
 
 func (l *Location) ToAnchor() string {
-	return component.StringToAnchor(l.Name)
+	return StringToAnchor(l.Name)
 }
 
-func (l *Location) ToMarkdown(_ ...component.Content) string {
+func (l *Location) ToMarkdown(_ ...Content) string {
 	md := "### " + l.Name + "\n"
 	if l.Address != "" {
 		md += "\n [" + l.Address + "](https://www.google.com/maps/search/?api=1&query=" + url.QueryEscape(l.Address) + ")\n"
@@ -74,15 +72,15 @@ func (l *Location) ToSVG() string {
 	y := 40
 	fragment := l.ToSVGFragment(&y)
 	height := ufmt.Sprintf("%d", y+20)
-	return component.SvgHeading("600", height) + fragment + "</svg>"
+	return SvgHeading("600", height) + fragment + "</svg>"
 }
 
 func (l *Location) ToSVGFragment(y *int) string {
 	svg := "<g class=\"location\">"
-	svg += component.RenderSVGLine(y, "sessiontitle", "", l.Name)
-	svg += component.RenderSVGLine(y, "text", "", l.Address)
-	svg += component.RenderSVGLine(y, "text", "", l.Coordinates)
-	svg += component.RenderSVGLine(y, "text", "", l.Description)
+	svg += RenderSVGLine(y, "sessiontitle", "", l.Name)
+	svg += RenderSVGLine(y, "text", "", l.Address)
+	svg += RenderSVGLine(y, "text", "", l.Coordinates)
+	svg += RenderSVGLine(y, "text", "", l.Description)
 	svg += "</g>"
 	return svg
 }

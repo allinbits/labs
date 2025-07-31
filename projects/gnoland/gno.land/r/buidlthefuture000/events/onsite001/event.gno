@@ -5,8 +5,6 @@ import (
 
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
-	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/session"
 )
 
 func init() {
@@ -22,7 +20,7 @@ var banner = component.Content{
 	Markdown:  "\n\n#### Status: Pre-planning",
 }
 
-var locations = map[string]*location.Location{
+var locations = map[string]*component.Location{
 	"null": {
 		Name:        "Null Island",
 		Coordinates: "0.0, 0.0",
@@ -36,7 +34,7 @@ var locations = map[string]*location.Location{
 	},
 }
 
-var sessions = map[string]*session.Session{
+var sessions = map[string]*component.Session{
 	"kickoff": {
 		Title:       "A Visit To Null Island",
 		Description: "Welcome to nowhere - there is nothing here, but we can still have a good time!",
@@ -63,7 +61,7 @@ var gnolandlaunch = &event.Event{
 	Status:         component.EventMovedOnline, // it was planned as an IRL event example, but it was moved online ;-P
 	AttendanceMode: component.OfflineEventAttendanceMode,
 	Description:    "Join this event to become a beta tester for Gnoland, help us think about planning the launch, and provide feedback on the platform. \n\n This is a pre-planning event to gather ideas and feedback from the community.",
-	Sessions: []*session.Session{
+	Sessions: []*component.Session{
 		sessions["kickoff"],
 		sessions["summit"],
 	},

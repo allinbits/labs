@@ -5,9 +5,6 @@ import (
 
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/component"
-	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
 )
 
 func init() {
@@ -26,7 +23,7 @@ var banner = component.Content{
 		component.TxlinkButton("Join Beta", "JoinBeta"),
 }
 
-var locations = map[string]*location.Location{
+var locations = map[string]*component.Location{
 	"gnowhere": {
 		Name:        "Gnowhere",
 		Description: "",
@@ -37,7 +34,7 @@ var locations = map[string]*location.Location{
 	},
 }
 
-var speakerBios = map[string]*speaker.Speaker{
+var speakerBios = map[string]*component.Speaker{
 	"mason": {
 		Name:        "Mason",
 		Biography:   "Nathan is a member of AIBLabs working on Eve event platform.",
@@ -59,7 +56,7 @@ var speakerBios = map[string]*speaker.Speaker{
 	},
 }
 
-var sessions = map[string]*session.Session{
+var sessions = map[string]*component.Session{
 	"kickoff": {
 		Title:       "Test our Tools: Gno.land and Gnoland",
 		Description: "This is a kickoff of an internal beta.",
@@ -86,7 +83,7 @@ var gnolandlaunch = &event.Event{
 	StartDate:      time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC),
 	EndDate:        time.Date(2025, 8, 29, 0, 0, 0, 0, time.UTC),
 	Description:    "Join this event to become a beta tester for Gnoland, help us think about planning the launch, and provide feedback on the platform. \n\n This is a pre-planning event to gather ideas and feedback from the community.",
-	Sessions: []*session.Session{
+	Sessions: []*component.Session{
 		sessions["kickoff"],
 		sessions["retro"],
 	},

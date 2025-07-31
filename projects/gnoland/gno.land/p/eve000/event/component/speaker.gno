@@ -1,10 +1,9 @@
-package speaker
+package component
 
 import (
 	"net/url"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event/component"
 )
 
 type Speaker struct {
@@ -16,7 +15,7 @@ type Speaker struct {
 	renderOpts  map[string]interface{}
 }
 
-var _ component.Component = (*Speaker)(nil)
+var _ Component = (*Speaker)(nil)
 
 func (s *Speaker) SetName(name string) {
 	s.Name = name
@@ -35,10 +34,10 @@ func (s *Speaker) SetPictureURL(pictureURL string) {
 }
 
 func (s *Speaker) ToAnchor() string {
-	return component.StringToAnchor(s.Name)
+	return StringToAnchor(s.Name)
 }
 
-func (s *Speaker) ToMarkdown(_ ...component.Content) string {
+func (s *Speaker) ToMarkdown(_ ...Content) string {
 	markdown := "#### " + s.Name + "\n\n"
 	if s.Biography != "" {
 		markdown += s.Biography + "\n\n"
@@ -77,14 +76,14 @@ func (s *Speaker) ToSVG() string {
 	y := 40
 	fragment := s.ToSVGFragment(&y)
 	height := ufmt.Sprintf("%d", y+20)
-	return component.SvgHeading("600", height) + fragment + "</svg>"
+	return SvgHeading("600", height) + fragment + "</svg>"
 }
 
 func (s *Speaker) ToSVGFragment(y *int) string {
 	svg := "<g class=\"speaker\">"
-	svg += component.RenderSVGLine(y, "speaker", "", s.Name)
-	svg += component.RenderSVGLine(y, "text", "", s.Biography)
-	svg += component.RenderSVGLine(y, "text", "", s.Affiliation)
+	svg += RenderSVGLine(y, "speaker", "", s.Name)
+	svg += RenderSVGLine(y, "text", "", s.Biography)
+	svg += RenderSVGLine(y, "text", "", s.Affiliation)
 	/* REVIEW: do we expect nested image refs to work? do we need to set a specific schema in svg header?
 	   if s.PictureURL != "" {
 	       y += 20

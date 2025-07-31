@@ -4,7 +4,6 @@ import (
 	"std"
 
 	"gno.land/p/eve000/event"
-	"gno.land/p/eve000/event/register"
 )
 
 type App struct{}
@@ -15,7 +14,7 @@ var (
 	app = &App{}
 
 	realmAllowPrefix = []string{} // realms prefixes that have access to update the registry
-	registry         = &register.Registry{}
+	registry         = &event.Registry{}
 )
 
 func (*App) Render(path string) (out string) {

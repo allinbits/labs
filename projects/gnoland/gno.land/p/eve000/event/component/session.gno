@@ -1,30 +1,26 @@
-package session
+package component
 
 import (
 	"net/url"
 	"time"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event/component"
-	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/speaker"
 )
 
 type Session struct {
 	Title       string
 	Description string
-	Speaker     *speaker.Speaker
+	Speaker     *Speaker
 	StartTime   time.Time
 	EndTime     time.Time
-	Location    *location.Location
+	Location    *Location
 	renderOpts  map[string]interface{}
 	Sequence    int
 	Cancelled   bool
 }
 
 var (
-	_ component.Component = (*Session)(nil)
-	f                     = ufmt.Sprintf
+	_ Component = (*Session)(nil)
 )
 
 func (s *Session) SetTitle(title string) {
@@ -36,7 +32,7 @@ func (s *Session) SetDescription(description string) {
 	s.Sequence++
 }
 
-func (s *Session) SetSpeaker(speaker *speaker.Speaker) {
+func (s *Session) SetSpeaker(speaker *Speaker) {
 	s.Speaker = speaker
 	s.Sequence++
 }
@@ -51,7 +47,7 @@ func (s *Session) SetEndTime(endTime time.Time) {
 	s.Sequence++
 }
 
-func (s *Session) SetLocation(location *location.Location) {
+func (s *Session) SetLocation(location *Location) {
 	s.Location = location
 	s.Sequence++
 }
@@ -62,10 +58,10 @@ func (s *Session) SetCancelled(cancelled bool) {
 }
 
 func (s *Session) ToAnchor() string {
-	return component.StringToAnchor(s.Title)
+	return StringToAnchor(s.Title)
 }
 
-func (s *Session) ToMarkdown(_ ...component.Content) string {
+func (s *Session) ToMarkdown(_ ...Content) string {
 	duration := s.EndTime.Sub(s.StartTime)
 	markdown := "### " + s.Title + "\n\n"
 	markdown += " " + s.StartTime.Format(time.Kitchen)
@@ -74,11 +70,11 @@ func (s *Session) ToMarkdown(_ ...component.Content) string {
 		markdown += " | [Speaker - " + s.Speaker.Name + "](" + s.Speaker.ToAnchor() + ")"
 	}
 	if _, ok := s.RenderOpts()["Location"]; ok && s.Location != nil {
-		markdown += " | [Location - " + s.Location.Name + "](" + component.StringToAnchor(s.Location.Name) + ")\n"
+		markdown += " | [Location - " + s.Location.Name + "](" + StringToAnchor(s.Location.Name) + ")\n"
 	}
 
 	markdown += "\n\n" + s.Description + "\n\n"
-	markdown += "Duration: " + component.FormatDuration(duration) + "\n"
+	markdown += "Duration: " + FormatDuration(duration) + "\n"
 	return markdown
 }
 
@@ -104,7 +100,7 @@ func (s *Session) ToSVG() string {
 	y := 40
 	fragment := s.ToSVGFragment(&y)
 	height := ufmt.Sprintf("%d", y+20)
-	return component.SvgHeading("600", height) + fragment + "</svg>"
+	return SvgHeading("600", height) + fragment + "</svg>"
 }
 
 func (s *Session) ToSVGFragment(y *int) string {
@@ -127,7 +123,7 @@ func (s *Session) ToSVGFragment(y *int) string {
 	rightY := *y
 	svg += ufmt.Sprintf(`<text x="200" y="%d" class="sessiontitle">%s</text>`, rightY, s.Title)
 	rightY += 20
-	descriptionLines := component.SplitText(s.Description, 50)
+	descriptionLines := SplitText(s.Description, 50)
 	for _, line := range descriptionLines {
 		svg += ufmt.Sprintf(`<text x="200" y="%d" class="text">%s</text>`, rightY, line)
 		rightY += 20

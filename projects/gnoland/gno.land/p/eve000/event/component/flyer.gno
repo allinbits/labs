@@ -1,4 +1,4 @@
-package flyer
+package component
 
 import (
 	"net/url"
@@ -7,45 +7,42 @@ import (
 	"time"
 
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event/component"
-	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/session"
 )
 
 type Flyer struct {
 	Name           string
-	Location       *location.Location
+	Location       *Location
 	StartDate      time.Time
 	EndDate        time.Time
-	Status         component.EventStatus
-	AttendanceMode component.EventAttendanceMode
+	Status         EventStatus
+	AttendanceMode EventAttendanceMode
 	Description    string
-	Sessions       []*session.Session
+	Sessions       []*Session
 	renderOpts     map[string]interface{}
 }
 
-var _ component.Component = (*Flyer)(nil)
+var _ Component = (*Flyer)(nil)
 
 func FormatDate(date time.Time) string {
 	if date.IsZero() {
 		return ""
 	}
-	return date.Format(component.DtFmt)
+	return date.Format(DtFmt)
 }
 
 func (a *Flyer) ToAnchor() string {
-	return component.StringToAnchor(a.Name)
+	return StringToAnchor(a.Name)
 }
 
 // ToMarkdown converts the Flyer to a Markdown representation (with optional additional content).
-func (a *Flyer) ToMarkdown(body ...component.Content) string {
+func (a *Flyer) ToMarkdown(body ...Content) string {
 	markdown := "## " + a.Name + "\n\n"
 
 	if _, ok := a.RenderOpts()["Location"]; ok && a.Location != nil {
 		markdown += "### " + a.Location.Name + "\n\n"
 	}
 
-	if a.Status == component.EventScheduled {
+	if a.Status == EventScheduled {
 		if FormatDate(a.StartDate) == FormatDate(a.EndDate) {
 			markdown += FormatDate(a.StartDate) + "\n\n"
 		} else {
@@ -71,7 +68,7 @@ func (a *Flyer) ToMarkdown(body ...component.Content) string {
 	markdown += "## Agenda \n\n"
 
 	// Group sessions by date
-	sessionsByDate := make(map[string][]*session.Session)
+	sessionsByDate := make(map[string][]*Session)
 	for _, session := range a.Sessions {
 		date := FormatDate(session.StartTime)
 		sessionsByDate[date] = append(sessionsByDate[date], session)
@@ -138,30 +135,30 @@ func (a *Flyer) ToSVG() string {
 	y := 40
 	fragment := a.ToSVGFragment(&y)
 	height := ufmt.Sprintf("%d", y)
-	return component.SvgHeading("600", height) + fragment + "</svg>"
+	return SvgHeading("600", height) + fragment + "</svg>"
 }
 
 func (a *Flyer) ToSVGFragment(y *int) string {
 	svg := "<rect width=\"100%\" height=\"100%\" fill=\"#eeeeee\" rx=\"15\"/>"
-	svg += component.RenderSVGLine(y, "title", "", a.Name)
+	svg += RenderSVGLine(y, "title", "", a.Name)
 	*y += 10
-	svg += component.RenderSVGLine(y, "subtitle", "", a.Location.Name)
+	svg += RenderSVGLine(y, "subtitle", "", a.Location.Name)
 	*y += 10
-	if a.Status == component.EventCancelled {
-		svg += component.RenderSVGLine(y, "text", "label", "Status: Canceled")
+	if a.Status == EventCancelled {
+		svg += RenderSVGLine(y, "text", "label", "Status: Canceled")
 	}
-	if a.Status != component.EventPostponed {
+	if a.Status != EventPostponed {
 		if a.StartDate == a.EndDate {
-			svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate))
+			svg += RenderSVGLine(y, "text", "", FormatDate(a.StartDate))
 		} else {
-			svg += component.RenderSVGLine(y, "text", "", FormatDate(a.StartDate)+" - "+FormatDate(a.EndDate))
+			svg += RenderSVGLine(y, "text", "", FormatDate(a.StartDate)+" - "+FormatDate(a.EndDate))
 		}
 	} else {
 		label := strings.TrimPrefix(string(a.Status), "https://schema.org/")
-		svg += component.RenderSVGLine(y, "text", "", "Status: "+label)
+		svg += RenderSVGLine(y, "text", "", "Status: "+label)
 	}
 	*y += 20
-	svg += component.RenderSVGLine(y, "text", "", a.Description)
+	svg += RenderSVGLine(y, "text", "", a.Description)
 	*y += 40
 	for _, s := range a.Sessions {
 		svg += s.ToSVGFragment(y)

@@ -10,15 +10,12 @@ import (
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
-	"gno.land/p/eve000/event/flyer"
-	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
 )
 
 var _ component.EventSchedule = (*Event)(nil)
 var _ component.Page = (*Event)(nil)
 
+// FIXME either change interface or satisfy it
 //var _ Api = (*Event)(nil)
 
 type Api interface {
@@ -61,11 +58,11 @@ type Storage struct {
 
 type Event struct {
 	Name           string
-	Location       *location.Location
+	Location       *component.Location
 	StartDate      time.Time
 	EndDate        time.Time
 	Description    string
-	Sessions       []*session.Session
+	Sessions       []*component.Session
 	Status         component.EventStatus
 	AttendanceMode component.EventAttendanceMode
 	Images         []string
@@ -77,7 +74,7 @@ func (evt *Event) SetEventName(name string) {
 	evt.Name = name
 }
 
-func (evt *Event) SetEventLocation(loc *location.Location) {
+func (evt *Event) SetEventLocation(loc *component.Location) {
 	evt.Location = loc
 }
 
@@ -93,11 +90,11 @@ func (evt *Event) SetEventDescription(description string) {
 	evt.Description = description
 }
 
-func (evt *Event) SetSessions(sessions []*session.Session) {
+func (evt *Event) SetSessions(sessions []*component.Session) {
 	evt.Sessions = sessions
 }
 
-func (evt *Event) AddSpeaker(s *speaker.Speaker) {
+func (evt *Event) AddSpeaker(s *component.Speaker) {
 	if evt.storage == nil {
 		evt.storage = &Storage{}
 	}
@@ -108,7 +105,7 @@ func (evt *Event) AddSpeaker(s *speaker.Speaker) {
 	evt.storage.Speakers.Set(AvlKey("speaker", id), s)
 }
 
-func (evt *Event) AddLocation(loc *location.Location) {
+func (evt *Event) AddLocation(loc *component.Location) {
 	if evt.storage == nil {
 		evt.storage = &Storage{}
 	}
@@ -119,7 +116,7 @@ func (evt *Event) AddLocation(loc *location.Location) {
 	evt.storage.Locations.Set(AvlKey("location", id), loc)
 }
 
-func (evt *Event) AddSession(sess *session.Session) {
+func (evt *Event) AddSession(sess *component.Session) {
 	if evt.storage == nil {
 		evt.storage = &Storage{}
 	}
@@ -131,44 +128,44 @@ func (evt *Event) AddSession(sess *session.Session) {
 	evt.storage.Sessions.Set(AvlKey("session", id), sess)
 }
 
-func (evt *Event) GetSpeaker(id string) *speaker.Speaker {
+func (evt *Event) GetSpeaker(id string) *component.Speaker {
 	s, ok := evt.storage.Speakers.Get(AvlKey("speaker", id))
 	if !ok {
 		panic("speaker not found: id=" + id)
 	}
-	return s.(*speaker.Speaker)
+	return s.(*component.Speaker)
 }
 
-func (evt *Event) GetLocation(id string) *location.Location {
+func (evt *Event) GetLocation(id string) *component.Location {
 	l, ok := evt.storage.Locations.Get(AvlKey("location", id))
 	if !ok {
 		panic("location not found: id=" + id)
 	}
-	return l.(*location.Location)
+	return l.(*component.Location)
 }
 
-func (evt *Event) GetSession(id string) *session.Session {
+func (evt *Event) GetSession(id string) *component.Session {
 	s, ok := evt.storage.Sessions.Get(AvlKey("session", id))
 	if !ok {
 		panic("session not found: id=" + id)
 	}
-	return s.(*session.Session)
+	return s.(*component.Session)
 }
 
-func (evt *Event) GetSessions() []*session.Session {
+func (evt *Event) GetSessions() []*component.Session {
 	if evt.storage == nil || evt.storage.Sessions == nil {
 		return nil
 	}
-	var sessions []*session.Session
+	var sessions []*component.Session
 	evt.storage.Sessions.IterateByOffset(0, evt.storage.Sessions.Size(), func(_ string, val any) bool {
-		s := val.(*session.Session)
+		s := val.(*component.Session)
 		sessions = append(sessions, s)
 		return false
 	})
 	return sessions
 }
 func (evt *Event) Flyer() component.Component {
-	f := &flyer.Flyer{
+	f := &component.Flyer{
 		Name:        evt.Name,
 		Location:    evt.Location,
 		StartDate:   evt.StartDate,

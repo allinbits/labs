@@ -7,14 +7,13 @@ import (
 
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/speaker"
 )
 
 func sampleSession() *Session {
 	return &Session{
 		Title:       "Reviewed Proposals: Ken Thompson interviewed by Brian Kernighan",
 		Description: "In the 1960s–1970s, Ken Thompson co-invented the UNIX operating system along with Dennis Ritchie at Bell Labs. He also worked on the language B, the operating system Plan 9, and the language Go. He and Ritchie won the Turing Award. He now works at Google. He’ll be interviewed by Brian Kernighan of “K&R” fame.",
-		Speaker:     &speaker.Speaker{Name: "Ken Thompson and Brian Kernighan", Biography: "Creators of UNIX and C", Affiliation: "Bell Labs / Princeton"},
+		Speaker:     &component.Speaker{Name: "Ken Thompson and Brian Kernighan", Biography: "Creators of UNIX and C", Affiliation: "Bell Labs / Princeton"},
 		StartTime:   time.Date(2025, 4, 3, 14, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 4, 3, 15, 0, 0, 0, time.UTC),
 		Location:    &location.Location{Name: "Main Theater"},

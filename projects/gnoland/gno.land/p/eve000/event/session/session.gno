@@ -7,13 +7,12 @@ import (
 	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
-	"gno.land/p/eve000/event/speaker"
 )
 
 type Session struct {
 	Title       string
 	Description string
-	Speaker     *speaker.Speaker
+	Speaker     *component.Speaker
 	StartTime   time.Time
 	EndTime     time.Time
 	Location    *location.Location
@@ -36,7 +35,7 @@ func (s *Session) SetDescription(description string) {
 	s.Sequence++
 }
 
-func (s *Session) SetSpeaker(speaker *speaker.Speaker) {
+func (s *Session) SetSpeaker(speaker *component.Speaker) {
 	s.Speaker = speaker
 	s.Sequence++
 }

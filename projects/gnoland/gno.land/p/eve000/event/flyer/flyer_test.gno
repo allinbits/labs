@@ -8,7 +8,6 @@ import (
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
 )
 
 func sampleFlyer() *Flyer {
@@ -22,7 +21,7 @@ func sampleFlyer() *Flyer {
 			{
 				Title:       "Fireside Chat",
 				Description: "Ken Thompson talks about UNIX, Plan 9, and Go.",
-				Speaker:     &speaker.Speaker{Name: "Ken Thompson", Biography: "Co-creator of UNIX", Affiliation: "Bell Labs"},
+				Speaker:     &component.Speaker{Name: "Ken Thompson", Biography: "Co-creator of UNIX", Affiliation: "Bell Labs"},
 				StartTime:   time.Date(2025, 4, 3, 14, 0, 0, 0, time.UTC),
 				EndTime:     time.Date(2025, 4, 3, 15, 0, 0, 0, time.UTC),
 				Location:    &location.Location{Name: "Main Theater"},

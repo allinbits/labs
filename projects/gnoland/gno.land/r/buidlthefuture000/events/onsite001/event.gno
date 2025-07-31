@@ -7,7 +7,6 @@ import (
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
 )
 
 func init() {
@@ -41,7 +40,7 @@ var sessions = map[string]*session.Session{
 	"kickoff": {
 		Title:       "A Visit To Null Island",
 		Description: "Welcome to nowhere - there is nothing here, but we can still have a good time!",
-		Speaker:     &speaker.Speaker{},
+		Speaker:     &component.Speaker{},
 		StartTime:   time.Date(2025, 7, 17, 13, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 7, 17, 13, 30, 0, 0, time.UTC),
 		Location:    locations["null"],
@@ -49,7 +48,7 @@ var sessions = map[string]*session.Session{
 	"summit": {
 		Title:       "Summit in Austin",
 		Description: "Join us for a summit in Austin, Texas to discuss the future of Gnoland and how we can build it together.",
-		Speaker:     &speaker.Speaker{},
+		Speaker:     &component.Speaker{},
 		StartTime:   time.Date(2025, 7, 18, 10, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 7, 18, 17, 0, 0, 0, time.UTC),
 		Location:    locations["atx"],

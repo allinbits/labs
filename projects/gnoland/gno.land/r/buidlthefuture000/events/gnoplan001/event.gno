@@ -7,7 +7,6 @@ import (
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
 )
 
 func init() {
@@ -37,7 +36,7 @@ var locations = map[string]*location.Location{
 	},
 }
 
-var speakerBios = map[string]*speaker.Speaker{
+var speakerBios = map[string]*component.Speaker{
 	"mason": {
 		Name:        "Mason",
 		Biography:   "Nathan is a member of AIBLabs working on Eve event platform.",

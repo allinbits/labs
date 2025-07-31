@@ -7,7 +7,6 @@ import (
 	"gno.land/p/eve000/event/component"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
 )
 
 func init() {
@@ -44,7 +43,7 @@ var locations = map[string]*location.Location{
 	},
 }
 
-var speakerBios = map[string]*speaker.Speaker{
+var speakerBios = map[string]*component.Speaker{
 	"jae": {
 		Name:        "Jae Kwon",
 		Biography:   "Jae Kwon is the creator of Gno.land and co-founder of Cosmos, pioneering decentralized systems built on logic and sovereignty.",

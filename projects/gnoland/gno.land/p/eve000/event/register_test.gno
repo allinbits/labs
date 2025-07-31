@@ -8,14 +8,14 @@ import (
 	"gno.land/p/eve000/event"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
+	"gno.land/p/eve000/event/component"
 )
 
 func TestRegistry(t *testing.T) {
 	registry := NewRegistry()
 
 	// Create test data
-	spkr := &speaker.Speaker{Name: "Alice"}
+	spkr := &component.Speaker{Name: "Alice"}
 	loc := &location.Location{Name: "Main Hall"}
 	sess := &session.Session{Speaker: spkr, Location: loc}
 	evt := &Event{Name: "Annual Meeting", Sessions: []*session.Session{sess}}
@@ -62,7 +62,7 @@ func TestAddIndividualRecords(t *testing.T) {
 	registry := NewRegistry()
 
 	// Add and retrieve speaker
-	spkrID := registry.AddSpeaker(&speaker.Speaker{Name: "Bob"})
+	spkrID := registry.AddSpeaker(&component.Speaker{Name: "Bob"})
 	gotSpeaker := registry.GetSpeaker(spkrID)
 	if gotSpeaker.Name != "Bob" {
 		t.Fatalf("expected speaker name 'Bob', got %q", gotSpeaker.Name)
@@ -77,7 +77,7 @@ func TestAddIndividualRecords(t *testing.T) {
 
 	// Add and retrieve session
 	sessID := registry.AddSession(&session.Session{
-		Speaker:  &speaker.Speaker{Name: "Carol"},
+		Speaker:  &component.Speaker{Name: "Carol"},
 		Location: &location.Location{Name: "Auditorium"},
 	})
 	gotSession := registry.GetSession(sessID)

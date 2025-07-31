@@ -13,7 +13,6 @@ import (
 	"gno.land/p/eve000/event/flyer"
 	"gno.land/p/eve000/event/location"
 	"gno.land/p/eve000/event/session"
-	"gno.land/p/eve000/event/speaker"
 )
 
 var _ component.EventSchedule = (*Event)(nil)
@@ -97,7 +96,7 @@ func (evt *Event) SetSessions(sessions []*session.Session) {
 	evt.Sessions = sessions
 }
 
-func (evt *Event) AddSpeaker(s *speaker.Speaker) {
+func (evt *Event) AddSpeaker(s *component.Speaker) {
 	if evt.storage == nil {
 		evt.storage = &Storage{}
 	}
@@ -131,12 +130,12 @@ func (evt *Event) AddSession(sess *session.Session) {
 	evt.storage.Sessions.Set(AvlKey("session", id), sess)
 }
 
-func (evt *Event) GetSpeaker(id string) *speaker.Speaker {
+func (evt *Event) GetSpeaker(id string) *component.Speaker {
 	s, ok := evt.storage.Speakers.Get(AvlKey("speaker", id))
 	if !ok {
 		panic("speaker not found: id=" + id)
 	}
-	return s.(*speaker.Speaker)
+	return s.(*component.Speaker)
 }
 
 func (evt *Event) GetLocation(id string) *location.Location {

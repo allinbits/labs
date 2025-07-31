@@ -2,7 +2,7 @@ package metamodel
 
 import mm "gno.land/p/metamodel000"
 
-var ticTacToeNotes=`
+var ticTacToeNotes = `
 This Petri net models the flow of a Tic Tac Toe game using places and transitions to represent board states and player actions. The structure supports two distinct but compatible interpretations:
 
 #### Game Board View (Compositional Model of State)
@@ -50,12 +50,12 @@ This dual lens allows the model to serve both as a game simulator and as a gener
 The Petri net’s native concurrency also reveals how multiple board positions can be independently available, but player turns enforce a strict global alternation constraint.
 `
 
-
 func init() {
 	model := ticTacToe()
-	register("TicTacToe", func(_ string) string {
+	model.Binding = func(_ string) string {
 		return model.ToMarkdown() + ticTacToeNotes
-	})
+	}
+	register("TicTacToe", model)
 }
 
 func ticTacToe() *mm.Model {

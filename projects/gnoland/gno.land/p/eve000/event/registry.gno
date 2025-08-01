@@ -48,7 +48,6 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 	}
 	evt := r.GetEvent(event_id)
 	format := q.Get("format")
-	view := q.Get("view")
 	switch {
 	case hasQueryParam(q, "session"):
 		return component.RenderComponent(path, evt.GetSession(q.Get("session")))
@@ -56,12 +55,10 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 		return component.RenderComponent(path, evt.GetLocation(q.Get("location")))
 	case hasQueryParam(q, "speaker"):
 		return component.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
-	case view == "flyer":
-		return component.RenderComponent(path, evt.Flyer())
-	case view == "calendar" || format == "ics":
-		return "```\n" + evt.RenderCalendar(path) + "\n```"
+	case format == "ics":
+		return "```\n" + evt.Flyer().RenderCalendar(path) + "\n```"
 	default:
-		return component.RenderPage(path, evt, body...)
+		return component.RenderPage(path, evt.Flyer(), body...)
 	}
 }
 
@@ -120,7 +117,7 @@ func (r *Registry) RegisterEvent(e *Event, opts map[string]interface{}) string {
 		e.AddLocation(s.Location)
 	}
 
-	id := Pad3(strconv.Itoa(r.Events.Size())) // 001, 002, etc.
+	id := component.Pad3(strconv.Itoa(r.Events.Size())) // 001, 002, etc.
 	r.Events.Set(id, e)
 	return id
 }

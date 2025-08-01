@@ -10,6 +10,8 @@ BACKLOG
 - [ ] fix event.ToJson() to populate all fields states
 - [ ] fix/test the `/events` api
 - [ ] add version number to bottom of /events page
+- [ ] fix http://127.0.0.1:8888/r/buidlthefuture000/events/onsite001?format=ics
+- [ ] add banner view of component
  
 DONE
 -----

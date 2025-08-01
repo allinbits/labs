@@ -2,7 +2,9 @@ package component
 
 import (
 	"net/url"
+	"regexp"
 	"std"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +20,7 @@ type Flyer struct {
 	AttendanceMode EventAttendanceMode
 	Description    string
 	Sessions       []*Session
+	Images         []string
 	renderOpts     map[string]interface{}
 }
 
@@ -51,10 +54,16 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 	}
 
 	markdown += a.Description + "\n\n"
+	fullURL := std.CurrentRealm().PkgPath()
 
 	if calHost, ok := a.RenderOpts()["CalendarHost"]; ok {
-		fullURL := std.CurrentRealm().PkgPath() + "?format=ics"
-		markdown += "[➕📅 Add to Calendar](" + calHost.(string) + "/" + fullURL + ")\n\n"
+		markdown += "[➕📅 Add to Calendar](" + calHost.(string) + "/" + fullURL + "?format=ics" + ")\n\n"
+	}
+	if calFile, ok := a.RenderOpts()["CalendarFile"]; ok {
+		markdown += "[📥 Download Calendar File](" + calFile.(string) + "/" + fullURL + "?format=ics" + ")\n\n"
+	}
+	if _, ok := a.RenderOpts()["CalendarDataUrl"]; ok {
+		markdown += "[📅 Calendar Data URL](" + a.CalenderDataUrl() + ")\n\n"
 	}
 
 	if len(body) > 0 {
@@ -109,6 +118,9 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 	if _, ok := a.RenderOpts()["Location"]; ok {
 		markdown += "## Locations\n\n" + locationsMarkdown
 	}
+	if _, ok := a.RenderOpts()["SvgFooter"]; ok {
+		markdown += "[![Flyer SVG](" + a.ToSvgDataUrl() + ")](" + a.ToAnchor() + ")\n\n"
+	}
 
 	return markdown
 }
@@ -116,7 +128,9 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 func (a *Flyer) ToJson() string {
 	json := "{\n"
 	json += "\"Name\":\"" + a.Name + "\",\n"
-	json += "\"Location\":" + a.Location.ToJson() + ",\n"
+	if a.Location != nil && a.Location.Name != "" {
+		json += "\"Location\":" + a.Location.ToJson() + ",\n"
+	}
 	json += "\"StartDate\":\"" + FormatDate(a.StartDate) + "\",\n"
 	json += "\"EndDate\":\"" + FormatDate(a.EndDate) + "\",\n"
 	json += "\"Description\":\"" + a.Description + "\",\n"
@@ -142,7 +156,9 @@ func (a *Flyer) ToSVGFragment(y *int) string {
 	svg := "<rect width=\"100%\" height=\"100%\" fill=\"#eeeeee\" rx=\"15\"/>"
 	svg += RenderSVGLine(y, "title", "", a.Name)
 	*y += 10
-	svg += RenderSVGLine(y, "subtitle", "", a.Location.Name)
+	if _, ok := a.RenderOpts()["Location"]; ok && a.Location != nil {
+		svg += RenderSVGLine(y, "subtitle", "", a.Location.Name)
+	}
 	*y += 10
 	if a.Status == EventCancelled {
 		svg += RenderSVGLine(y, "text", "label", "Status: Canceled")
@@ -177,4 +193,155 @@ func (a *Flyer) RenderOpts() map[string]interface{} {
 
 func (a *Flyer) SetRenderOpts(opts map[string]interface{}) {
 	a.renderOpts = opts
+}
+
+func (a *Flyer) CalenderDataUrl() string {
+	data := a.RenderCalendar("?format=ics")
+	return "data:text/calendar;charset=utf-8," + url.QueryEscape(data)
+}
+
+const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
+
+func (a *Flyer) ToJsonLD() string {
+	var sb strings.Builder
+	sb.WriteString(`{
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": "` + ufmt.Sprintf("%s", a.Name) + `",`)
+
+	if a.Status == EventPostponed {
+		sb.WriteString(`
+        "previousStartDate": "` + ufmt.Sprintf("%s", a.StartDate.Format(DateFormatJsonLD)) + `",`)
+	} else {
+		sb.WriteString(`
+        "startDate": "` + ufmt.Sprintf("%s", a.StartDate.Format(DateFormatJsonLD)) + `",`)
+		sb.WriteString(`
+        "endDate": "` + ufmt.Sprintf("%s", a.EndDate.Format(DateFormatJsonLD)) + `",`)
+	}
+
+	sb.WriteString(`
+        "eventAttendanceMode": "` + ufmt.Sprintf("%s", a.AttendanceMode) + `",
+        "eventStatus": "` + ufmt.Sprintf("%s", a.Status) + `",`)
+
+	if a.AttendanceMode != OfflineEventAttendanceMode && a.Location != nil {
+		sb.WriteString(`
+        "location": {
+            "@type": "Place",
+            "name": "` + ufmt.Sprintf("%s", a.Location.Name) + `"
+        },`)
+	}
+
+	// Add images if available
+	sb.WriteString(`
+        "image": [`)
+	for i, img := range a.Images {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(`"` + ufmt.Sprintf("%s", img) + `"`)
+	}
+	sb.WriteString(`],`)
+
+	sb.WriteString(`
+        "description": "` + ufmt.Sprintf("%s", a.Description) + `"
+    }`)
+	return sb.String()
+}
+
+func (a *Flyer) RenderCalendar(path string) string {
+	var f = ufmt.Sprintf
+	var b strings.Builder
+	w := func(s string) {
+		b.WriteString(s + "\n")
+	}
+
+	q := ParseQuery(path)
+	sessionIDs := q["session"]
+	format := strings.ToLower(q.Get("format"))
+
+	useAll := len(sessionIDs) == 0
+	allowed := make(map[string]bool)
+	for _, id := range sessionIDs {
+		allowed[id] = true
+	}
+	include := func(id string) bool { return useAll || allowed[id] }
+
+	switch format {
+	case "json":
+		b.WriteString(a.ToJson())
+		return b.String()
+
+	case "ics":
+		w("BEGIN:VCALENDAR")
+		w("VERSION:2.0")
+		w("CALSCALE:GREGORIAN")
+		w("PRODID:-//gno.land//Launch Calendar//EN")
+		w("METHOD:PUBLISH\n")
+
+		w("BEGIN:VEVENT")
+		w(f("UID:event-%s@%s", slugify(a.Name), "gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar"))
+		w("SEQUENCE:0")
+		w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
+		w(f("DTSTART;VALUE=DATE:%s", a.StartDate.Format("20060102")))
+		w(f("DTEND;VALUE=DATE:%s", a.StartDate.AddDate(0, 0, 1).Format("20060102"))) // 👈 Fix: DTEND is exclusive
+		w(f("SUMMARY:%s", a.Name))
+		w(f("DESCRIPTION:%s", a.Description))
+		if a.Location != nil && a.Location.Name != "" {
+			w(f("LOCATION:%s", a.Location.Name))
+		}
+		w("END:VEVENT\n")
+
+		for i, s := range a.Sessions {
+			id := Pad3(strconv.Itoa(i))
+			if !include(id) {
+				continue
+			}
+
+			w("BEGIN:VEVENT")
+			w(f("UID:%s-%d@%s",
+				slugify(s.Title)[:5],
+				s.StartTime.Unix(),
+				"gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar",
+			))
+			w(f("SEQUENCE:%d", s.Sequence))
+			w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
+			w(f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")))
+			w(f("DTEND:%s", s.EndTime.UTC().Format("20060102T150000Z")))
+			w(f("SUMMARY:%s", s.Title))
+			w(f("DESCRIPTION:%s", s.Description))
+			w(f("LOCATION:%s", s.Location.Name))
+			if s.Cancelled {
+				w("STATUS:CANCELLED")
+			}
+			w("END:VEVENT\n")
+		}
+
+		w("END:VCALENDAR")
+		return b.String()
+
+	default:
+		w(f("# %s\n\n%s", a.Name, a.Description))
+		for i, s := range a.Sessions {
+			id := Pad3(strconv.Itoa(i))
+			if !include(id) {
+				continue
+			}
+			w(s.ToMarkdown())
+		}
+		return b.String()
+	}
+}
+
+func slugify(s string) string {
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	lower := strings.ToLower(s)
+	slug := re.ReplaceAllString(lower, "-")
+	return strings.Trim(slug, "-")
+}
+
+func Pad3(s string) string {
+	for len(s) < 3 {
+		s = "0" + s
+	}
+	return s
 }

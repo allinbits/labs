@@ -9,7 +9,8 @@ import (
 
 func init() {
 	renderOpts := map[string]interface{}{
-		"Location": struct{}{},
+		"SvgFooter": struct{}{},
+		"Location":  struct{}{},
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 }

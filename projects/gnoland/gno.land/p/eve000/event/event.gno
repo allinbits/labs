@@ -1,19 +1,14 @@
 package event
 
 import (
-	"regexp"
 	"std"
 	"strconv"
-	"strings"
 	"time"
 
 	"gno.land/p/demo/avl"
-	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event/component"
 )
 
-var _ component.EventSchedule = (*Event)(nil)
-var _ component.Page = (*Event)(nil)
 
 // FIXME either change interface or satisfy it
 //var _ Api = (*Event)(nil)
@@ -99,7 +94,7 @@ func (evt *Event) AddSpeaker(s *component.Speaker) {
 	if evt.storage.Speakers == nil {
 		evt.storage.Speakers = &avl.Tree{}
 	}
-	id := Pad3(strconv.Itoa(evt.storage.Speakers.Size()))
+	id := component.Pad3(strconv.Itoa(evt.storage.Speakers.Size()))
 	evt.storage.Speakers.Set(AvlKey("speaker", id), s)
 }
 
@@ -110,7 +105,7 @@ func (evt *Event) AddLocation(loc *component.Location) {
 	if evt.storage.Locations == nil {
 		evt.storage.Locations = &avl.Tree{}
 	}
-	id := Pad3(strconv.Itoa(evt.storage.Locations.Size()))
+	id := component.Pad3(strconv.Itoa(evt.storage.Locations.Size()))
 	evt.storage.Locations.Set(AvlKey("location", id), loc)
 }
 
@@ -122,7 +117,7 @@ func (evt *Event) AddSession(sess *component.Session) {
 		evt.storage.Sessions = &avl.Tree{}
 	}
 	// TODO: maybe Pad3 can accept interface so extras stringconv isn't needed here
-	id := Pad3(strconv.Itoa(evt.storage.Sessions.Size()))
+	id := component.Pad3(strconv.Itoa(evt.storage.Sessions.Size()))
 	evt.storage.Sessions.Set(AvlKey("session", id), sess)
 }
 
@@ -162,7 +157,7 @@ func (evt *Event) GetSessions() []*component.Session {
 	})
 	return sessions
 }
-func (evt *Event) Flyer() component.Component {
+func (evt *Event) Flyer() *component.Flyer {
 	flyer := &component.Flyer{
 		Name:        evt.Name,
 		Location:    evt.Location,
@@ -171,116 +166,15 @@ func (evt *Event) Flyer() component.Component {
 		Status:      evt.Status,
 		Description: evt.Description,
 		Sessions:    evt.Sessions,
+		Images:    evt.Images,
 	}
 	flyer.SetRenderOpts(evt.renderOpts)
 	return flyer
 }
 
-func (evt *Event) RenderMarkdown(body ...component.Content) string {
-	return evt.Flyer().ToMarkdown(body...)
-}
-
-func (evt *Event) RenderCalendar(path string) string {
-	var f = ufmt.Sprintf
-	var b strings.Builder
-	w := func(s string) {
-		b.WriteString(s + "\n")
-	}
-
-	q := component.ParseQuery(path)
-	sessionIDs := q["session"]
-	format := strings.ToLower(q.Get("format"))
-
-	useAll := len(sessionIDs) == 0
-	allowed := make(map[string]bool)
-	for _, id := range sessionIDs {
-		allowed[id] = true
-	}
-	include := func(id string) bool { return useAll || allowed[id] }
-
-	sessions := evt.GetSessions()
-
-	switch format {
-	case "json":
-		b.WriteString(evt.Flyer().ToJson())
-		return b.String()
-
-	case "ics":
-		w("BEGIN:VCALENDAR")
-		w("VERSION:2.0")
-		w("CALSCALE:GREGORIAN")
-		w("PRODID:-//gno.land//Launch Calendar//EN")
-		w("METHOD:PUBLISH\n")
-
-		w("BEGIN:VEVENT")
-		w(f("UID:event-%s@%s", slugify(evt.Name), "gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar"))
-		w("SEQUENCE:0")
-		w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
-		w(f("DTSTART;VALUE=DATE:%s", evt.StartDate.Format("20060102")))
-		w(f("DTEND;VALUE=DATE:%s", evt.StartDate.AddDate(0, 0, 1).Format("20060102"))) // 👈 Fix: DTEND is exclusive
-		w(f("SUMMARY:%s", evt.Name))
-		w(f("DESCRIPTION:%s", evt.Description))
-		w(f("LOCATION:%s", evt.Location.Name))
-		w("END:VEVENT\n")
-
-		for i, s := range sessions {
-			id := Pad3(strconv.Itoa(i))
-			if !include(id) {
-				continue
-			}
-
-			w("BEGIN:VEVENT")
-			w(f("UID:%s-%d@%s",
-				slugify(s.Title)[:5],
-				s.StartTime.Unix(),
-				"gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar",
-			))
-			w(f("SEQUENCE:%d", s.Sequence))
-			w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
-			w(f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")))
-			w(f("DTEND:%s", s.EndTime.UTC().Format("20060102T150000Z")))
-			w(f("SUMMARY:%s", s.Title))
-			w(f("DESCRIPTION:%s", s.Description))
-			w(f("LOCATION:%s", s.Location.Name))
-			if s.Cancelled {
-				w("STATUS:CANCELLED")
-			}
-			w("END:VEVENT\n")
-		}
-
-		w("END:VCALENDAR")
-		return b.String()
-
-	default:
-		w(f("# %s\n\n%s", evt.Name, evt.Description))
-		for i, s := range sessions {
-			id := Pad3(strconv.Itoa(i))
-			if !include(id) {
-				continue
-			}
-			w(s.ToMarkdown())
-		}
-		return b.String()
-	}
-}
-
-func slugify(s string) string {
-	re := regexp.MustCompile(`[^a-z0-9]+`)
-	lower := strings.ToLower(s)
-	slug := re.ReplaceAllString(lower, "-")
-	return strings.Trim(slug, "-")
-}
-
-func Pad3(s string) string {
-	for len(s) < 3 {
-		s = "0" + s
-	}
-	return s
-}
-
 // build a key for the AVL tree like "event:123" "speaker:456" or "location:789"
 func AvlKey(label string, id string) string {
-	return Pad3(id)
+	return component.Pad3(id)
 }
 
 // Event may not be a component (yet!) but it is where the render opts are stored.
@@ -296,50 +190,3 @@ func (evt *Event) ToAnchor() string {
 	return component.StringToAnchor(evt.Name)
 }
 
-const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
-
-func (evt *Event) ToJson() string {
-	var sb strings.Builder
-	sb.WriteString(`{
-        "@context": "https://schema.org",
-        "@type": "Event",
-        "name": "` + ufmt.Sprintf("%s", evt.Name) + `",`)
-
-	if evt.Status == component.EventPostponed {
-		sb.WriteString(`
-        "previousStartDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",`)
-	} else {
-		sb.WriteString(`
-        "startDate": "` + ufmt.Sprintf("%s", evt.StartDate.Format(DateFormatJsonLD)) + `",`)
-		sb.WriteString(`
-        "endDate": "` + ufmt.Sprintf("%s", evt.EndDate.Format(DateFormatJsonLD)) + `",`)
-	}
-
-	sb.WriteString(`
-        "eventAttendanceMode": "` + ufmt.Sprintf("%s", evt.AttendanceMode) + `",
-        "eventStatus": "` + ufmt.Sprintf("%s", evt.Status) + `",`)
-
-	if evt.AttendanceMode != component.OfflineEventAttendanceMode && evt.Location != nil {
-		sb.WriteString(`
-        "location": {
-            "@type": "Place",
-            "name": "` + ufmt.Sprintf("%s", evt.Location.Name) + `"
-        },`)
-	}
-
-	// Add images if available
-	sb.WriteString(`
-        "image": [`)
-	for i, img := range evt.Images {
-		if i > 0 {
-			sb.WriteString(",")
-		}
-		sb.WriteString(`"` + ufmt.Sprintf("%s", img) + `"`)
-	}
-	sb.WriteString(`],`)
-
-	sb.WriteString(`
-        "description": "` + ufmt.Sprintf("%s", evt.Description) + `"
-    }`)
-	return sb.String()
-}

@@ -14,15 +14,35 @@ import (
 // Interfaces
 
 type EventSchedule interface {
-	ToJson() string // schema.org compatible
+	Flyer() *Flyer
+	ToJson() string   // object representation of flyer
+	ToJsonLD() string // schema.org compatible event object
 	RenderMarkdown(body ...Content) string
 	RenderCalendar(string) string
-	Flyer() Component
+	// TODO: support more formats
+	// RenderFeed(string) string
+	// RenderFrame(string) string
 }
 
-type Page interface {
-	ToJson() string // schema.org compatible
-	RenderMarkdown(body ...Content) string
+// TODO: add a banner view suitable to nest in another realm
+type Banner interface {
+	RenderBanner(body ...Content) string
+}
+
+type ContentProvider interface {
+    Render(path ...string) string
+}
+
+type JsonLdProvider interface {
+	ToJsonLD() string // schema.org compatible
+}
+
+type JsonProvider interface {
+	ToJson() string
+}
+
+type MarkdownProvider interface {
+	ToMarkdown(...Content) string
 }
 
 type Component interface {
@@ -94,12 +114,12 @@ func (c *Content) Render(path ...string) string {
 
 // Functions
 
-func RenderPage(path string, c Page, body ...Content) string {
+func RenderPage(path string, c interface{}, body ...Content) string {
 	q := ParseQuery(path)
 	format := q.Get("format")
-	if format == "json" {
+	if jsonProvider, ok := c.(JsonProvider); ok  && format == "json" {
 		var sb strings.Builder
-		sb.WriteString("```\n\n" + c.ToJson() + "\n\n```")
+		sb.WriteString("```\n\n" + jsonProvider.ToJson() + "\n\n```")
 		if len(body) > 0 {
 			sb.WriteString("\n\n---\n\n")
 		}
@@ -111,7 +131,19 @@ func RenderPage(path string, c Page, body ...Content) string {
 		}
 		return sb.String()
 	}
-	return c.RenderMarkdown(body...)
+	if jsonLdProvider, ok := c.(JsonLdProvider); ok && format == "jsonld" {
+        return "```\n" + jsonLdProvider.ToJsonLD() + "\n```"
+    }
+	if contentProvider, ok := c.(ContentProvider); ok {
+        return contentProvider.Render(path)
+    }
+	if mdProvider, ok := c.(MarkdownProvider); ok {
+        return mdProvider.ToMarkdown(body...)
+    }
+    if obj, ok := c.(Component); ok {
+        return RenderComponent(path, obj)
+    }
+    panic("RenderPage: unsupported type")
 }
 
 func RenderComponent(path string, c Component) (out string) {
@@ -135,11 +167,9 @@ func RenderComponent(path string, c Component) (out string) {
 		sb.WriteString(c.ToMarkdown())
 	}
 
-	if _, ok := c.RenderOpts()["Svg"]; ok {
-		dataURL := c.ToSvgDataUrl()
-		anchor := c.ToAnchor()
-		sb.WriteString("\n[![" + anchor + "](" + dataURL + ")](" + anchor + ")\n\n---\n\n")
-	}
+	dataURL := c.ToSvgDataUrl()
+	anchor := c.ToAnchor()
+	sb.WriteString("\n[![" + anchor + "](" + dataURL + ")](" + anchor + ")\n\n---\n\n")
 
 	return sb.String()
 }

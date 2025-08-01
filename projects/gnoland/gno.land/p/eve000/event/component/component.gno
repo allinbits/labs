@@ -1,9 +1,9 @@
 package component
 
 import (
-    "std"
 	"net/url"
 	"regexp"
+	"std"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +15,7 @@ import (
 // Interfaces
 
 type IcsFileProvider interface {
-    ToIcs() string // returns the content of the ICS file
+	ToIcs() string // returns the content of the ICS file
 }
 
 type ContentProvider interface {
@@ -102,8 +102,8 @@ func RenderPage(path string, c interface{}, body ...Content) string {
 	format := q.Get("format")
 
 	if c == nil {
-        panic("RenderPage: component is nil")
-    }
+		panic("RenderPage: component is nil")
+	}
 
 	switch {
 	case format == "ics" && implementsIcsFileProvider(c):
@@ -248,11 +248,11 @@ func ParseQuery(path string) url.Values {
 
 func EscapeHtml(s string) string {
 	replacements := map[string]string{
-		"&": "&amp;",
-		"<": "&lt;",
-		">": "&gt;",
+		"&":  "&amp;",
+		"<":  "&lt;",
+		">":  "&gt;",
 		"\"": "&quot;",
-		"'": "&#39;",
+		"'":  "&#39;",
 	}
 	for old, new := range replacements {
 		s = strings.ReplaceAll(s, old, new)
@@ -313,8 +313,8 @@ func FormatDate(date time.Time) string {
 // Helper Functions
 
 func implementsIcsFileProvider(c interface{}) bool {
-    _, ok := c.(IcsFileProvider)
-    return ok
+	_, ok := c.(IcsFileProvider)
+	return ok
 }
 
 func implementsJsonProvider(c interface{}) bool {
@@ -338,28 +338,28 @@ func implementsMarkdownProvider(c interface{}) bool {
 }
 
 func renderBody(body []Content) string {
-    var sb strings.Builder
-    for _, content := range body {
-        if content.Published {
-            sb.WriteString("\n\n" + content.Render() + "\n\n")
-            sb.WriteString("---\n\n")
-        }
-    }
-    return sb.String()
+	var sb strings.Builder
+	for _, content := range body {
+		if content.Published {
+			sb.WriteString("\n\n" + content.Render() + "\n\n")
+			sb.WriteString("---\n\n")
+		}
+	}
+	return sb.String()
 }
 
 func renderIcsFile(c interface{}, body []Content) string {
-    var sb strings.Builder
-    sb.WriteString("```ics\n" + c.(IcsFileProvider).ToIcs() + "\n```")
-    sb.WriteString(renderBody(body))
-    return sb.String()
+	var sb strings.Builder
+	sb.WriteString("```ics\n" + c.(IcsFileProvider).ToIcs() + "\n```")
+	sb.WriteString(renderBody(body))
+	return sb.String()
 }
 
 func renderJsonLD(c interface{}, body []Content) string {
-    var sb strings.Builder
-    sb.WriteString("```jsonld\n" + c.(JsonLdProvider).ToJsonLD() + "\n```")
-    sb.WriteString(renderBody(body))
-    return sb.String()
+	var sb strings.Builder
+	sb.WriteString("```jsonld\n" + c.(JsonLdProvider).ToJsonLD() + "\n```")
+	sb.WriteString(renderBody(body))
+	return sb.String()
 }
 
 // Show data as Json next to the body content:w

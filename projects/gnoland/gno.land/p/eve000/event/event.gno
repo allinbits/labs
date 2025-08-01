@@ -9,7 +9,6 @@ import (
 	"gno.land/p/eve000/event/component"
 )
 
-
 // FIXME either change interface or satisfy it
 //var _ Api = (*Event)(nil)
 
@@ -170,7 +169,7 @@ func (evt *Event) Flyer() *component.Flyer {
 		Status:      evt.Status,
 		Description: evt.Description,
 		Sessions:    evt.Sessions,
-		Images:    evt.Images,
+		Images:      evt.Images,
 	}
 	flyer.SetRenderOpts(evt.renderOpts)
 	return flyer
@@ -196,7 +195,5 @@ func (evt *Event) ToAnchor() string {
 
 // Render provides a syntactic sugar for rendering a Flyer using a template function.
 func (evt *Event) Render(path string, tpl func(path string, flyer *component.Flyer) string) string {
-    return tpl(path, evt.Flyer())
+	return tpl(path, evt.Flyer())
 }
-
-

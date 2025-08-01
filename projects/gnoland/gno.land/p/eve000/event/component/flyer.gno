@@ -1,14 +1,13 @@
 package component
 
 import (
+	"net/url"
 	"std"
 	"strings"
 	"time"
-	"net/url"
 
 	"gno.land/p/demo/ufmt"
 )
-
 
 type Flyer struct {
 	Name           string
@@ -188,9 +187,9 @@ func (a *Flyer) SetRenderOpts(opts map[string]interface{}) {
 }
 
 func (a *Flyer) ToJsonLD() string {
-    return EventJsonLD("?format=jsonld", a)
+	return EventJsonLD("?format=jsonld", a)
 }
 
 func (a *Flyer) ToIcs() string {
-    return IcsCalendarFile("?format=ics", a)
+	return IcsCalendarFile("?format=ics", a)
 }

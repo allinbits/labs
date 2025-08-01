@@ -116,7 +116,6 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 
 	return markdown
 }
-//REVIEW: do we still want ToJsonLD signature on this object?
 
 func (a *Flyer) ToJson() string {
 	json := "{\n"

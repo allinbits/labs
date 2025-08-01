@@ -4,6 +4,7 @@ import (
 	"std"
 
 	"gno.land/p/eve000/event"
+	"gno.land/p/eve000/event/component"
 )
 
 type App struct{}
@@ -18,7 +19,11 @@ var (
 )
 
 func (*App) Render(path string) (out string) {
-	return registry.Render(path, banner)
+	return registry.Render(path, banner) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+}
+
+func (*App) RenderCalendar(path string) string {
+	return app.LiveEvent().Render(path, component.IcsCalendarFile)
 }
 
 func (*App) SetContent(key, markdown string) {

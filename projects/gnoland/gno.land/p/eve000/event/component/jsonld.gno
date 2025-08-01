@@ -1,9 +1,9 @@
 package component
 
 import (
-    "strings"
+	"strings"
 
-    "gno.land/p/demo/ufmt"
+	"gno.land/p/demo/ufmt"
 )
 
 const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"

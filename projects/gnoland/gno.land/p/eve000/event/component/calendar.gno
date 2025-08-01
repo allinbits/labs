@@ -1,18 +1,18 @@
 package component
 
 import (
-    "net/url"
-    "strings"
-    "strconv"
-    "time"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
 
-    "gno.land/p/demo/ufmt"
+	"gno.land/p/demo/ufmt"
 )
 
 func CalenderDataUrl(path string, a *Flyer) string {
-    if path == "" {
-        path = "?format=ics"
-    }
+	if path == "" {
+		path = "?format=ics"
+	}
 	data := IcsCalendarFile(path, a)
 	return "data:text/calendar;charset=utf-8," + url.QueryEscape(data)
 }

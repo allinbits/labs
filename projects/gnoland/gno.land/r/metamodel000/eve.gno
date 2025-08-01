@@ -56,4 +56,3 @@ func eventFolderLayout() *mm.Model {
 		Arrows:      arrows,
 	}
 }
-

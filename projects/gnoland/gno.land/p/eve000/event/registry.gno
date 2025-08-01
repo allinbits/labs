@@ -19,22 +19,6 @@ type Registry struct {
 	patchRealm  string // realm that is allowed to update the patch level, used for debugging and content management
 }
 
-func getQueryParam(q url.Values, param string) (string, bool) {
-	if q == nil {
-		return "", false
-	}
-	value := q.Get(param)
-	if value == "" {
-		return "", false
-	}
-	return value, true
-}
-
-func hasQueryParam(q url.Values, param string) bool {
-	_, ok := getQueryParam(q, param)
-	return ok
-}
-
 func (r *Registry) Render(path string, body ...component.Content) string {
 	fullURL := std.CurrentRealm().PkgPath() + path // REVIEW: is this really needed?
 	u, err := url.Parse(fullURL)
@@ -48,11 +32,11 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 	}
 	evt := r.GetEvent(event_id)
 	switch {
-	case hasQueryParam(q, "session"):
+	case component.HasQueryParam(q, "session"):
 		return component.RenderComponent(path, evt.GetSession(q.Get("session")))
-	case hasQueryParam(q, "location"):
+	case component.HasQueryParam(q, "location"):
 		return component.RenderComponent(path, evt.GetLocation(q.Get("location")))
-	case hasQueryParam(q, "speaker"):
+	case component.HasQueryParam(q, "speaker"):
 		return component.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
 	default:
 		return component.RenderPage(path, evt.Flyer(), body...)

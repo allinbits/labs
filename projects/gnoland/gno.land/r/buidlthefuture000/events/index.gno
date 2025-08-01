@@ -22,6 +22,7 @@ var upcoming = `
 - (current) [gno.land Pre-Launch Event](/r/buidlthefuture000/events/gnoplan001)
 - (future) [gno.land Launch Event](/r/buidlthefuture000/events/gnolandlaunch)
 - (fictional) [demo OnSite Event](/r/buidlthefuture000/events/onsite001)
+- (private) [event w/o registry or acl](/r/buidlthefuture000/events/gnopriv001)
 `
 
 var intro = `

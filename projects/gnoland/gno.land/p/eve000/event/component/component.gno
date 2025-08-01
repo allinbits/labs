@@ -1,8 +1,9 @@
 package component
 
 import (
+    "std"
 	"net/url"
-	"std"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -13,16 +14,24 @@ import (
 
 // Interfaces
 
-type EventSchedule interface {
-	ToJson() string // schema.org compatible
-	RenderMarkdown(body ...Content) string
-	RenderCalendar(string) string
-	Flyer() Component
+type IcsFileProvider interface {
+    ToIcs() string // returns the content of the ICS file
 }
 
-type Page interface {
-	ToJson() string // schema.org compatible
-	RenderMarkdown(body ...Content) string
+type ContentProvider interface {
+	Render(path ...string) string
+}
+
+type JsonLdProvider interface {
+	ToJsonLD() string // schema.org compatible
+}
+
+type JsonProvider interface {
+	ToJson() string
+}
+
+type MarkdownProvider interface {
+	ToMarkdown(...Content) string
 }
 
 type Component interface {
@@ -36,13 +45,9 @@ type Component interface {
 
 // Types
 
-// Event is a schema.org compatible status string
 type EventStatus string
-
-// EventAttendanceMode is a schema.org compatible attendance mode string
 type EventAttendanceMode string
 
-// Content is a user-editable content struct.
 type Content struct {
 	Published bool
 	Markdown  string
@@ -67,7 +72,7 @@ const (
 	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
 )
 
-// Methods
+// Content Methods
 
 func (c *Content) SetPublished(published bool) {
 	c.Published = published
@@ -77,46 +82,46 @@ func (c *Content) SetMarkdown(markdown string) {
 	c.Markdown = markdown
 }
 
-// Render displays stored content or calls the callback function if provided.
 func (c *Content) Render(path ...string) string {
-	if !c.Published || c.Markdown == "" && c.Callback == nil {
+	if !c.Published || (c.Markdown == "" && c.Callback == nil) {
 		return ""
 	}
 	if c.Callback != nil {
 		if len(path) > 0 {
 			return c.Callback(path[0])
-		} else {
-			return c.Callback("")
 		}
+		return c.Callback("")
 	}
 	return c.Markdown
 }
 
-// Functions
+// Rendering Functions
 
-func RenderPage(path string, c Page, body ...Content) string {
+func RenderPage(path string, c interface{}, body ...Content) string {
 	q := ParseQuery(path)
 	format := q.Get("format")
-	if format == "json" {
-		var sb strings.Builder
-		sb.WriteString("```\n\n" + c.ToJson() + "\n\n```")
-		if len(body) > 0 {
-			sb.WriteString("\n\n---\n\n")
-		}
-		for _, content := range body {
-			if content.Published {
-				sb.WriteString("\n\n" + content.Render() + "\n\n")
-				sb.WriteString("---\n\n")
-			}
-		}
-		return sb.String()
+
+	if c == nil {
+        panic("RenderPage: component is nil")
+    }
+
+	switch {
+	case format == "ics" && implementsIcsFileProvider(c):
+		return renderIcsFile(c, body)
+	case format == "json" && implementsJsonProvider(c):
+		return renderJson(c, body)
+	case format == "jsonld" && implementsJsonLdProvider(c):
+		return renderJsonLd(c, body)
+	case implementsContentProvider(c):
+		return c.(ContentProvider).Render(path)
+	case implementsMarkdownProvider(c):
+		return c.(MarkdownProvider).ToMarkdown(body...)
+	default:
+		panic("RenderPage: unsupported type")
 	}
-	return c.RenderMarkdown(body...)
 }
 
-func RenderComponent(path string, c Component) (out string) {
-	var sb strings.Builder
-
+func RenderComponent(path string, c Component) string {
 	if c == nil {
 		return ""
 	}
@@ -126,34 +131,24 @@ func RenderComponent(path string, c Component) (out string) {
 		panic("invalid path in RenderComponent: " + path)
 	}
 
+	var sb strings.Builder
 	switch u.Query().Get("format") {
 	case "json":
 		sb.WriteString("```json\n" + c.ToJson() + "\n```")
-	case "frame": // show same view as frame
+	case "frame":
 		sb.WriteString(c.ToJson())
 	default:
 		sb.WriteString(c.ToMarkdown())
 	}
 
-	if _, ok := c.RenderOpts()["Svg"]; ok {
-		dataURL := c.ToSvgDataUrl()
-		anchor := c.ToAnchor()
-		sb.WriteString("\n[![" + anchor + "](" + dataURL + ")](" + anchor + ")\n\n---\n\n")
-	}
-
+	sb.WriteString("\n[![" + c.ToAnchor() + "](" + c.ToSvgDataUrl() + ")](" + c.ToAnchor() + ")\n\n---\n\n")
 	return sb.String()
 }
 
+// Utility Functions
+
 func StringToAnchor(text string) string {
-	text = strings.ToLower(text)
-	text = strings.ReplaceAll(text, " ", "-")
-	text = strings.ReplaceAll(text, ".", "")
-	text = strings.ReplaceAll(text, ",", "")
-	text = strings.ReplaceAll(text, ":", "")
-	text = strings.ReplaceAll(text, ";", "")
-	text = strings.ReplaceAll(text, "!", "")
-	text = strings.ReplaceAll(text, "?", "")
-	return "#" + text
+	return "#" + slugify(text)
 }
 
 func SplitText(text string, maxLength int) []string {
@@ -174,42 +169,36 @@ func SplitText(text string, maxLength int) []string {
 }
 
 func SvgHeading(width, height string) string {
-	svg := "<svg width=\"" + width + "\" height=\"" + height + "\" xmlns=\"http://www.w3.org/2000/svg\">"
-	svg += "<style>"
-	svg += ".title { font: bold 24px sans-serif; }"
-	svg += ".subtitle { font: bold 18px sans-serif; }"
-	svg += ".sessiontitle { font: bold 16px sans-serif; }"
-	svg += ".text { font: 14px sans-serif; }"
-	svg += ".label { font: bold 14px sans-serif; }"
-	svg += ".speaker { font: 14px sans-serif; font-style: italic; }"
-	svg += ".session { font: 14px sans-serif; margin-top: 20px; }"
-	svg += "</style>"
-	return svg
+	return `<svg width="` + width + `" height="` + height + `" xmlns="http://www.w3.org/2000/svg">
+<style>
+.title { font: bold 24px sans-serif; }
+.subtitle { font: bold 18px sans-serif; }
+.sessiontitle { font: bold 16px sans-serif; }
+.text { font: 14px sans-serif; }
+.label { font: bold 14px sans-serif; }
+.speaker { font: 14px sans-serif; font-style: italic; }
+.session { font: 14px sans-serif; margin-top: 20px; }
+</style>`
 }
 
 func RenderSVGLine(y *int, class, label, text string) string {
 	var svg string
-	if label != "" && text != "" {
-		textLines := SplitText(text, 80)
+	textLines := SplitText(text, 80)
+	if label != "" && len(textLines) > 0 {
 		svg += ufmt.Sprintf(`<text x="20" y="%d" class="%s"><tspan class="label">%s</tspan> %s</text>`, *y, class, label, textLines[0])
 		*y += 20
-		for _, line := range textLines[1:] {
-			svg += ufmt.Sprintf(`<text x="20" y="%d" class="%s">%s</text>`, *y, class, line)
-			*y += 20
-		}
-	} else if text != "" {
-		textLines := SplitText(text, 80)
-		for _, line := range textLines {
-			svg += ufmt.Sprintf(`<text x="20" y="%d" class="%s">%s</text>`, *y, class, line)
-			*y += 20
-		}
+		textLines = textLines[1:]
+	}
+	for _, line := range textLines {
+		svg += ufmt.Sprintf(`<text x="20" y="%d" class="%s">%s</text>`, *y, class, line)
+		*y += 20
 	}
 	return svg
 }
 
 func FormatDuration(duration time.Duration) string {
 	d := strings.TrimRight(duration.String(), "0s")
-	if strings.HasSuffix(d, "h0m") { // e.g., "1h0m0s"
+	if strings.HasSuffix(d, "h0m") {
 		d = strings.TrimRight(d, "0m")
 	}
 	return d
@@ -240,15 +229,7 @@ func ParseDuration(d string) time.Duration {
 }
 
 func TagString(tag string) string {
-	tag = strings.ToLower(tag)
-	tag = strings.ReplaceAll(tag, " ", "-")
-	tag = strings.ReplaceAll(tag, ".", "")
-	tag = strings.ReplaceAll(tag, ",", "")
-	tag = strings.ReplaceAll(tag, ":", "")
-	tag = strings.ReplaceAll(tag, ";", "")
-	tag = strings.ReplaceAll(tag, "!", "")
-	tag = strings.ReplaceAll(tag, "?", "")
-	return tag
+	return slugify(tag)
 }
 
 func LinkTag(name string) string {
@@ -265,12 +246,17 @@ func ParseQuery(path string) url.Values {
 	return url.Values{}
 }
 
-func escapeHtml(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, "\"", "&quot;")
-	s = strings.ReplaceAll(s, "'", "&#39;")
+func EscapeHtml(s string) string {
+	replacements := map[string]string{
+		"&": "&amp;",
+		"<": "&lt;",
+		">": "&gt;",
+		"\"": "&quot;",
+		"'": "&#39;",
+	}
+	for old, new := range replacements {
+		s = strings.ReplaceAll(s, old, new)
+	}
 	return s
 }
 
@@ -279,13 +265,13 @@ func TxlinkButton(label, method string) string {
 }
 
 func Button(label, path string) string {
-	return SubmitButton(label, path, 16, 120) // Default font size and min width
+	return SubmitButton(label, path, 16, 120)
 }
 
 func SubmitButton(label, path string, fontSize, minWidth int) string {
-	charWidth := int(0.6 * float64(fontSize)) // Approximate width of each character
-	padding := 40                             // Total padding (left + right)
-	h := 2 * fontSize                         // Height of the button, 2x font size for padding
+	charWidth := int(0.6 * float64(fontSize))
+	padding := 40
+	h := 2 * fontSize
 	w := len(label)*charWidth + padding
 	if w < minWidth {
 		w = minWidth
@@ -295,13 +281,99 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 <foreignObject x="16" y="-5" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
   <body xmlns="http://www.w3.org/1999/xhtml">
     <button style="padding-left: 20px; font-size:` + strconv.Itoa(fontSize) + `px">
-      ` + escapeHtml(label) + `
+      ` + EscapeHtml(label) + `
     </button>
   </body>
 </foreignObject>
 </svg>`
 
 	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
-
 	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
+}
+
+func slugify(s string) string {
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	return strings.Trim(re.ReplaceAllString(strings.ToLower(s), "-"), "-")
+}
+
+func Pad3(s string) string {
+	for len(s) < 3 {
+		s = "0" + s
+	}
+	return s
+}
+
+func FormatDate(date time.Time) string {
+	if date.IsZero() {
+		return ""
+	}
+	return date.Format(DtFmt)
+}
+
+// Helper Functions
+
+func implementsIcsFileProvider(c interface{}) bool {
+    _, ok := c.(IcsFileProvider)
+    return ok
+}
+
+func implementsJsonProvider(c interface{}) bool {
+	_, ok := c.(JsonProvider)
+	return ok
+}
+
+func implementsJsonLdProvider(c interface{}) bool {
+	_, ok := c.(JsonLdProvider)
+	return ok
+}
+
+func implementsContentProvider(c interface{}) bool {
+	_, ok := c.(ContentProvider)
+	return ok
+}
+
+func implementsMarkdownProvider(c interface{}) bool {
+	_, ok := c.(MarkdownProvider)
+	return ok
+}
+
+func renderBody(body []Content) string {
+    var sb strings.Builder
+    for _, content := range body {
+        if content.Published {
+            sb.WriteString("\n\n" + content.Render() + "\n\n")
+            sb.WriteString("---\n\n")
+        }
+    }
+    return sb.String()
+}
+
+func renderIcsFile(c interface{}, body []Content) string {
+    var sb strings.Builder
+    sb.WriteString("```ics\n" + c.(IcsFileProvider).ToIcs() + "\n```")
+    sb.WriteString(renderBody(body))
+    return sb.String()
+}
+
+func renderJsonLD(c interface{}, body []Content) string {
+    var sb strings.Builder
+    sb.WriteString("```jsonld\n" + c.(JsonLdProvider).ToJsonLD() + "\n```")
+    sb.WriteString(renderBody(body))
+    return sb.String()
+}
+
+// Show data as Json next to the body content:w
+func renderJson(c interface{}, body []Content) string {
+	var sb strings.Builder
+	sb.WriteString("```\n\n" + c.(JsonProvider).ToJson() + "\n\n```")
+	sb.WriteString(renderBody(body))
+	return sb.String()
+}
+
+// Show JsonLD next to the body content
+func renderJsonLd(c interface{}, body []Content) string {
+	var sb strings.Builder
+	sb.WriteString("```\n" + c.(JsonLdProvider).ToJsonLD() + "\n```")
+	sb.WriteString(renderBody(body))
+	return sb.String()
 }

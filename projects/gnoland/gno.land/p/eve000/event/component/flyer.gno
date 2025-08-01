@@ -1,13 +1,14 @@
 package component
 
 import (
-	"net/url"
 	"std"
 	"strings"
 	"time"
+	"net/url"
 
 	"gno.land/p/demo/ufmt"
 )
+
 
 type Flyer struct {
 	Name           string
@@ -18,17 +19,11 @@ type Flyer struct {
 	AttendanceMode EventAttendanceMode
 	Description    string
 	Sessions       []*Session
+	Images         []string
 	renderOpts     map[string]interface{}
 }
 
 var _ Component = (*Flyer)(nil)
-
-func FormatDate(date time.Time) string {
-	if date.IsZero() {
-		return ""
-	}
-	return date.Format(DtFmt)
-}
 
 func (a *Flyer) ToAnchor() string {
 	return StringToAnchor(a.Name)
@@ -51,10 +46,16 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 	}
 
 	markdown += a.Description + "\n\n"
+	fullURL := std.CurrentRealm().PkgPath()
 
 	if calHost, ok := a.RenderOpts()["CalendarHost"]; ok {
-		fullURL := std.CurrentRealm().PkgPath() + "?format=ics"
-		markdown += "[➕📅 Add to Calendar](" + calHost.(string) + "/" + fullURL + ")\n\n"
+		markdown += "[➕📅 Subscribe to Calendar](" + calHost.(string) + "/" + fullURL + "?format=ics" + ")\n\n"
+	}
+	if calFile, ok := a.RenderOpts()["CalendarFile"]; ok {
+		markdown += "[📥 Download Calendar File](" + calFile.(string) + "/" + fullURL + "?format=ics" + ")\n\n"
+	}
+	if _, ok := a.RenderOpts()["CalendarDataUrl"]; ok {
+		markdown += "[📅 Add To Calendar](" + CalenderDataUrl("?format=ics", a) + ")\n\n"
 	}
 
 	if len(body) > 0 {
@@ -109,14 +110,20 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 	if _, ok := a.RenderOpts()["Location"]; ok {
 		markdown += "## Locations\n\n" + locationsMarkdown
 	}
+	if _, ok := a.RenderOpts()["SvgFooter"]; ok {
+		markdown += "[![Flyer SVG](" + a.ToSvgDataUrl() + ")](" + a.ToAnchor() + ")\n\n"
+	}
 
 	return markdown
 }
+//REVIEW: do we still want ToJsonLD signature on this object?
 
 func (a *Flyer) ToJson() string {
 	json := "{\n"
 	json += "\"Name\":\"" + a.Name + "\",\n"
-	json += "\"Location\":" + a.Location.ToJson() + ",\n"
+	if a.Location != nil && a.Location.Name != "" {
+		json += "\"Location\":" + a.Location.ToJson() + ",\n"
+	}
 	json += "\"StartDate\":\"" + FormatDate(a.StartDate) + "\",\n"
 	json += "\"EndDate\":\"" + FormatDate(a.EndDate) + "\",\n"
 	json += "\"Description\":\"" + a.Description + "\",\n"
@@ -142,7 +149,9 @@ func (a *Flyer) ToSVGFragment(y *int) string {
 	svg := "<rect width=\"100%\" height=\"100%\" fill=\"#eeeeee\" rx=\"15\"/>"
 	svg += RenderSVGLine(y, "title", "", a.Name)
 	*y += 10
-	svg += RenderSVGLine(y, "subtitle", "", a.Location.Name)
+	if _, ok := a.RenderOpts()["Location"]; ok && a.Location != nil {
+		svg += RenderSVGLine(y, "subtitle", "", a.Location.Name)
+	}
 	*y += 10
 	if a.Status == EventCancelled {
 		svg += RenderSVGLine(y, "text", "label", "Status: Canceled")
@@ -177,4 +186,12 @@ func (a *Flyer) RenderOpts() map[string]interface{} {
 
 func (a *Flyer) SetRenderOpts(opts map[string]interface{}) {
 	a.renderOpts = opts
+}
+
+func (a *Flyer) ToJsonLD() string {
+    return EventJsonLD("?format=jsonld", a)
+}
+
+func (a *Flyer) ToIcs() string {
+    return IcsCalendarFile("?format=ics", a)
 }

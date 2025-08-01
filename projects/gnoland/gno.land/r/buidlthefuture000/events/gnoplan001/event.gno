@@ -10,7 +10,7 @@ import (
 func init() {
 	renderOpts := map[string]interface{}{
 		"Speaker":      struct{}{},
-		"Svg":          struct{}{}, // FIXME verify svg appears on this Flyer
+		"SvgFooter":    struct{}{},
 		"CalendarHost": "webcal://127.0.0.1:8080",
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)

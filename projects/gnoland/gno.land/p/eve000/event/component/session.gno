@@ -19,9 +19,7 @@ type Session struct {
 	Cancelled   bool
 }
 
-var (
-	_ Component = (*Session)(nil)
-)
+var _ Component = (*Session)(nil)
 
 func (s *Session) SetTitle(title string) {
 	s.Title = title
@@ -108,8 +106,10 @@ func (s *Session) ToSVGFragment(y *int) string {
 
 	// Left column (speaker, times, location)
 	leftY := *y
-	svg += ufmt.Sprintf(`<text x="20" y="%d" class="speaker">Speaker: %s</text>`, leftY, s.Speaker.Name)
-	leftY += 20
+	if _, ok := s.RenderOpts()["Speaker"]; ok && s.Speaker != nil && s.Speaker.Name != "" {
+		svg += ufmt.Sprintf(`<text x="20" y="%d" class="speaker">Speaker: %s</text>`, leftY, s.Speaker.Name)
+		leftY += 20
+	}
 	svg += ufmt.Sprintf(`<text x="20" y="%d" class="text">Start Time: %s</text>`, leftY, s.StartTime.Format(time.Kitchen))
 	leftY += 20
 	svg += ufmt.Sprintf(`<text x="20" y="%d" class="text">End Time: %s</text>`, leftY, s.EndTime.Format(time.Kitchen))

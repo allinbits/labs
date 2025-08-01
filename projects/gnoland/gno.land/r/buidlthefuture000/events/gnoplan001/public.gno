@@ -1,4 +1,7 @@
 package gnoplan
+import (
+    "gno.land/p/eve000/event/component"
+)
 
 // JoinBeta allows users to join the beta program for the Gno.land launch event.
 func JoinBeta() {
@@ -6,9 +9,9 @@ func JoinBeta() {
 }
 
 func RenderCalendar(path string) string {
-	return app.LiveEvent().RenderCalendar(path)
+	return app.LiveEvent().Render(path, component.IcsCalendarFile)
 }
 
 func Render(path string) (out string) {
-	return app.Render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n"
+	return app.Render(path) + "\n\n" + registry.GetPatchLevel() + "\n\n" // REVIEW: should this look like RenderCalendar?
 }

@@ -18,7 +18,7 @@ var (
 )
 
 func (*App) Render(path string) (out string) {
-	return registry.Render(path, banner)
+	return registry.Render(path, banner) // REVIEW: injecting content here
 }
 
 func (*App) SetContent(key, markdown string) {

@@ -19,9 +19,7 @@ type Session struct {
 	Cancelled   bool
 }
 
-var (
-	_ Component = (*Session)(nil)
-)
+var _ Component = (*Session)(nil)
 
 func (s *Session) SetTitle(title string) {
 	s.Title = title

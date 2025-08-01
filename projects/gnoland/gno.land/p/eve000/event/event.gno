@@ -49,6 +49,9 @@ type Storage struct {
 	Locations *avl.Tree
 }
 
+// REVIEW: Event / Flyer are duals of each other.
+// we return Flyer objects to non-admin users - (lacking any edit methods)
+// the event object is protected for edits only by patching from specific 'sub-realms'
 type Event struct {
 	Name           string
 	Location       *component.Location
@@ -145,6 +148,7 @@ func (evt *Event) GetSession(id string) *component.Session {
 	return s.(*component.Session)
 }
 
+// REVIEW: is this used?
 func (evt *Event) GetSessions() []*component.Session {
 	if evt.storage == nil || evt.storage.Sessions == nil {
 		return nil
@@ -189,4 +193,10 @@ func (evt *Event) SetRenderOpts(opts map[string]interface{}) {
 func (evt *Event) ToAnchor() string {
 	return component.StringToAnchor(evt.Name)
 }
+
+// Render provides a syntactic sugar for rendering a Flyer using a template function.
+func (evt *Event) Render(path string, tpl func(path string, flyer *component.Flyer) string) string {
+    return tpl(path, evt.Flyer())
+}
+
 

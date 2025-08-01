@@ -19,15 +19,15 @@ The relationships between these files are as follows:
 `
 
 func init() {
-	eveModel := eve()
-	eveModel.Binding = func(_ string) string {
-		return folderLayout + eveModel.ToMarkdown()
+	folderModel := eventFolderLayout()
+	folderModel.Binding = func(_ string) string {
+		return folderLayout + folderModel.ToMarkdown()
 	}
-	register("EventFolderLayout", eveModel)
+	register("EventFolderLayout", folderModel)
 }
 
 // eve model shows the layout of the event folder
-func eve() *mm.Model {
+func eventFolderLayout() *mm.Model {
 	places := map[string]mm.Place{
 		"acl.gno":    {Offset: 0, X: 58, Y: 50},
 		"app.gno":    {Offset: 1, X: 275, Y: 100},
@@ -56,3 +56,4 @@ func eve() *mm.Model {
 		Arrows:      arrows,
 	}
 }
+

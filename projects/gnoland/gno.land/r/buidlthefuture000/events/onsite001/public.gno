@@ -1,7 +1,11 @@
 package onsite
 
+import (
+    "gno.land/p/eve000/event/component"
+)
+
 func RenderCalendar(path string) string {
-	return app.LiveEvent().Flyer().RenderCalendar(path)
+	return app.LiveEvent().Render(path, component.IcsCalendarFile)
 }
 
 func Render(path string) (out string) {

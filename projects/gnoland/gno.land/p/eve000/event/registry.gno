@@ -47,7 +47,6 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 		event_id = r.LiveEventId
 	}
 	evt := r.GetEvent(event_id)
-	format := q.Get("format")
 	switch {
 	case hasQueryParam(q, "session"):
 		return component.RenderComponent(path, evt.GetSession(q.Get("session")))
@@ -55,8 +54,6 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 		return component.RenderComponent(path, evt.GetLocation(q.Get("location")))
 	case hasQueryParam(q, "speaker"):
 		return component.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
-	case format == "ics":
-		return "```\n" + evt.Flyer().RenderCalendar(path) + "\n```"
 	default:
 		return component.RenderPage(path, evt.Flyer(), body...)
 	}

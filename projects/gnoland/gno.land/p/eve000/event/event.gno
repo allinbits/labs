@@ -97,7 +97,7 @@ func (evt *Event) AddSpeaker(s *component.Speaker) {
 		evt.storage.Speakers = &avl.Tree{}
 	}
 	id := component.Pad3(strconv.Itoa(evt.storage.Speakers.Size()))
-	evt.storage.Speakers.Set(AvlKey("speaker", id), s)
+	evt.storage.Speakers.Set(component.Pad3(id), s)
 }
 
 func (evt *Event) AddLocation(loc *component.Location) {
@@ -108,7 +108,7 @@ func (evt *Event) AddLocation(loc *component.Location) {
 		evt.storage.Locations = &avl.Tree{}
 	}
 	id := component.Pad3(strconv.Itoa(evt.storage.Locations.Size()))
-	evt.storage.Locations.Set(AvlKey("location", id), loc)
+	evt.storage.Locations.Set(component.Pad3(id), loc)
 }
 
 func (evt *Event) AddSession(sess *component.Session) {
@@ -120,11 +120,11 @@ func (evt *Event) AddSession(sess *component.Session) {
 	}
 	// TODO: maybe Pad3 can accept interface so extras stringconv isn't needed here
 	id := component.Pad3(strconv.Itoa(evt.storage.Sessions.Size()))
-	evt.storage.Sessions.Set(AvlKey("session", id), sess)
+	evt.storage.Sessions.Set(component.Pad3(id), sess)
 }
 
 func (evt *Event) GetSpeaker(id string) *component.Speaker {
-	s, ok := evt.storage.Speakers.Get(AvlKey("speaker", id))
+	s, ok := evt.storage.Speakers.Get(component.Pad3(id))
 	if !ok {
 		panic("speaker not found: id=" + id)
 	}
@@ -132,7 +132,7 @@ func (evt *Event) GetSpeaker(id string) *component.Speaker {
 }
 
 func (evt *Event) GetLocation(id string) *component.Location {
-	l, ok := evt.storage.Locations.Get(AvlKey("location", id))
+	l, ok := evt.storage.Locations.Get(component.Pad3(id))
 	if !ok {
 		panic("location not found: id=" + id)
 	}
@@ -140,44 +140,39 @@ func (evt *Event) GetLocation(id string) *component.Location {
 }
 
 func (evt *Event) GetSession(id string) *component.Session {
-	s, ok := evt.storage.Sessions.Get(AvlKey("session", id))
+	s, ok := evt.storage.Sessions.Get(component.Pad3(id))
 	if !ok {
 		panic("session not found: id=" + id)
 	}
 	return s.(*component.Session)
 }
 
-// REVIEW: is this used?
-func (evt *Event) GetSessions() []*component.Session {
-	if evt.storage == nil || evt.storage.Sessions == nil {
-		return nil
-	}
-	var sessions []*component.Session
-	evt.storage.Sessions.IterateByOffset(0, evt.storage.Sessions.Size(), func(_ string, val any) bool {
-		s := val.(*component.Session)
-		sessions = append(sessions, s)
-		return false
-	})
-	return sessions
-}
 func (evt *Event) Flyer() *component.Flyer {
 	flyer := &component.Flyer{
 		Name:        evt.Name,
-		Location:    evt.Location,
+		Location:    nil,
 		StartDate:   evt.StartDate,
 		EndDate:     evt.EndDate,
 		Status:      evt.Status,
 		Description: evt.Description,
-		Sessions:    evt.Sessions,
-		Images:      evt.Images,
+		Sessions:    nil,
+		Images:      append([]string(nil), evt.Images...),
+	}
+	if evt.Location != nil {
+		loc := *evt.Location
+		flyer.Location = &loc
+	}
+	if evt.Sessions != nil {
+		flyer.Sessions = make([]*component.Session, len(evt.Sessions))
+		for i, s := range evt.Sessions {
+			if s != nil {
+				sessionCopy := *s
+				flyer.Sessions[i] = &sessionCopy
+			}
+		}
 	}
 	flyer.SetRenderOpts(evt.renderOpts)
 	return flyer
-}
-
-// build a key for the AVL tree like "event:123" "speaker:456" or "location:789"
-func AvlKey(label string, id string) string {
-	return component.Pad3(id)
 }
 
 // Event may not be a component (yet!) but it is where the render opts are stored.

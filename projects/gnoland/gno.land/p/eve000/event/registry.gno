@@ -67,7 +67,7 @@ func (r *Registry) SetPatchLevel(level int) {
 }
 
 func (r *Registry) GetEvent(id string) *Event {
-	e, ok := r.Events.Get(AvlKey("event", id))
+	e, ok := r.Events.Get(component.Pad3(id))
 	if !ok {
 		panic("event not found" + id)
 	}

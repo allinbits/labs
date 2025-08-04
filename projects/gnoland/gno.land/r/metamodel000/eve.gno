@@ -86,37 +86,37 @@ Additionally the same relation is seen between Event and Flyer, event must exist
 `
 
 func init() {
-    eventModel := eventComposition()
-    eventModel.Binding = func(_ string) string {
-        return eventCompositionLayout + eventModel.ToMarkdown()
-    }
-    register("EventComposition", eventModel)
+	eventModel := eventComposition()
+	eventModel.Binding = func(_ string) string {
+		return eventCompositionLayout + eventModel.ToMarkdown()
+	}
+	register("EventComposition", eventModel)
 }
 
 func eventComposition() *mm.Model {
 	places := map[string]mm.Place{
-		"EventStatus":          {Offset: 0, Initial: mm.T(1), X: 435, Y: 147},
-		"EventAttendanceMode":  {Offset: 1, Initial: mm.T(1), X: 432, Y: 200},
-		"Speakers":             {Offset: 2, X: 200, Y: 320},
-		"Locations":            {Offset: 3, X: 200, Y: 440},
-		"RenderOpts":           {Offset: 4, Initial: mm.T(1), X: 782, Y: 216},
-		"Event":                {Offset: 5, X: 788, Y: 137},
-		"Sessions":             {Offset: 6, X: 440, Y: 320},
-		"Flyer":                {Offset: 7, X: 972, Y: 178},
-		"EventDetails":         {Offset: 8, Initial: mm.T(1), X: 436, Y: 93},
-		"ContentBlock":         {Offset: 9, Initial: mm.T(1), X: 974, Y: 260},
+		"EventStatus":         {Offset: 0, Initial: mm.T(1), X: 435, Y: 147},
+		"EventAttendanceMode": {Offset: 1, Initial: mm.T(1), X: 432, Y: 200},
+		"Speakers":            {Offset: 2, X: 200, Y: 320},
+		"Locations":           {Offset: 3, X: 200, Y: 440},
+		"RenderOpts":          {Offset: 4, Initial: mm.T(1), X: 782, Y: 216},
+		"Event":               {Offset: 5, X: 788, Y: 137},
+		"Sessions":            {Offset: 6, X: 440, Y: 320},
+		"Flyer":               {Offset: 7, X: 972, Y: 178},
+		"EventDetails":        {Offset: 8, Initial: mm.T(1), X: 436, Y: 93},
+		"ContentBlock":        {Offset: 9, Initial: mm.T(1), X: 974, Y: 260},
 	}
 
 	transitions := map[string]mm.Transition{
-		"(Speaker)":                  {X: 320, Y: 320},
-		"(Location)":                 {X: 320, Y: 440},
-		"(Speaker,Location)":         {X: 320, Y: 380},
+		"(Speaker)":                    {X: 320, Y: 320},
+		"(Location)":                   {X: 320, Y: 440},
+		"(Speaker,Location)":           {X: 320, Y: 380},
 		"(Status,Attendance,Sessions)": {X: 605, Y: 138},
-		"Location":                   {X: 80, Y: 440},
-		"Session":                    {X: 320, Y: 240},
-		"Speaker":                    {X: 80, Y: 320},
-		"Flyer()":                    {X: 890, Y: 177},
-		"Render()":                   {X: 1071, Y: 207},
+		"Location":                     {X: 80, Y: 440},
+		"Session":                      {X: 320, Y: 240},
+		"Speaker":                      {X: 80, Y: 320},
+		"Flyer()":                      {X: 890, Y: 177},
+		"Render()":                     {X: 1071, Y: 207},
 	}
 
 	arrows := []mm.Arrow{

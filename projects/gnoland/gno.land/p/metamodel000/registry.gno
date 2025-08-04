@@ -205,7 +205,7 @@ func (r *Registry) thumbnail(key string, obj interface{}) string {
 		return "![" + key + "](" + model.ThumbnailDataUrl() + ")\n" +
 			r.Preview(key, "") + "\n"
 	case ContentBlock:
-		return "[no thumbnail]\n"
+		return "[POST] - " + r.Preview(key, "") + "\n"
 	default:
 		return "[default]\n"
 	}

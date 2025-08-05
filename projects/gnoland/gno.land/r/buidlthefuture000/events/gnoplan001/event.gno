@@ -14,6 +14,11 @@ func init() {
 			"SvgFooter":    struct{}{},
 			"CalendarHost": "webcal://127.0.0.1:8080",
 		},
+		"labsnet1": map[string]interface{}{
+			"Speaker":      struct{}{},
+			"SvgFooter":    struct{}{},
+			"CalendarHost": "webcal://gnocal.aiblabs.net",
+		},
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 }

@@ -1,4 +1,5 @@
-FROM ghcr.io/gnolang/gno/gnodev:0.0.1-560a63109-master
+# Test 7.2 Hash
+FROM ghcr.io/gnolang/gno/gnodev:sha-9b384d4
 
 RUN apk add --no-cache ca-certificates bash
 

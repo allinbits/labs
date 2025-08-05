@@ -3,7 +3,7 @@ WIP
 High level TODOs for eve
 
 - [ ] Focus on separation between Event -> Flyer objects for security and developer api
-- [ ] Refine ACL to make it more flexible between events
+- [ ] Refine ACL to make it more flexible between the different example events
 - [ ] Test /events api with all registered events
 - [ ] Audit for security issues with event permissions re: realm-based perms
 - [ ] add rendering tests for each type of supported event config location/speaker/cancelled events
@@ -22,7 +22,7 @@ BACKLOG
 - [ ] fix/test the `/events` api
 - [ ] consider refactoring acl.gno for each event's specific needs
 - [ ] review style of events in calendar (url encoded? Test+foo ?)
-- [ ] self-audit patch permissions for each event's realm - is exposing LiveEvent() bad?
+- [ ] self-audit patch permissions for each event's realm 
 - [ ] test content blocks with callbacks
  
 DONE

@@ -9,9 +9,11 @@ import (
 
 func init() {
 	renderOpts := map[string]interface{}{
-		"Speaker":      struct{}{},
-		"SvgFooter":    struct{}{},
-		"CalendarHost": "webcal://127.0.0.1:8080",
+		"dev": map[string]interface{}{
+			"Speaker":      struct{}{},
+			"SvgFooter":    struct{}{},
+			"CalendarHost": "webcal://127.0.0.1:8080",
+		},
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 }

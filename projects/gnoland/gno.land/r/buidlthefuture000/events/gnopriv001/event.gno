@@ -9,11 +9,14 @@ import (
 
 func init() {
 	evt.SetRenderOpts(map[string]interface{}{
-		"Speaker":         struct{}{},
-		"SvgFooter":       struct{}{},
-		"CalendarDataUrl": struct{}{},
-		//"CalendarHost": "webcal://127.0.0.1:8080",
+		"dev": map[string]interface{}{
+			"Speaker":         struct{}{},
+			"SvgFooter":       struct{}{},
+			"CalendarDataUrl": struct{}{},
+			//"CalendarHost": "webcal://127.0.0.1:8080",
+		},
 	})
+
 	// REVIEW: register the event with  the event registry
 	// reg "gno.land/r/buidlthefuture000/events/"
 	// events.RegisterEvent(evt, map[string]interface{}{
@@ -40,21 +43,7 @@ var evt = &event.Event{
 }
 
 func Render(path string) string {
-	q := eve.QueryValues(path)
-	switch {
-	// FIXME: component view is not working
-	case eve.HasQueryParam(q, "session"):
-		id := q.Get("session")
-		s := evt.GetSession(string(id[0])) // REVIEW: why is id a slice?
-		return eve.RenderComponent(path, s)
-	case eve.HasQueryParam(q, "location"):
-		return eve.RenderComponent(path, evt.GetLocation(q.Get("location")))
-	case eve.HasQueryParam(q, "speaker"):
-		return eve.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
-	default:
-		return eve.RenderPage(path, evt.Flyer(), banner)
-	}
-	return "Rendering failed: no valid query parameters found."
+	return evt.RenderPage(path, banner)
 }
 
 var locations = map[string]*eve.Location{

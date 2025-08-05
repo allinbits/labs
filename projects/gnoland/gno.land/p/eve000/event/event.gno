@@ -187,14 +187,19 @@ func (evt *Event) initStorage() {
 }
 
 func (evt *Event) SetRenderOpts(opts map[string]interface{}) {
-	evt.renderOpts = opts
+	chainId := std.ChainID()
+	if _, ok := opts[chainId]; !ok {
+		panic("render options must be set for the current chain: " + chainId)
+	}
+	evt.renderOpts = opts[chainId].(map[string]interface{})
+
 	if evt.storage == nil {
 		evt.initStorage()
 	}
 	for _, s := range evt.Sessions {
-		s.SetRenderOpts(opts)
-		s.Speaker.SetRenderOpts(opts)
-		s.Location.SetRenderOpts(opts)
+		s.SetRenderOpts(evt.renderOpts)
+		s.Speaker.SetRenderOpts(evt.renderOpts)
+		s.Location.SetRenderOpts(evt.renderOpts)
 	}
 }
 
@@ -205,4 +210,18 @@ func (evt *Event) ToAnchor() string {
 // Render provides a syntactic sugar for rendering a Flyer using a template function.
 func (evt *Event) Render(path string, tpl func(path string, flyer *eve.Flyer) string) string {
 	return tpl(path, evt.Flyer())
+}
+
+func (evt *Event) RenderPage(path string, body ...eve.Content) string {
+	q := eve.QueryValues(path)
+	switch {
+	case eve.HasQueryParam(q, "session"):
+		return eve.RenderComponent(path, evt.GetSession(q.Get("session")))
+	case eve.HasQueryParam(q, "location"):
+		return eve.RenderComponent(path, evt.GetLocation(q.Get("location")))
+	case eve.HasQueryParam(q, "speaker"):
+		return eve.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
+	default:
+	}
+	return eve.RenderPage(path, evt.Flyer(), body...)
 }

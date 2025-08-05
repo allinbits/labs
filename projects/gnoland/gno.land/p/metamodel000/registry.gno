@@ -212,9 +212,9 @@ func (r *Registry) thumbnail(key string, obj interface{}) string {
 }
 
 func (r *Registry) renderIndex(path string) string {
-	const pageSize = 4
+	const pageSize = 5
 	var sb strings.Builder
-	sb.WriteString("### Metamodel Index\n\n")
+	sb.WriteString("## Metamodel Index\n\n")
 
 	total := r.tree.Size()
 	page := 0

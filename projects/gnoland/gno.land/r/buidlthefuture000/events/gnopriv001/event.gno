@@ -13,7 +13,13 @@ func init() {
 			"Speaker":         struct{}{},
 			"SvgFooter":       struct{}{},
 			"CalendarDataUrl": struct{}{},
-			//"CalendarHost": "webcal://127.0.0.1:8080",
+			"CalendarHost": "webcal://127.0.0.1:8080",
+		},
+		"labsnet1": map[string]interface{}{
+			"Speaker":         struct{}{},
+			"SvgFooter":       struct{}{},
+			"CalendarDataUrl": struct{}{},
+			"CalendarHost": "webcal://gnocal.aiblabs.net",
 		},
 	})
 

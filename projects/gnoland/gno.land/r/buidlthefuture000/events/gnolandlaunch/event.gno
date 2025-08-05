@@ -10,10 +10,16 @@ import (
 func init() {
 	renderOpts := map[string]interface{}{
 		"dev": map[string]interface{}{
-			"SvgFooter":       struct{}{},                // enables SVG footer in the event flyer
-			"CalendarHost":    "webcal://127.0.0.1:8080", // external webcal server
-			"CalendarFile":    "http://127.0.0.1:8080",   // external calendar file server
-			"CalendarDataUrl": struct{}{},                // allows use of calendar without external server
+			"SvgFooter":       struct{}{},
+			"CalendarHost":    "webcal://127.0.0.1:8080",
+			"CalendarFile":    "http://127.0.0.1:8080",
+			"CalendarDataUrl": struct{}{},
+		},
+		"labsnet1": map[string]interface{}{
+			"SvgFooter":       struct{}{},
+			"CalendarHost":    "webcal://gnocal.aiblabs.net",
+			"CalendarFile":    "http://gnocal.aiblabs.net",
+			"CalendarDataUrl": struct{}{},
 		},
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)

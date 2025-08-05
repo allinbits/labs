@@ -11,33 +11,17 @@ Though not overly useful in itself, it serves as a demonstration that inputs wit
 
 Thus, we can control a re-usable model vocabulary that can be built upon by appending arrows and places to the model.
 `
-var externalLink = `[![pflow](https://pflow.dev/img/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb.svg)](https://pflow.dev/p/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb/)`
+var (
+    externalLink = `[![pflow](https://pflow.dev/img/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb.svg)](https://pflow.dev/p/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb/)`
+)
 
 
 func init() {
 	keyboard := qwertyModel()
 	keyboard.Binding = func(_ string) string {
-	    return qwertyNotes + keyboard.ToMarkdown()
+		return qwertyNotes + keyboard.ToMarkdown() + externalLink
 	}
-	// FIXME: adding this model crashes gnoweb w/ a stackoverflow
-    // gnodev-labs-1  | runtime: goroutine stack exceeds 1GB limit
-	// gnodev-labs-1  | runtime: sp=0x40395de3a0 stack=[0x40395de000, 0x40595de000]
-	// gnodev-labs-1  | fatal error: stack overflow
-
-	// affecting only the index view - it works for individual views
-	// http://127.0.0.1:8888/r/metamodel000?i=2
-
-    var staticContent = true // workaround for gnoweb stack overflow issue
-
-    if staticContent {
-        // Register the model with an external link
-        register("Keyboard", func(_ string) string {
-            return qwertyNotes + externalLink
-        })
-    } else {
-        // Register the model directly
-        register("Keyboard", keyboard)
-    }
+    register("Keyboard", keyboard)
 }
 
 func qwertyModel() *mm.Model {

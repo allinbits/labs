@@ -4,7 +4,7 @@ import (
 	"std"
 
 	"gno.land/p/eve000/event"
-	"gno.land/p/eve000/event/component"
+	eve "gno.land/p/eve000/event/component"
 )
 
 type App struct{}
@@ -23,7 +23,7 @@ func (*App) Render(path string) (out string) {
 }
 
 func (*App) RenderCalendar(path string) string {
-	return app.LiveEvent().Render(path, component.IcsCalendarFile)
+	return app.LiveEvent().Render(path, eve.IcsCalendarFile)
 }
 
 func (*App) SetContent(key, markdown string) {

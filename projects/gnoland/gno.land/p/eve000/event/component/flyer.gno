@@ -110,7 +110,7 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 		markdown += "## Locations\n\n" + locationsMarkdown
 	}
 	if _, ok := a.RenderOpts()["SvgFooter"]; ok {
-		markdown += "[![Flyer SVG](" + a.ToSvgDataUrl() + ")](" + a.ToAnchor() + ")\n\n"
+		markdown += "\n\n[![Flyer SVG](" + a.ToSvgDataUrl() + ")](" + a.ToAnchor() + ")\n\n"
 	}
 
 	return markdown

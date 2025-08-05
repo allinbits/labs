@@ -88,16 +88,6 @@ func (r *Registry) RegisterEvent(e *Event, opts map[string]interface{}) string {
 	}
 	e.SetRenderOpts(opts)
 
-	// REVIEW: is there a better way to inject options?
-	for _, s := range e.Sessions {
-		s.SetRenderOpts(opts)
-		e.AddSession(s)
-		s.Speaker.SetRenderOpts(opts)
-		e.AddSpeaker(s.Speaker) // REVIEW: why call addSpeaker if record was included as input?
-		s.Location.SetRenderOpts(opts)
-		e.AddLocation(s.Location)
-	}
-
 	id := component.Pad3(strconv.Itoa(r.Events.Size())) // 001, 002, etc.
 	r.Events.Set(id, e)
 	return id

@@ -25,7 +25,7 @@ var locations = map[string]*component.Location{
 	"null": {
 		Name:        "Null Island",
 		Coordinates: "0.0, 0.0",
-		Description: "*not an actual Island [![Null Island coords: 0, 0](https://cdn.jsdelivr.net/gh/BUIDLTHEFUTURE/events@main/static/img/null_island.png)](https://en.wikipedia.org/wiki/Null_Island)",
+		Description: "*not an actual Island \n\n[![Null Island coords: 0, 0](https://cdn.jsdelivr.net/gh/BUIDLTHEFUTURE/events@main/static/img/null_island.png)](https://en.wikipedia.org/wiki/Null_Island)",
 	},
 	"atx": {
 		Name:        "Austin, Texas",

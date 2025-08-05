@@ -9,10 +9,12 @@ import (
 
 func init() {
 	renderOpts := map[string]interface{}{
-		"SvgFooter":       struct{}{},                // enables SVG footer in the event flyer
-		"CalendarHost":    "webcal://127.0.0.1:8080", // external webcal server
-		"CalendarFile":    "http://127.0.0.1:8080",   // external calendar file server
-		"CalendarDataUrl": struct{}{},                // allows use of calendar without external server
+		"dev": map[string]interface{}{
+			"SvgFooter":       struct{}{},                // enables SVG footer in the event flyer
+			"CalendarHost":    "webcal://127.0.0.1:8080", // external webcal server
+			"CalendarFile":    "http://127.0.0.1:8080",   // external calendar file server
+			"CalendarDataUrl": struct{}{},                // allows use of calendar without external server
+		},
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)
 }

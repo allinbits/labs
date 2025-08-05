@@ -43,16 +43,6 @@ func (r *Registry) Render(path string, body ...eve.Content) string {
 	}
 }
 
-func NewRegistry(renderOpts map[string]interface{}) *Registry {
-	return &Registry{
-		Events:      avl.NewTree(),
-		LiveEventId: "",
-		RenderOpts:  renderOpts,
-		patchLevel:  0,
-		patchRealm:  "",
-	}
-}
-
 func (r *Registry) GetPatchLevel() string {
 	realmLink := strings.TrimPrefix(r.patchRealm, "gno.land")
 	return ufmt.Sprintf("[rev %d](%s)", r.patchLevel, realmLink)
@@ -86,8 +76,7 @@ func (r *Registry) RegisterEvent(e *Event, opts map[string]interface{}) string {
 	if r.Events == nil {
 		r.Events = avl.NewTree()
 	}
-	e.SetRenderOpts(opts)
-
+	e.SetRenderOpts(opts) // REVIEW: consider moving this into the Event constructor
 	id := eve.Pad3(r.Events.Size())
 	r.Events.Set(id, e)
 	return id

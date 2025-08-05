@@ -187,14 +187,19 @@ func (evt *Event) initStorage() {
 }
 
 func (evt *Event) SetRenderOpts(opts map[string]interface{}) {
-	evt.renderOpts = opts
+	chainId := std.ChainID()
+	if _, ok := opts[chainId]; !ok {
+		panic("render options must be set for the current chain: " + chainId)
+	}
+	evt.renderOpts = opts[chainId].(map[string]interface{})
+
 	if evt.storage == nil {
 		evt.initStorage()
 	}
 	for _, s := range evt.Sessions {
-		s.SetRenderOpts(opts)
-		s.Speaker.SetRenderOpts(opts)
-		s.Location.SetRenderOpts(opts)
+		s.SetRenderOpts(evt.renderOpts)
+		s.Speaker.SetRenderOpts(evt.renderOpts)
+		s.Location.SetRenderOpts(evt.renderOpts)
 	}
 }
 

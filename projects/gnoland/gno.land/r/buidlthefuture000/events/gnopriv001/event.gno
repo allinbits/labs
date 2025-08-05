@@ -9,11 +9,14 @@ import (
 
 func init() {
 	evt.SetRenderOpts(map[string]interface{}{
-		"Speaker":         struct{}{},
-		"SvgFooter":       struct{}{},
-		"CalendarDataUrl": struct{}{},
-		//"CalendarHost": "webcal://127.0.0.1:8080",
+		"dev": map[string]interface{}{
+			"Speaker":         struct{}{},
+			"SvgFooter":       struct{}{},
+			"CalendarDataUrl": struct{}{},
+			//"CalendarHost": "webcal://127.0.0.1:8080",
+		},
 	})
+
 	// REVIEW: register the event with  the event registry
 	// reg "gno.land/r/buidlthefuture000/events/"
 	// events.RegisterEvent(evt, map[string]interface{}{

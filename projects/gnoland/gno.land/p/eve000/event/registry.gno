@@ -8,7 +8,7 @@ import (
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event/component"
+	eve "gno.land/p/eve000/event/component"
 )
 
 type Registry struct {
@@ -19,7 +19,7 @@ type Registry struct {
 	patchRealm  string // realm that is allowed to update the patch level, used for debugging and content management
 }
 
-func (r *Registry) Render(path string, body ...component.Content) string {
+func (r *Registry) Render(path string, body ...eve.Content) string {
 	fullURL := std.CurrentRealm().PkgPath() + path // REVIEW: is this really needed?
 	u, err := url.Parse(fullURL)
 	if err != nil {
@@ -32,14 +32,14 @@ func (r *Registry) Render(path string, body ...component.Content) string {
 	}
 	evt := r.GetEvent(event_id)
 	switch {
-	case component.HasQueryParam(q, "session"):
-		return component.RenderComponent(path, evt.GetSession(q.Get("session")))
-	case component.HasQueryParam(q, "location"):
-		return component.RenderComponent(path, evt.GetLocation(q.Get("location")))
-	case component.HasQueryParam(q, "speaker"):
-		return component.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
+	case eve.HasQueryParam(q, "session"):
+		return eve.RenderComponent(path, evt.GetSession(q.Get("session")))
+	case eve.HasQueryParam(q, "location"):
+		return eve.RenderComponent(path, evt.GetLocation(q.Get("location")))
+	case eve.HasQueryParam(q, "speaker"):
+		return eve.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
 	default:
-		return component.RenderPage(path, evt.Flyer(), body...)
+		return eve.RenderPage(path, evt.Flyer(), body...)
 	}
 }
 
@@ -67,7 +67,7 @@ func (r *Registry) SetPatchLevel(level int) {
 }
 
 func (r *Registry) GetEvent(id string) *Event {
-	e, ok := r.Events.Get(component.Pad3(id))
+	e, ok := r.Events.Get(eve.Pad3(id))
 	if !ok {
 		panic("event not found" + id)
 	}
@@ -88,17 +88,7 @@ func (r *Registry) RegisterEvent(e *Event, opts map[string]interface{}) string {
 	}
 	e.SetRenderOpts(opts)
 
-	// REVIEW: is there a better way to inject options?
-	for _, s := range e.Sessions {
-		s.SetRenderOpts(opts)
-		e.AddSession(s)
-		s.Speaker.SetRenderOpts(opts)
-		e.AddSpeaker(s.Speaker) // REVIEW: why call addSpeaker if record was included as input?
-		s.Location.SetRenderOpts(opts)
-		e.AddLocation(s.Location)
-	}
-
-	id := component.Pad3(strconv.Itoa(r.Events.Size())) // 001, 002, etc.
+	id := eve.Pad3(r.Events.Size())
 	r.Events.Set(id, e)
 	return id
 }

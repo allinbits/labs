@@ -2,7 +2,6 @@ package component
 
 import (
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -61,7 +60,7 @@ func IcsCalendarFile(path string, a *Flyer) string {
 		w("END:VEVENT\n")
 
 		for i, s := range a.Sessions {
-			id := Pad3(strconv.Itoa(i))
+			id := Pad3(i)
 			if !include(id) {
 				continue
 			}
@@ -91,7 +90,7 @@ func IcsCalendarFile(path string, a *Flyer) string {
 	default:
 		w(f("# %s\n\n%s", a.Name, a.Description))
 		for i, s := range a.Sessions {
-			id := Pad3(strconv.Itoa(i))
+			id := Pad3(i)
 			if !include(id) {
 				continue
 			}

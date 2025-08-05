@@ -43,8 +43,9 @@ Our goal is to expose how blockchain enables exit from legacy systems of control
 var contact = `
 Review the topics below to see what resonates with you. We welcome all builders, thinkers, and communities who share our vision.
 
-If you wish to get involved, have ideas, or want to help organize future events, please create a github issue.` + component.Button("Add GitHub Issue", "https://github.com/BUIDLTHEFUTURE/events/issues/new") + `
-`
+If you wish to get involved, have ideas, or want to help organize future events, please create a github issue.
+
+` + component.Button("Add GitHub Issue", "https://github.com/BUIDLTHEFUTURE/events/issues/new")
 
 var topics = `
 

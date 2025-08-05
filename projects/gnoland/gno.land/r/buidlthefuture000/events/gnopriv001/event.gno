@@ -45,8 +45,7 @@ func Render(path string) string {
 	// FIXME: component view is not working
 	case eve.HasQueryParam(q, "session"):
 		id := q.Get("session")
-		return id[0]
-		//s := evt.GetSession(string(id[0])) // REVIEW: why is id a slice?
+		s := evt.GetSession(string(id[0])) // REVIEW: why is id a slice?
 		return eve.RenderComponent(path, s)
 	case eve.HasQueryParam(q, "location"):
 		return eve.RenderComponent(path, evt.GetLocation(q.Get("location")))

@@ -12,16 +12,15 @@ Though not overly useful in itself, it serves as a demonstration that inputs wit
 Thus, we can control a re-usable model vocabulary that can be built upon by appending arrows and places to the model.
 `
 var (
-    externalLink = `[![pflow](https://pflow.dev/img/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb.svg)](https://pflow.dev/p/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb/)`
+	externalLink = `[![pflow](https://pflow.dev/img/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb.svg)](https://pflow.dev/p/zb2rhoVtN4MTsEuAEL6eMDog85mvLx91jG5LTnnDZ6fxxqVRb/)`
 )
-
 
 func init() {
 	keyboard := qwertyModel()
 	keyboard.Binding = func(_ string) string {
 		return qwertyNotes + keyboard.ToMarkdown() + externalLink
 	}
-    register("Keyboard", keyboard)
+	register("Keyboard", keyboard)
 }
 
 func qwertyModel() *mm.Model {

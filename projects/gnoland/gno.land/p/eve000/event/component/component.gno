@@ -296,7 +296,18 @@ func slugify(s string) string {
 	return strings.Trim(re.ReplaceAllString(strings.ToLower(s), "-"), "-")
 }
 
-func Pad3(s string) string {
+func Pad3(val interface{}) string {
+	var s string
+	switch v := val.(type) {
+	case string:
+		s = v
+	case int:
+		s = strconv.Itoa(v)
+	case int64:
+		s = strconv.FormatInt(v, 10)
+	default:
+		panic("Pad3: unsupported type")
+	}
 	for len(s) < 3 {
 		s = "0" + s
 	}

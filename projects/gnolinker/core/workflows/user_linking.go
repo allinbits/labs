@@ -3,6 +3,7 @@ package workflows
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
@@ -26,31 +27,47 @@ func NewUserLinkingWorkflow(client *contracts.GnoClient, config WorkflowConfig) 
 
 // GenerateClaim creates a signed claim for linking a platform user to a Gno address
 func (w *UserLinkingWorkflowImpl) GenerateClaim(platformID, gnoAddress string) (*core.Claim, error) {
-	timestamp := time.Now()
-	message := fmt.Sprintf("%v,%v,%v", timestamp.Unix(), platformID, gnoAddress)
-	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
-	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
+	// Get current block height
+	blockHeight, err := w.gnoClient.GetCurrentBlockHeight()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current block height: %w", err)
+	}
+
+	// Create message with block height instead of timestamp
+	message := fmt.Sprintf("%d,%s,%s", blockHeight, platformID, gnoAddress)
+	
+	// Sign only the message (not the full signed message)
+	signature := sign.Sign(nil, []byte(message), w.config.SigningKey)[:64] // Only the signature part
+	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)
 
 	return &core.Claim{
 		Type:      core.ClaimTypeUserLink,
 		Data:      message,
-		Signature: signature,
-		CreatedAt: timestamp,
+		Signature: signatureEncoded,
+		CreatedAt: time.Now(), // Keep for tracking purposes
 	}, nil
 }
 
 // GenerateUnlinkClaim creates a signed claim for unlinking a platform user from their Gno address
 func (w *UserLinkingWorkflowImpl) GenerateUnlinkClaim(platformID, gnoAddress string) (*core.Claim, error) {
-	timestamp := time.Now()
-	message := fmt.Sprintf("%v,%v,%v", timestamp.Unix(), platformID, gnoAddress)
-	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
-	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
+	// Get current block height
+	blockHeight, err := w.gnoClient.GetCurrentBlockHeight()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current block height: %w", err)
+	}
+
+	// Create message with block height and platformID only (no address needed for unlink)
+	message := fmt.Sprintf("%d,%s", blockHeight, platformID)
+	
+	// Sign only the message (not the full signed message)
+	signature := sign.Sign(nil, []byte(message), w.config.SigningKey)[:64] // Only the signature part
+	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)
 
 	return &core.Claim{
 		Type:      core.ClaimTypeUserUnlink,
 		Data:      message,
-		Signature: signature,
-		CreatedAt: timestamp,
+		Signature: signatureEncoded,
+		CreatedAt: time.Now(), // Keep for tracking purposes
 	}, nil
 }
 
@@ -61,13 +78,27 @@ func (w *UserLinkingWorkflowImpl) GetLinkedAddress(platformID string) (string, e
 
 // GetClaimURL returns the URL where users can submit their claim
 func (w *UserLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
-	// Format: https://baseurl/r/linker000/discord/user/v0:claim/signature
-	url := fmt.Sprintf("%s/%s:claim/%s", w.config.BaseURL, w.config.UserContract, claim.Signature)
-
-	// Add query parameter for unlink operations
-	if claim.Type == core.ClaimTypeUserUnlink {
-		url += "?unlink=true"
+	// Parse the claim data to extract values
+	parts := strings.Split(claim.Data, ",")
+	if len(parts) < 2 {
+		return "" // Invalid claim data
 	}
 
-	return url
+	blockHeight := parts[0]
+	discordID := parts[1]
+
+	if claim.Type == core.ClaimTypeUserUnlink {
+		// Unlink URL: /unlink?blockHeight=X&discordID=Y&signature=S
+		return fmt.Sprintf("%s/%s:unlink?blockHeight=%s&discordID=%s&signature=%s",
+			w.config.BaseURL, w.config.UserContract, blockHeight, discordID, claim.Signature)
+	}
+
+	// Link URL: /link?blockHeight=X&discordID=Y&address=Z&signature=S
+	if len(parts) < 3 {
+		return "" // Invalid claim data for link
+	}
+	address := parts[2]
+
+	return fmt.Sprintf("%s/%s:link?blockHeight=%s&discordID=%s&address=%s&signature=%s",
+		w.config.BaseURL, w.config.UserContract, blockHeight, discordID, address, claim.Signature)
 }

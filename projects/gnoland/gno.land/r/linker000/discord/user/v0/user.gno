@@ -13,18 +13,20 @@ func init() {
 	ds = newDatastore()
 }
 
-// Link takes a base64 encoded ed25519 signed claim from the gno discord linker bot.
-// If the claim is valid, it will use the claim to link a gno address to a discord id.
+// Link links a discord ID to a gno address using individual claim parameters
 // A gno address may only be linked to a single discord ID and a single discord ID may
 // only be linked to a single gno address.
-func Link(cur realm, encodedClaim string) {
-	claim, err := validateEncodedClaim(encodedClaim, false)
+func Link(cur realm, blockHeight int64, discordID string, address std.Address, signature string) {
+	claim, err := validateLinkClaim(blockHeight, discordID, address, signature, false)
 	if err != nil {
 		panic(err)
 	}
 	if err := ds.set(claim); err != nil {
 		panic(err)
 	}
+
+	// Mark signature as used
+	ds.markSignatureUsed(signature, blockHeight)
 
 	// Emit UserLinked event
 	std.Emit("UserLinked",
@@ -51,12 +53,11 @@ func UnlinkByCaller(cur realm) {
 	ds.removeByAddress(caller)
 }
 
-// UnlinkByClaim takes an encodedClaim from a valid discord bot
-// and unlinks a discordID from a gno address. This is useful if you
-// still have access to your discord account, but you have lost
+// UnlinkByClaim unlinks a discordID from a gno address using individual claim parameters
+// This is useful if you still have access to your discord account, but you have lost
 // access to your old gno address.
-func UnlinkByClaim(cur realm, encodedClaim string) {
-	claim, err := validateEncodedClaim(encodedClaim, false)
+func UnlinkByClaim(cur realm, blockHeight int64, discordID string, signature string) {
+	claim, err := validateUnlinkClaim(blockHeight, discordID, signature)
 	if err != nil {
 		panic(err)
 	}
@@ -72,6 +73,9 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 	}
 
 	ds.removeByDiscordID(claim.discordID)
+	
+	// Mark signature as used
+	ds.markSignatureUsed(signature, blockHeight)
 }
 
 // GetLinkedAddress takes a discord ID and returns a linked gno address

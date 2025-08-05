@@ -14,9 +14,11 @@ func init() {
 	ds = newDatastore()
 }
 
-// Link takes an encoded claim and saves it to the datastore, or it panics and rolls back the transaction
-func Link(cur realm, encodedClaim string) {
-	claim, err := validateEncodedClaim(encodedClaim, false)
+// Link takes individual claim parameters and saves the role link to the datastore
+func Link(cur realm, blockHeight int64, discordAccountID, discordGuildID, discordRoleID string,
+	address std.Address, roleName, realmPath, signature string) {
+	claim, err := validateLinkClaim(blockHeight, discordAccountID, discordGuildID, discordRoleID,
+		address, roleName, realmPath, signature, false)
 	if err != nil {
 		panic(err)
 	}
@@ -24,6 +26,9 @@ func Link(cur realm, encodedClaim string) {
 	if err := ds.set(claim); err != nil {
 		panic(err)
 	}
+
+	// Mark signature as used
+	ds.markSignatureUsed(signature, blockHeight)
 
 	// Emit RoleLinked event
 	std.Emit("RoleLinked",
@@ -34,10 +39,11 @@ func Link(cur realm, encodedClaim string) {
 	)
 }
 
-// UnlinkByClaim takes a base64 encoded string of a ed25519 signed claim, if if it passes
-// validation, it removes the linked role from registry.
-func UnlinkByClaim(cur realm, encodedClaim string) {
-	claim, err := validateEncodedClaim(encodedClaim, false)
+// UnlinkByClaim takes individual claim parameters and removes the linked role from registry
+func UnlinkByClaim(cur realm, blockHeight int64, discordAccountID, discordGuildID string,
+	realmPath, roleName, signature string) {
+	claim, err := validateUnlinkClaim(blockHeight, discordAccountID, discordGuildID,
+		realmPath, roleName, signature)
 	if err != nil {
 		panic(err)
 	}
@@ -55,6 +61,9 @@ func UnlinkByClaim(cur realm, encodedClaim string) {
 	}
 
 	ds.removeByPathRoleGuild(claim.realmPath, claim.roleName, claim.discordGuildID)
+	
+	// Mark signature as used
+	ds.markSignatureUsed(signature, blockHeight)
 }
 
 // GetLinkedDiscordRole takes a realmPath, roleName, and discordGuildID and returns a LinkedRealmRole

@@ -25,10 +25,3 @@ services:
     environment:
       - GNO_HOME=/gnoroot
     command: ["dev"]
-
-    # Optional healthcheck
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:26657/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5

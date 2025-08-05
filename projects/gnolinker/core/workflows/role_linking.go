@@ -3,6 +3,8 @@ package workflows
 import (
 	"encoding/base64"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/allinbits/labs/projects/gnolinker/core"
@@ -36,44 +38,46 @@ func (w *RoleLinkingWorkflowImpl) GenerateClaim(userID, platformGuildID, platfor
 		return nil, fmt.Errorf("user has not linked their Gno address")
 	}
 
+	// Get current block height
+	blockHeight, err := w.gnoClient.GetCurrentBlockHeight()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current block height: %w", err)
+	}
+
 	// Generate the claim
 	timestamp := time.Now()
-	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v",
-		timestamp.Unix(), userID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
-	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
-	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
+	message := fmt.Sprintf("%d,%s,%s,%s,%s,%s,%s",
+		blockHeight, userID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
+	signature := sign.Sign(nil, []byte(message), w.config.SigningKey)[:64] // Only the signature part
+	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)
 
 	return &core.Claim{
 		Type:      core.ClaimTypeRoleLink,
 		Data:      message,
-		Signature: signature,
+		Signature: signatureEncoded,
 		CreatedAt: timestamp,
 	}, nil
 }
 
 // GenerateUnlinkClaim creates a signed claim for unlinking a realm role from a platform role
 func (w *RoleLinkingWorkflowImpl) GenerateUnlinkClaim(userID, platformGuildID, platformRoleID, roleName, realmPath string) (*core.Claim, error) {
-	// Get the user's linked Gno address for the claim
-	gnoAddress, err := w.gnoClient.GetLinkedAddress(userID)
+	// Get current block height
+	blockHeight, err := w.gnoClient.GetCurrentBlockHeight()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get linked address: %w", err)
+		return nil, fmt.Errorf("failed to get current block height: %w", err)
 	}
 
-	if gnoAddress == "" {
-		return nil, fmt.Errorf("user has not linked their Gno address")
-	}
-
-	// Generate the unlink claim
+	// Generate the unlink claim (doesn't need role ID or address)
 	timestamp := time.Now()
-	message := fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v",
-		timestamp.Unix(), userID, platformGuildID, platformRoleID, gnoAddress, roleName, realmPath)
-	signedMessage := sign.Sign(nil, []byte(message), w.config.SigningKey)
-	signature := base64.RawURLEncoding.EncodeToString(signedMessage)
+	message := fmt.Sprintf("%d,%s,%s,%s,%s",
+		blockHeight, userID, platformGuildID, realmPath, roleName)
+	signature := sign.Sign(nil, []byte(message), w.config.SigningKey)[:64] // Only the signature part
+	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)
 
 	return &core.Claim{
 		Type:      core.ClaimTypeRoleUnlink,
 		Data:      message,
-		Signature: signature,
+		Signature: signatureEncoded,
 		CreatedAt: timestamp,
 	}, nil
 }
@@ -100,13 +104,42 @@ func (w *RoleLinkingWorkflowImpl) HasRealmRole(realmPath, roleName, address stri
 
 // GetClaimURL returns the URL where admins can submit their claim
 func (w *RoleLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
-	// Format: https://baseurl/r/linker000/discord/role/v0:claim/signature
-	url := fmt.Sprintf("%s/%s:claim/%s", w.config.BaseURL, w.config.RoleContract, claim.Signature)
-
-	// Add query parameter for unlink operations
-	if claim.Type == core.ClaimTypeRoleUnlink {
-		url += "?unlink=true"
+	// Parse the claim data to extract fields
+	parts := strings.Split(claim.Data, ",")
+	
+	if claim.Type == core.ClaimTypeRoleLink {
+		// Link claim format: blockHeight,discordAccountID,discordGuildID,discordRoleID,address,roleName,realmPath
+		if len(parts) < 7 {
+			return "" // Invalid claim data
+		}
+		
+		// Build URL with query parameters for link
+		params := url.Values{}
+		params.Add("blockHeight", parts[0])
+		params.Add("discordAccountID", parts[1])
+		params.Add("discordGuildID", parts[2])
+		params.Add("discordRoleID", parts[3])
+		params.Add("address", parts[4])
+		params.Add("roleName", parts[5])
+		params.Add("realmPath", parts[6])
+		params.Add("signature", claim.Signature)
+		
+		return fmt.Sprintf("%s/%s:link?%s", w.config.BaseURL, w.config.RoleContract, params.Encode())
+	} else {
+		// Unlink claim format: blockHeight,discordAccountID,discordGuildID,realmPath,roleName
+		if len(parts) < 5 {
+			return "" // Invalid claim data
+		}
+		
+		// Build URL with query parameters for unlink
+		params := url.Values{}
+		params.Add("blockHeight", parts[0])
+		params.Add("discordAccountID", parts[1])
+		params.Add("discordGuildID", parts[2])
+		params.Add("realmPath", parts[3])
+		params.Add("roleName", parts[4])
+		params.Add("signature", claim.Signature)
+		
+		return fmt.Sprintf("%s/%s:unlink?%s", w.config.BaseURL, w.config.RoleContract, params.Encode())
 	}
-
-	return url
 }

@@ -8,14 +8,16 @@ import (
 )
 
 type datastore struct {
-	byAddr      *avl.Tree
-	byDiscordID *avl.Tree
+	byAddr         *avl.Tree
+	byDiscordID    *avl.Tree
+	usedSignatures *avl.Tree // tracks used signatures to prevent replay attacks
 }
 
 func newDatastore() *datastore {
 	return &datastore{
-		byAddr:      avl.NewTree(),
-		byDiscordID: avl.NewTree(),
+		byAddr:         avl.NewTree(),
+		byDiscordID:    avl.NewTree(),
+		usedSignatures: avl.NewTree(),
 	}
 }
 
@@ -61,4 +63,15 @@ func (ds datastore) getByDiscordID(id string) *Claim {
 		return nil
 	}
 	return value.(*Claim)
+}
+
+// isSignatureUsed checks if a signature has been used before
+func (ds datastore) isSignatureUsed(signature string) bool {
+	_, exists := ds.usedSignatures.Get(signature)
+	return exists
+}
+
+// markSignatureUsed marks a signature as used with the current block height
+func (ds *datastore) markSignatureUsed(signature string, blockHeight int64) {
+	ds.usedSignatures.Set(signature, blockHeight)
 }

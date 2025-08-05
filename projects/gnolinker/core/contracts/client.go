@@ -148,6 +148,16 @@ func (c *GnoClient) HasRole(realmPath, roleName, address string) (bool, error) {
 	return isMember, nil
 }
 
+// GetCurrentBlockHeight returns the current block height from the chain
+func (c *GnoClient) GetCurrentBlockHeight() (int64, error) {
+	status, err := c.client.RPCClient.Status()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get status: %w", err)
+	}
+
+	return status.SyncInfo.LatestBlockHeight, nil
+}
+
 // Parsing functions (same as before)
 
 func parseGnoAddress(s string) string {

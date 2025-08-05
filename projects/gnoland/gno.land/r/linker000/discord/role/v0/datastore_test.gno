@@ -2,7 +2,6 @@ package role
 
 import (
 	"testing"
-	"time"
 
 	"gno.land/p/demo/testutils"
 )
@@ -45,7 +44,7 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 2: First valid claim should succeed
 	claim1 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role789",
@@ -61,7 +60,7 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 3: Cannot link same path-role-guild combination twice
 	claim2 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1001,
 		discordAccountID: "user456",
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role999",  // different role ID
@@ -80,7 +79,7 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 4: Cannot link same guild-role combination twice
 	claim3 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1002,
 		discordAccountID: "user789",
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role789",  // same role ID
@@ -99,7 +98,7 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 5: Different combination should succeed
 	claim4 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1003,
 		discordAccountID: "user456",
 		discordGuildID:   "guild789", // different guild
 		discordRoleID:    "role123",  // different role ID
@@ -127,7 +126,7 @@ func TestDatastoreGetByPathRoleGuild(t *testing.T) {
 
 	// Test 2: Add claim and verify retrieval
 	claim := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role789",
@@ -173,7 +172,7 @@ func TestDatastoreGetByGuildRole(t *testing.T) {
 
 	// Test 2: Add claim and verify retrieval
 	claim := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role789",
@@ -214,7 +213,7 @@ func TestDatastoreRemoveByPathRoleGuild(t *testing.T) {
 
 	// Setup: Add two claims
 	claim1 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role789",
@@ -223,7 +222,7 @@ func TestDatastoreRemoveByPathRoleGuild(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app",
 	}
 	claim2 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user456",
 		discordGuildID:   "guild789",
 		discordRoleID:    "role123",
@@ -265,7 +264,7 @@ func TestDatastoreRemoveByGuildRole(t *testing.T) {
 
 	// Setup: Add two claims
 	claim1 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role789",
@@ -274,7 +273,7 @@ func TestDatastoreRemoveByGuildRole(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app",
 	}
 	claim2 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user456",
 		discordGuildID:   "guild789",
 		discordRoleID:    "role123",
@@ -322,7 +321,7 @@ func TestDatastoreListRolesByPathGuild(t *testing.T) {
 
 	// Test 2: Add multiple roles for same path-guild
 	claim1 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role789",
@@ -331,7 +330,7 @@ func TestDatastoreListRolesByPathGuild(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app",
 	}
 	claim2 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user456",
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role123",
@@ -384,7 +383,7 @@ func TestDatastorePathGuildOperations(t *testing.T) {
 
 	// Test adding and removing roles from path-guild tracking
 	claim := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role789",
@@ -421,7 +420,7 @@ func TestDatastoreComplexScenario(t *testing.T) {
 
 	// Step 1: Add multiple claims for same realm-guild but different roles
 	claimAdmin := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role_admin",
@@ -430,7 +429,7 @@ func TestDatastoreComplexScenario(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app",
 	}
 	claimMod := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user456",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role_mod",
@@ -439,7 +438,7 @@ func TestDatastoreComplexScenario(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app",
 	}
 	claimUser := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user789",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role_user",
@@ -518,7 +517,7 @@ func TestDatastoreByGuild(t *testing.T) {
 
 	// Test 2: Add multiple claims for same guild but different realms/roles
 	claim1 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user123",
 		discordGuildID:   "guild456",
 		discordRoleID:    "role_admin",
@@ -527,7 +526,7 @@ func TestDatastoreByGuild(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app1",
 	}
 	claim2 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user456",
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role_mod",
@@ -536,7 +535,7 @@ func TestDatastoreByGuild(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app2", // different realm
 	}
 	claim3 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user789",
 		discordGuildID:   "guild456", // same guild
 		discordRoleID:    "role_user",
@@ -545,7 +544,7 @@ func TestDatastoreByGuild(t *testing.T) {
 		realmPath:        "gno.land/r/demo/app1", // same realm as claim1
 	}
 	claim4 := &Claim{
-		timestamp:        time.Now(),
+		blockHeight:      1000,
 		discordAccountID: "user999",
 		discordGuildID:   "guild789", // different guild
 		discordRoleID:    "role_admin2",

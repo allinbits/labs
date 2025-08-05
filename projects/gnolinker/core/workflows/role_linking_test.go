@@ -25,42 +25,66 @@ func TestRoleLinkingWorkflow_GetClaimURL(t *testing.T) {
 	t.Run("link claim URL", func(t *testing.T) {
 		claim := &core.Claim{
 			Type:      core.ClaimTypeRoleLink,
-			Data:      "test-data",
+			Data:      "1000,user123,guild456,role789,g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5,admin,gno.land/r/demo/app",
 			Signature: "test-signature",
 			CreatedAt: time.Now(),
 		}
 
 		url := workflow.GetClaimURL(claim)
-		expectedURL := "https://example.com/r/linker/role/v0:claim/test-signature"
 
-		if url != expectedURL {
-			t.Errorf("Expected URL %q, got %q", expectedURL, url)
+		// Should be a link URL with query parameters
+		if !strings.HasPrefix(url, "https://example.com/r/linker/role/v0:link?") {
+			t.Errorf("Expected URL to start with link endpoint, got %q", url)
 		}
 
-		// Should not have unlink parameter
-		if strings.Contains(url, "?unlink=true") {
-			t.Error("Link claim URL should not contain unlink parameter")
+		// Should contain all required parameters
+		requiredParams := []string{
+			"blockHeight=1000",
+			"discordAccountID=user123",
+			"discordGuildID=guild456",
+			"discordRoleID=role789",
+			"address=g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5",
+			"roleName=admin",
+			"realmPath=gno.land%2Fr%2Fdemo%2Fapp", // URL encoded
+			"signature=test-signature",
+		}
+
+		for _, param := range requiredParams {
+			if !strings.Contains(url, param) {
+				t.Errorf("URL should contain parameter %q, got %q", param, url)
+			}
 		}
 	})
 
 	t.Run("unlink claim URL", func(t *testing.T) {
 		claim := &core.Claim{
 			Type:      core.ClaimTypeRoleUnlink,
-			Data:      "test-data",
+			Data:      "1000,user123,guild456,gno.land/r/demo/app,admin",
 			Signature: "test-signature",
 			CreatedAt: time.Now(),
 		}
 
 		url := workflow.GetClaimURL(claim)
-		expectedURL := "https://example.com/r/linker/role/v0:claim/test-signature?unlink=true"
 
-		if url != expectedURL {
-			t.Errorf("Expected URL %q, got %q", expectedURL, url)
+		// Should be an unlink URL with query parameters
+		if !strings.HasPrefix(url, "https://example.com/r/linker/role/v0:unlink?") {
+			t.Errorf("Expected URL to start with unlink endpoint, got %q", url)
 		}
 
-		// Should have unlink parameter
-		if !strings.Contains(url, "?unlink=true") {
-			t.Error("Unlink claim URL should contain unlink parameter")
+		// Should contain all required parameters
+		requiredParams := []string{
+			"blockHeight=1000",
+			"discordAccountID=user123",
+			"discordGuildID=guild456",
+			"realmPath=gno.land%2Fr%2Fdemo%2Fapp", // URL encoded
+			"roleName=admin",
+			"signature=test-signature",
+		}
+
+		for _, param := range requiredParams {
+			if !strings.Contains(url, param) {
+				t.Errorf("URL should contain parameter %q, got %q", param, url)
+			}
 		}
 	})
 }

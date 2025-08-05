@@ -5,59 +5,70 @@ import (
 	"encoding/base64"
 	"errors"
 	"std"
-	"strconv"
-	"strings"
-	"time"
+
+	"gno.land/p/demo/ufmt"
 
 	keyring "gno.land/r/linker000/discord/keyring/v0"
 )
 
 const (
-	// claimTTL is the maximum duration allowed for a claim to be valid.
-	claimTTL = 5 * time.Minute
-	//maxClockSkew represents the maximum allowed time skew for claims to exist in the future.
-	maxClockSkew = 30 * time.Second
+	// maxBlockAge is the maximum number of blocks a claim can be old
+	maxBlockAge = 500
 )
 
 // Claim is a struct that represents the contents of a signed claim from the discord bot.
 type Claim struct {
-	timestamp time.Time
-	discordID string
-	addr      std.Address
+	blockHeight int64
+	discordID   string
+	addr        std.Address
 }
 
-// validateEncodedClaim takes a base64 encoded ed25519 based nacl.Sign claim. If the claim is valid
-// and all verifications pass, the discord ID and gno address are linked.
+// validateLinkClaim validates a claim for linking a discord ID to a gno address
 // A valid claim must:
-// - have a valid signature
-// - the payload must be in the format `timestamp,discord_id,gno_address`
-// - timestamp must be within the TTL
-// - timestamp must not exceed future time clock skew
-// - address must match caller
-func validateEncodedClaim(encodedClaim string, skipVerifyAddress bool) (*Claim, error) {
-	// decode the base64 encoded claim
-	decodedClaim, err := base64.RawURLEncoding.DecodeString(encodedClaim)
+// - have a valid signature for the payload `block_height,discord_id,gno_address`
+// - signature must not have been used before
+// - block height must not be in the future
+// - block height must not be too old (maxBlockAge)
+// - address must match caller (unless skipVerifyAddress is true)
+func validateLinkClaim(blockHeight int64, discordID string, addr std.Address, signature string, skipVerifyAddress bool) (*Claim, error) {
+	// Check if signature was already used
+	if ds.isSignatureUsed(signature) {
+		return nil, errors.New("claim: signature already used")
+	}
+	
+	// Decode the signature
+	decodedSignature, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("claim: invalid signature encoding")
 	}
 
-	// attempt to verify with primary public key, and failover to previous public key
-	payload, ok := verifySignature(decodedClaim, keyring.PubKey())
-	if !ok {
-		payload, ok = verifySignature(decodedClaim, keyring.PreviousPubKey())
-		if !ok {
+	// Reconstruct the payload that was signed
+	payload := ufmt.Sprintf("%d,%s,%s", blockHeight, discordID, addr)
+	
+	// Verify signature with primary public key, and failover to previous public key
+	verified := ed25519.Verify(keyring.PubKey(), []byte(payload), decodedSignature)
+	if !verified {
+		verified = ed25519.Verify(keyring.PreviousPubKey(), []byte(payload), decodedSignature)
+		if !verified {
 			return nil, errors.New("claim: not a valid signature")
 		}
 	}
 
-	// create claim from payload
-	claim, err := claimFromPayload(string(payload))
-	if err != nil {
+	// Validate discord ID
+	if err := validateDiscordID(discordID); err != nil {
 		return nil, err
 	}
 
-	// verify timestamp
-	if err := verifyTimestamp(claim.timestamp, time.Now(), claimTTL, maxClockSkew); err != nil {
+	// Create claim
+	claim := &Claim{
+		blockHeight: blockHeight,
+		discordID:   discordID,
+		addr:        addr,
+	}
+
+	// Verify block height
+	currentHeight := std.ChainHeight()
+	if err := verifyBlockHeight(claim.blockHeight, currentHeight); err != nil {
 		return nil, err
 	}
 
@@ -71,31 +82,63 @@ func validateEncodedClaim(encodedClaim string, skipVerifyAddress bool) (*Claim, 
 	return claim, nil
 }
 
-func claimFromPayload(payload string) (*Claim, error) {
-	splitPayload := strings.Split(payload, ",")
-	if len(splitPayload) != 3 {
-		return nil, errors.New("claim: invalid arg length, expecting timestamp,discord_id,gno_addr")
+// validateUnlinkClaim validates a claim for unlinking a discord ID
+// This is used when someone wants to unlink but might not control the gno address anymore
+// A valid claim must:
+// - have a valid signature for the payload `block_height,discord_id`
+// - signature must not have been used before
+// - block height must not be in the future
+// - block height must not be too old (maxBlockAge)
+// - discord ID must be currently linked
+func validateUnlinkClaim(blockHeight int64, discordID string, signature string) (*Claim, error) {
+	// Check if signature was already used
+	if ds.isSignatureUsed(signature) {
+		return nil, errors.New("claim: signature already used")
 	}
-	unixSeconds, err := strconv.ParseInt(splitPayload[0], 10, 64)
-	timestamp := time.Unix(unixSeconds, 0)
+	
+	// Decode the signature
+	decodedSignature, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
-		return nil, errors.New("claim: failed to parse timestamp")
+		return nil, errors.New("claim: invalid signature encoding")
 	}
 
-	discordID := splitPayload[1]
-	addr := std.Address(splitPayload[2])
+	// Reconstruct the payload that was signed (just block_height and discord_id for unlink)
+	payload := ufmt.Sprintf("%d,%s", blockHeight, discordID)
+	
+	// Verify signature with primary public key, and failover to previous public key
+	verified := ed25519.Verify(keyring.PubKey(), []byte(payload), decodedSignature)
+	if !verified {
+		verified = ed25519.Verify(keyring.PreviousPubKey(), []byte(payload), decodedSignature)
+		if !verified {
+			return nil, errors.New("claim: not a valid signature")
+		}
+	}
 
 	// Validate discord ID
 	if err := validateDiscordID(discordID); err != nil {
 		return nil, err
 	}
 
+	// Verify block height
+	currentHeight := std.ChainHeight()
+	if err := verifyBlockHeight(blockHeight, currentHeight); err != nil {
+		return nil, err
+	}
+
+	// Get the linked claim to return the full claim data
+	existingClaim := ds.getByDiscordID(discordID)
+	if existingClaim == nil {
+		return nil, errors.New("claim: discord ID is not linked")
+	}
+
+	// Return the existing claim with updated block height for tracking
 	return &Claim{
-		timestamp: timestamp,
-		discordID: discordID,
-		addr:      addr,
+		blockHeight: blockHeight,
+		discordID:   existingClaim.discordID,
+		addr:        existingClaim.addr,
 	}, nil
 }
+
 
 func verifyAddress(addr std.Address) error {
 	caller := std.PreviousRealm().Address()
@@ -122,14 +165,20 @@ func validateDiscordID(discordID string) error {
 	return nil
 }
 
-func verifyTimestamp(claim, evaluated time.Time, ttl, skew time.Duration) error {
-	claimAge := evaluated.Sub(claim)
-	if claimAge > ttl {
-		return errors.New("claim: timestamp exceeds ttl window")
+func verifyBlockHeight(claimHeight, currentHeight int64) error {
+	// Check if claim is from the future
+	if claimHeight > currentHeight {
+		return errors.New(ufmt.Sprintf("claim: block height is in the future (claim: %d, current: %d)", 
+			claimHeight, currentHeight))
 	}
-	if claim.After(evaluated.Add(skew)) {
-		return errors.New("claim: timestamp exceeds clock skew tolerance")
+	
+	// Check if claim is too old
+	age := currentHeight - claimHeight
+	if age > maxBlockAge {
+		return errors.New(ufmt.Sprintf("claim: block height too old (age: %d blocks, max: %d blocks, claim: %d, current: %d)", 
+			age, maxBlockAge, claimHeight, currentHeight))
 	}
+	
 	return nil
 }
 

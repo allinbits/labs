@@ -4,24 +4,21 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"errors"
+	"net/url"
 	"std"
-	"strconv"
 	"strings"
-	"time"
 
 	"gno.land/p/demo/ufmt"
 	keyring "gno.land/r/linker000/discord/keyring/v0"
 )
 
 const (
-	// claimTTL is the maximum duration allowed for a claim to be valid.
-	claimTTL = 5 * time.Minute
-	//maxClockSkew represents the maximum allowed time skew for claims to exist in the future.
-	maxClockSkew = 30 * time.Second
+	// maxBlockAge is the maximum number of blocks a claim can be old
+	maxBlockAge = 500
 )
 
 type Claim struct {
-	timestamp        time.Time
+	blockHeight      int64
 	discordAccountID string
 	discordGuildID   string
 	discordRoleID    string
@@ -63,60 +60,43 @@ func fmtGuildRoleKey(guildID, roleID string) string {
 	return ufmt.Sprintf("%s|%s", guildID, roleID)
 }
 
-func validateEncodedClaim(encodedClaim string, skipVerifyAddress bool) (*Claim, error) {
-
-	// decode the base64 encoded claim
-	decodedClaim, err := base64.RawURLEncoding.DecodeString(encodedClaim)
+// validateLinkClaim validates a claim for linking a realm role to a discord role
+func validateLinkClaim(blockHeight int64, discordAccountID, discordGuildID, discordRoleID string, 
+	addr std.Address, roleName, realmPath, signature string, skipVerifyAddress bool) (*Claim, error) {
+	// Check if signature was already used
+	if ds.isSignatureUsed(signature) {
+		return nil, errors.New("claim: signature already used")
+	}
+	
+	// URL decode the realmPath and roleName in case they come from URL query parameters
+	decodedRealmPath, _ := url.QueryUnescape(realmPath)
+	if decodedRealmPath != "" {
+		realmPath = decodedRealmPath
+	}
+	
+	decodedRoleName, _ := url.QueryUnescape(roleName)
+	if decodedRoleName != "" {
+		roleName = decodedRoleName
+	}
+	
+	// Decode the signature
+	decodedSignature, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("claim: invalid signature encoding")
 	}
 
-	// attempt to verify with primary public key, and failover to previous public key
-	payload, ok := verifySignature(decodedClaim, keyring.PubKey())
-	if !ok {
-		payload, ok = verifySignature(decodedClaim, keyring.PreviousPubKey())
-		if !ok {
+	// Reconstruct the payload that was signed
+	payload := ufmt.Sprintf("%d,%s,%s,%s,%s,%s,%s", blockHeight, discordAccountID, 
+		discordGuildID, discordRoleID, addr, roleName, realmPath)
+	
+	// Verify signature with primary public key, and failover to previous public key
+	verified := ed25519.Verify(keyring.PubKey(), []byte(payload), decodedSignature)
+	if !verified {
+		verified = ed25519.Verify(keyring.PreviousPubKey(), []byte(payload), decodedSignature)
+		if !verified {
 			return nil, errors.New("claim: not a valid signature")
 		}
 	}
-	// create claim from payload
-	claim, err := claimFromPayload(string(payload))
-	if err != nil {
-		return nil, err
-	}
-
-	// verify timestamp
-	if err := verifyTimestamp(claim.timestamp, time.Now(), claimTTL, maxClockSkew); err != nil {
-		return nil, err
-	}
-
-	if !skipVerifyAddress {
-		// verify address
-		if err := verifyAddress(claim.addr); err != nil {
-			return nil, err
-		}
-	}
-
-	return claim, nil
-}
-
-func claimFromPayload(payload string) (*Claim, error) {
-	splitPayload := strings.Split(payload, ",")
-	if len(splitPayload) != 7 {
-		return nil, errors.New("claim: invalid arg length, expecting 7 values")
-	}
-	unixSeconds, err := strconv.ParseInt(splitPayload[0], 10, 64)
-	timestamp := time.Unix(unixSeconds, 0)
-	if err != nil {
-		return nil, errors.New("claim: failed to parse timestamp")
-	}
-
-	discordAccountID := splitPayload[1]
-	discordGuildID := splitPayload[2]
-	discordRoleID := splitPayload[3]
-	addr := std.Address(splitPayload[4])
-	roleName := splitPayload[5]
-	realmPath := splitPayload[6]
 
 	// Validate discord IDs
 	if err := validateDiscordID(discordAccountID); err != nil {
@@ -137,40 +117,118 @@ func claimFromPayload(payload string) (*Claim, error) {
 		return nil, errors.New("claim: realm path cannot be empty")
 	}
 
-	return &Claim{
-		timestamp:        timestamp,
+	// Create claim
+	claim := &Claim{
+		blockHeight:      blockHeight,
 		discordAccountID: discordAccountID,
 		discordGuildID:   discordGuildID,
 		discordRoleID:    discordRoleID,
 		addr:             addr,
 		roleName:         roleName,
 		realmPath:        realmPath,
-	}, nil
+	}
+
+	// Verify block height
+	currentHeight := std.ChainHeight()
+	if err := verifyBlockHeight(claim.blockHeight, currentHeight); err != nil {
+		return nil, err
+	}
+
+	if !skipVerifyAddress {
+		// verify address
+		if err := verifyAddress(claim.addr); err != nil {
+			return nil, err
+		}
+	}
+
+	return claim, nil
 }
 
-// verifySignature takes a signedMessage and attempts to verify it with any pubkey in the set of pubkeys
-// if it is able to verify, it returns the payload and true, otherwise it returns nil and false.
-func verifySignature(signedMessage, pubkey []byte) ([]byte, bool) {
-	overhead := 64
-	if len(signedMessage) < overhead {
-		return nil, false
+// validateUnlinkClaim validates a claim for unlinking a realm role from a discord role
+func validateUnlinkClaim(blockHeight int64, discordAccountID, discordGuildID string, 
+	realmPath, roleName, signature string) (*Claim, error) {
+	// Check if signature was already used
+	if ds.isSignatureUsed(signature) {
+		return nil, errors.New("claim: signature already used")
 	}
-	if ed25519.Verify(pubkey, signedMessage[overhead:], signedMessage[:overhead]) {
-		out := make([]byte, len(signedMessage)-overhead)
-		copy(out, signedMessage[overhead:])
-		return out, true
+	
+	// URL decode the realmPath and roleName in case they come from URL query parameters
+	decodedRealmPath, _ := url.QueryUnescape(realmPath)
+	if decodedRealmPath != "" {
+		realmPath = decodedRealmPath
 	}
-	return nil, false
+	
+	decodedRoleName, _ := url.QueryUnescape(roleName)
+	if decodedRoleName != "" {
+		roleName = decodedRoleName
+	}
+	
+	// Decode the signature
+	decodedSignature, err := base64.RawURLEncoding.DecodeString(signature)
+	if err != nil {
+		return nil, errors.New("claim: invalid signature encoding")
+	}
+
+	// Reconstruct the payload that was signed (unlink doesn't need role ID or address)
+	payload := ufmt.Sprintf("%d,%s,%s,%s,%s", blockHeight, discordAccountID, 
+		discordGuildID, realmPath, roleName)
+	
+	// Verify signature with primary public key, and failover to previous public key
+	verified := ed25519.Verify(keyring.PubKey(), []byte(payload), decodedSignature)
+	if !verified {
+		verified = ed25519.Verify(keyring.PreviousPubKey(), []byte(payload), decodedSignature)
+		if !verified {
+			return nil, errors.New("claim: not a valid signature")
+		}
+	}
+
+	// Validate discord IDs
+	if err := validateDiscordID(discordAccountID); err != nil {
+		return nil, err
+	}
+	if err := validateDiscordID(discordGuildID); err != nil {
+		return nil, err
+	}
+
+	// Validate role name and realm path are not empty
+	if len(roleName) == 0 {
+		return nil, errors.New("claim: role name cannot be empty")
+	}
+	if len(realmPath) == 0 {
+		return nil, errors.New("claim: realm path cannot be empty")
+	}
+
+	// Verify block height
+	currentHeight := std.ChainHeight()
+	if err := verifyBlockHeight(blockHeight, currentHeight); err != nil {
+		return nil, err
+	}
+
+	// Get the existing claim to return full data
+	existingClaim := ds.getByPathRoleGuild(realmPath, roleName, discordGuildID)
+	if existingClaim == nil {
+		return nil, errors.New("claim: role mapping not found")
+	}
+
+	// Return the full claim with all details
+	return existingClaim, nil
 }
 
-func verifyTimestamp(claim, evaluated time.Time, ttl, skew time.Duration) error {
-	claimAge := evaluated.Sub(claim)
-	if claimAge > ttl {
-		return errors.New("claim: timestamp exceeds ttl window")
+
+func verifyBlockHeight(claimHeight, currentHeight int64) error {
+	// Check if claim is from the future
+	if claimHeight > currentHeight {
+		return errors.New(ufmt.Sprintf("claim: block height is in the future (claim: %d, current: %d)", 
+			claimHeight, currentHeight))
 	}
-	if claim.After(evaluated.Add(skew)) {
-		return errors.New("claim: timestamp exceeds clock skew tolerance")
+	
+	// Check if claim is too old
+	age := currentHeight - claimHeight
+	if age > maxBlockAge {
+		return errors.New(ufmt.Sprintf("claim: block height too old (age: %d blocks, max: %d blocks, claim: %d, current: %d)", 
+			age, maxBlockAge, claimHeight, currentHeight))
 	}
+	
 	return nil
 }
 

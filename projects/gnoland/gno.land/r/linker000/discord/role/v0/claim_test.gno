@@ -2,115 +2,78 @@ package role
 
 import (
 	"testing"
-	"time"
 
 	"gno.land/p/demo/testutils"
 )
 
-// TestClaimFromPayload tests parsing role claim payload strings into Claim structs
-func TestClaimFromPayload(t *testing.T) {
+// TestVerifyBlockHeight tests block height validation logic
+func TestVerifyBlockHeight(t *testing.T) {
 	tt := []struct {
-		payload     string
-		shouldFail  bool
-		expectedErr string
-		description string
+		claimHeight  int64
+		currentHeight int64
+		shouldFail   bool
+		expectedErr  string
+		description  string
 	}{
 		{
-			payload:     "1704067200,123456789012345678,987654321098765432,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40,admin,gno.land/r/demo/app",
-			shouldFail:  false,
-			description: "valid role claim payload should parse successfully",
+			claimHeight:  1000,
+			currentHeight: 1050,
+			shouldFail:   false,
+			description:  "claim within maxBlockAge should pass",
 		},
 		{
-			payload:     "1704067200,555666777888999000,444333222111000999,777888999000111222,g1m9pwhrf9tggvz33kq4gv7t9h4rundlj2afcawe,moderator,gno.land/r/test/realm",
-			shouldFail:  false,
-			description: "another valid role claim should parse successfully",
+			claimHeight:  1000,
+			currentHeight: 1499,
+			shouldFail:   false,
+			description:  "claim near maxBlockAge limit should pass",
 		},
 		{
-			payload:     "invalid_timestamp,123456789012345678,987654321098765432,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40,admin,gno.land/r/demo/app",
-			shouldFail:  true,
-			expectedErr: "claim: failed to parse timestamp",
-			description: "invalid timestamp should fail",
+			claimHeight:  1000,
+			currentHeight: 1501,
+			shouldFail:   true,
+			expectedErr:  "claim: block height too old (age: 501 blocks, max: 500 blocks, claim: 1000, current: 1501)",
+			description:  "claim exceeding maxBlockAge should fail",
 		},
 		{
-			payload:     "1704067200,123456789012345678,987654321098765432,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40,admin",
-			shouldFail:  true,
-			expectedErr: "claim: invalid arg length, expecting 7 values",
-			description: "missing realm path should fail",
+			claimHeight:  2000,
+			currentHeight: 1999,
+			shouldFail:   true,
+			expectedErr:  "claim: block height is in the future (claim: 2000, current: 1999)",
+			description:  "claim from future block should fail",
 		},
 		{
-			payload:     "1704067200,123456789012345678,987654321098765432,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40",
-			shouldFail:  true,
-			expectedErr: "claim: invalid arg length, expecting 7 values",
-			description: "missing role name and realm path should fail",
+			claimHeight:  1000,
+			currentHeight: 1000,
+			shouldFail:   false,
+			description:  "claim at exact same block should pass",
 		},
 		{
-			payload:     "",
-			shouldFail:  true,
-			expectedErr: "claim: invalid arg length, expecting 7 values",
-			description: "empty payload should fail",
-		},
-		{
-			payload:     "1704067200,123456789012345678,987654321098765432,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40,admin,gno.land/r/demo/app,extra",
-			shouldFail:  true,
-			expectedErr: "claim: invalid arg length, expecting 7 values",
-			description: "too many fields should fail",
-		},
-		{
-			payload:     "1704067200,,987654321098765432,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40,admin,gno.land/r/demo/app",
-			shouldFail:  true,
-			expectedErr: "claim: discord ID cannot be empty",
-			description: "empty discord account ID should fail validation",
-		},
-		{
-			payload:     "1704067200,123456789012345678,,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40,admin,gno.land/r/demo/app",
-			shouldFail:  true,
-			expectedErr: "claim: discord ID cannot be empty",
-			description: "empty guild ID should fail validation",
+			claimHeight:  0,
+			currentHeight: 100,
+			shouldFail:   false,
+			description:  "genesis block claim should pass if within age limit",
 		},
 	}
 
 	for _, test := range tt {
-		claim, err := claimFromPayload(test.payload)
+		err := verifyBlockHeight(test.claimHeight, test.currentHeight)
 
 		if test.shouldFail {
 			if err == nil {
-				t.Errorf("expected error for payload '%v', description: %v", test.payload, test.description)
+				t.Errorf("expected error for claimHeight=%v, currentHeight=%v, description: %v",
+					test.claimHeight, test.currentHeight, test.description)
 				continue
 			}
 			if err.Error() != test.expectedErr {
-				t.Errorf("expected error '%v', got '%v', description: %v", test.expectedErr, err.Error(), test.description)
+				t.Errorf("expected error '%v', got '%v', description: %v",
+					test.expectedErr, err.Error(), test.description)
 			}
 			continue
 		}
 
 		if err != nil {
-			t.Errorf("unexpected error for payload '%v': %v, description: %v", test.payload, err, test.description)
-			continue
-		}
-
-		// Verify parsed claim for first successful case
-		if test.payload == "1704067200,123456789012345678,987654321098765432,111222333444555666,g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40,admin,gno.land/r/demo/app" {
-			if claim.timestamp.Unix() != 1704067200 {
-				t.Errorf("expected timestamp 1704067200, got %v", claim.timestamp.Unix())
-			}
-			if claim.discordAccountID != "123456789012345678" {
-				t.Errorf("expected discord account ID '123456789012345678', got '%v'", claim.discordAccountID)
-			}
-			if claim.discordGuildID != "987654321098765432" {
-				t.Errorf("expected guild ID '987654321098765432', got '%v'", claim.discordGuildID)
-			}
-			if claim.discordRoleID != "111222333444555666" {
-				t.Errorf("expected role ID '111222333444555666', got '%v'", claim.discordRoleID)
-			}
-			if string(claim.addr) != "g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40" {
-				t.Errorf("expected address 'g1jafqkehdf9ezeeu9398xh6lya6qacvjnp5df40', got '%v'", string(claim.addr))
-			}
-			if claim.roleName != "admin" {
-				t.Errorf("expected role name 'admin', got '%v'", claim.roleName)
-			}
-			if claim.realmPath != "gno.land/r/demo/app" {
-				t.Errorf("expected realm path 'gno.land/r/demo/app', got '%v'", claim.realmPath)
-			}
+			t.Errorf("unexpected error for claimHeight=%v, currentHeight=%v: %v, description: %v",
+				test.claimHeight, test.currentHeight, err, test.description)
 		}
 	}
 }
@@ -118,7 +81,7 @@ func TestClaimFromPayload(t *testing.T) {
 // TestClaimMethods tests the methods on Claim struct
 func TestClaimMethods(t *testing.T) {
 	claim := &Claim{
-		timestamp:        time.Unix(1704067200, 0),
+		blockHeight:      1000,
 		discordAccountID: "123456789012345678",
 		discordGuildID:   "987654321098765432",
 		discordRoleID:    "111222333444555666",
@@ -194,96 +157,33 @@ func TestFormatFunctions(t *testing.T) {
 	}
 }
 
-// TestVerifyTimestamp tests timestamp validation logic (same as user package)
-func TestVerifyTimestamp(t *testing.T) {
-	baseTime := time.Unix(1704067200, 0) // 2024-01-01 00:00:00 UTC
-	ttl := 5 * time.Minute
-	skew := 30 * time.Second
+// TestSignatureUsageTracking tests signature replay protection
+func TestSignatureUsageTracking(t *testing.T) {
+	// Initialize a test datastore
+	ds := newDatastore()
 
-	tt := []struct {
-		claimTime   time.Time
-		evalTime    time.Time
-		shouldFail  bool
-		expectedErr string
-		description string
-	}{
-		{
-			claimTime:   baseTime,
-			evalTime:    baseTime.Add(1 * time.Minute),
-			shouldFail:  false,
-			description: "claim within TTL should pass",
-		},
-		{
-			claimTime:   baseTime,
-			evalTime:    baseTime.Add(6 * time.Minute),
-			shouldFail:  true,
-			expectedErr: "claim: timestamp exceeds ttl window",
-			description: "claim exceeding TTL should fail",
-		},
-		{
-			claimTime:   baseTime.Add(10 * time.Second),
-			evalTime:    baseTime,
-			shouldFail:  false,
-			description: "claim slightly in future (within skew) should pass",
-		},
-		{
-			claimTime:   baseTime.Add(1 * time.Minute),
-			evalTime:    baseTime,
-			shouldFail:  true,
-			expectedErr: "claim: timestamp exceeds clock skew tolerance",
-			description: "claim too far in future should fail",
-		},
+	// Test 1: New signature should not be used
+	sig1 := "test_signature_1"
+	if ds.isSignatureUsed(sig1) {
+		t.Errorf("new signature should not be marked as used")
 	}
 
-	for _, test := range tt {
-		err := verifyTimestamp(test.claimTime, test.evalTime, ttl, skew)
-
-		if test.shouldFail {
-			if err == nil {
-				t.Errorf("expected error for claimTime=%v, evalTime=%v, description: %v",
-					test.claimTime, test.evalTime, test.description)
-				continue
-			}
-			if err.Error() != test.expectedErr {
-				t.Errorf("expected error '%v', got '%v', description: %v",
-					test.expectedErr, err.Error(), test.description)
-			}
-			continue
-		}
-
-		if err != nil {
-			t.Errorf("unexpected error for claimTime=%v, evalTime=%v: %v, description: %v",
-				test.claimTime, test.evalTime, err, test.description)
-		}
-	}
-}
-
-// TestVerifySignature tests signature verification logic (same as user package)
-func TestVerifySignature(t *testing.T) {
-	// Test 1: Message too short should fail
-	shortMessage := make([]byte, 32)
-	pubkey := make([]byte, 32)
-
-	payload, ok := verifySignature(shortMessage, pubkey)
-	if ok {
-		t.Errorf("short message should fail verification")
-	}
-	if payload != nil {
-		t.Errorf("failed verification should return nil payload")
+	// Test 2: Mark signature as used
+	ds.markSignatureUsed(sig1, 1000)
+	if !ds.isSignatureUsed(sig1) {
+		t.Errorf("signature should be marked as used after calling markSignatureUsed")
 	}
 
-	// Test 2: Message with proper length but invalid signature
-	longMessage := make([]byte, 100)
-	for i := range longMessage {
-		longMessage[i] = byte(i % 256)
+	// Test 3: Different signature should not be affected
+	sig2 := "test_signature_2"
+	if ds.isSignatureUsed(sig2) {
+		t.Errorf("different signature should not be marked as used")
 	}
 
-	payload, ok = verifySignature(longMessage, pubkey)
-	if ok {
-		t.Errorf("invalid signature should fail verification")
-	}
-	if payload != nil {
-		t.Errorf("failed verification should return nil payload")
+	// Test 4: Mark second signature and verify both are tracked
+	ds.markSignatureUsed(sig2, 1001)
+	if !ds.isSignatureUsed(sig1) || !ds.isSignatureUsed(sig2) {
+		t.Errorf("both signatures should be marked as used")
 	}
 }
 
@@ -398,14 +298,10 @@ func TestEscapeString(t *testing.T) {
 
 // TestClaimConstants tests the defined constants
 func TestClaimConstants(t *testing.T) {
-	expectedTTL := 5 * time.Minute
-	if claimTTL != expectedTTL {
-		t.Errorf("expected claimTTL to be %v, got %v", expectedTTL, claimTTL)
-	}
-
-	expectedSkew := 30 * time.Second
-	if maxClockSkew != expectedSkew {
-		t.Errorf("expected maxClockSkew to be %v, got %v", expectedSkew, maxClockSkew)
+	// Test maxBlockAge constant
+	expectedMaxAge := int64(500)
+	if maxBlockAge != expectedMaxAge {
+		t.Errorf("expected maxBlockAge to be %v, got %v", expectedMaxAge, maxBlockAge)
 	}
 }
 

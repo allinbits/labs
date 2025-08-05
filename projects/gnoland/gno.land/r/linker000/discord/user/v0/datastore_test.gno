@@ -2,7 +2,6 @@ package user
 
 import (
 	"testing"
-	"time"
 
 	"gno.land/p/demo/avl"
 	"gno.land/p/demo/testutils"
@@ -20,9 +19,9 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 1: First valid claim should succeed
 	claim1 := &Claim{
-		timestamp: time.Now(),
-		discordID: "alice_discord_123",
-		addr:      alice,
+		blockHeight: 1000,
+		discordID:   "alice_discord_123",
+		addr:        alice,
 	}
 
 	err := ds.set(claim1)
@@ -32,9 +31,9 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 2: Cannot link same address twice
 	claim2 := &Claim{
-		timestamp: time.Now(),
-		discordID: "alice_discord_456",
-		addr:      alice, // same address
+		blockHeight: 1001,
+		discordID:   "alice_discord_456",
+		addr:        alice, // same address
 	}
 
 	err = ds.set(claim2)
@@ -47,7 +46,7 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 3: Cannot link same discord ID twice
 	claim3 := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1002,
 		discordID: "alice_discord_123", // same discord ID
 		addr:      bob,
 	}
@@ -62,7 +61,7 @@ func TestDatastoreSet(t *testing.T) {
 
 	// Test 4: Different address and discord ID should succeed
 	claim4 := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "bob_discord_789",
 		addr:      bob,
 	}
@@ -91,7 +90,7 @@ func TestDatastoreGetByAddress(t *testing.T) {
 
 	// Test 2: Add claim and verify retrieval
 	claim := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "alice_discord_123",
 		addr:      alice,
 	}
@@ -132,7 +131,7 @@ func TestDatastoreGetByDiscordID(t *testing.T) {
 
 	// Test 2: Add claim and verify retrieval
 	claim := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "alice_discord_123",
 		addr:      alice,
 	}
@@ -168,12 +167,12 @@ func TestDatastoreRemoveByAddress(t *testing.T) {
 
 	// Setup: Add two claims
 	claim1 := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "alice_discord_123",
 		addr:      alice,
 	}
 	claim2 := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "bob_discord_456",
 		addr:      bob,
 	}
@@ -216,12 +215,12 @@ func TestDatastoreRemoveByDiscordID(t *testing.T) {
 
 	// Setup: Add two claims
 	claim1 := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "alice_discord_123",
 		addr:      alice,
 	}
 	claim2 := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "bob_discord_456",
 		addr:      bob,
 	}
@@ -264,7 +263,7 @@ func TestDatastoreComplexScenario(t *testing.T) {
 
 	// Step 1: Add alice
 	claimAlice := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "alice_discord_123",
 		addr:      alice,
 	}
@@ -275,7 +274,7 @@ func TestDatastoreComplexScenario(t *testing.T) {
 
 	// Step 2: Try to add bob with alice's discord ID (should fail)
 	claimBob := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "alice_discord_123", // same discord ID
 		addr:      bob,
 	}
@@ -302,7 +301,7 @@ func TestDatastoreComplexScenario(t *testing.T) {
 
 	// Step 5: Add charlie with different discord ID
 	claimCharlie := &Claim{
-		timestamp: time.Now(),
+		blockHeight: 1000,
 		discordID: "charlie_discord_789",
 		addr:      charlie,
 	}

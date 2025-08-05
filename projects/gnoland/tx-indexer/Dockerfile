@@ -1,4 +1,4 @@
-FROM ghcr.io/gnolang/tx-indexer:0.5.4 AS tx-indexer
+FROM ghcr.io/gnolang/tx-indexer:0.6.1 AS tx-indexer
 
 FROM cgr.dev/chainguard/static:latest
 

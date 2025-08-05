@@ -211,3 +211,17 @@ func (evt *Event) ToAnchor() string {
 func (evt *Event) Render(path string, tpl func(path string, flyer *eve.Flyer) string) string {
 	return tpl(path, evt.Flyer())
 }
+
+func (evt *Event) RenderPage(path string, body ...eve.Content) string {
+	q := eve.QueryValues(path)
+	switch {
+	case eve.HasQueryParam(q, "session"):
+		return eve.RenderComponent(path, evt.GetSession(q.Get("session")))
+	case eve.HasQueryParam(q, "location"):
+		return eve.RenderComponent(path, evt.GetLocation(q.Get("location")))
+	case eve.HasQueryParam(q, "speaker"):
+		return eve.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
+	default:
+	}
+	return eve.RenderPage(path, evt.Flyer(), body...)
+}

@@ -16,5 +16,5 @@ GNOROOT = '/gnoroot'
 app = "staging"
 
 [[vm]]
-size = 'performance-2x'
-memory = '8gb'
+size = 'performance-1x'
+memory = '2gb'

@@ -2,7 +2,9 @@
 
 This is a repository meant to hold all gno.land smart contract related `p/` and `r/` files.
 
-This has a local development environment so that you can run `make dev` and it will spin up hot-reload for `examples` as well as all the files in this directory. 
+This has a local development environment so that you can run `make dev` and it will spin up hot-reload for `examples` as well as all the files in this directory.
+
+`labsneet` current matches `test7.2` using `sha-9b384d4` as the tagged image
 
 ## Quick Start
 

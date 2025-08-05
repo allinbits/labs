@@ -25,42 +25,59 @@ func TestUserLinkingWorkflow_GetClaimURL(t *testing.T) {
 	t.Run("link claim URL", func(t *testing.T) {
 		claim := &core.Claim{
 			Type:      core.ClaimTypeUserLink,
-			Data:      "test-data",
+			Data:      "1000,123456789012345678,g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5",
 			Signature: "test-signature",
 			CreatedAt: time.Now(),
 		}
 
 		url := workflow.GetClaimURL(claim)
-		expectedURL := "https://example.com/r/linker/user/v0:claim/test-signature"
 
-		if url != expectedURL {
-			t.Errorf("Expected URL %q, got %q", expectedURL, url)
+		// Should be a link URL with query parameters
+		if !strings.HasPrefix(url, "https://example.com/r/linker/user/v0:link?") {
+			t.Errorf("Expected URL to start with link endpoint, got %q", url)
 		}
 
-		// Should not have unlink parameter
-		if strings.Contains(url, "?unlink=true") {
-			t.Error("Link claim URL should not contain unlink parameter")
+		// Should contain all required parameters
+		requiredParams := []string{
+			"blockHeight=1000",
+			"discordID=123456789012345678",
+			"address=g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5",
+			"signature=test-signature",
+		}
+
+		for _, param := range requiredParams {
+			if !strings.Contains(url, param) {
+				t.Errorf("URL should contain parameter %q, got %q", param, url)
+			}
 		}
 	})
 
 	t.Run("unlink claim URL", func(t *testing.T) {
 		claim := &core.Claim{
 			Type:      core.ClaimTypeUserUnlink,
-			Data:      "test-data",
+			Data:      "1000,123456789012345678",
 			Signature: "test-signature",
 			CreatedAt: time.Now(),
 		}
 
 		url := workflow.GetClaimURL(claim)
-		expectedURL := "https://example.com/r/linker/user/v0:claim/test-signature?unlink=true"
 
-		if url != expectedURL {
-			t.Errorf("Expected URL %q, got %q", expectedURL, url)
+		// Should be an unlink URL with query parameters
+		if !strings.HasPrefix(url, "https://example.com/r/linker/user/v0:unlink?") {
+			t.Errorf("Expected URL to start with unlink endpoint, got %q", url)
 		}
 
-		// Should have unlink parameter
-		if !strings.Contains(url, "?unlink=true") {
-			t.Error("Unlink claim URL should contain unlink parameter")
+		// Should contain all required parameters
+		requiredParams := []string{
+			"blockHeight=1000",
+			"discordID=123456789012345678",
+			"signature=test-signature",
+		}
+
+		for _, param := range requiredParams {
+			if !strings.Contains(url, param) {
+				t.Errorf("URL should contain parameter %q, got %q", param, url)
+			}
 		}
 	})
 }

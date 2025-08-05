@@ -35,7 +35,7 @@ func (w *UserLinkingWorkflowImpl) GenerateClaim(platformID, gnoAddress string) (
 
 	// Create message with block height instead of timestamp
 	message := fmt.Sprintf("%d,%s,%s", blockHeight, platformID, gnoAddress)
-	
+
 	// Sign only the message (not the full signed message)
 	signature := sign.Sign(nil, []byte(message), w.config.SigningKey)[:64] // Only the signature part
 	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)
@@ -58,7 +58,7 @@ func (w *UserLinkingWorkflowImpl) GenerateUnlinkClaim(platformID, gnoAddress str
 
 	// Create message with block height and platformID only (no address needed for unlink)
 	message := fmt.Sprintf("%d,%s", blockHeight, platformID)
-	
+
 	// Sign only the message (not the full signed message)
 	signature := sign.Sign(nil, []byte(message), w.config.SigningKey)[:64] // Only the signature part
 	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)

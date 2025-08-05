@@ -106,13 +106,13 @@ func (w *RoleLinkingWorkflowImpl) HasRealmRole(realmPath, roleName, address stri
 func (w *RoleLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
 	// Parse the claim data to extract fields
 	parts := strings.Split(claim.Data, ",")
-	
+
 	if claim.Type == core.ClaimTypeRoleLink {
 		// Link claim format: blockHeight,discordAccountID,discordGuildID,discordRoleID,address,roleName,realmPath
 		if len(parts) < 7 {
 			return "" // Invalid claim data
 		}
-		
+
 		// Build URL with query parameters for link
 		params := url.Values{}
 		params.Add("blockHeight", parts[0])
@@ -123,14 +123,14 @@ func (w *RoleLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
 		params.Add("roleName", parts[5])
 		params.Add("realmPath", parts[6])
 		params.Add("signature", claim.Signature)
-		
+
 		return fmt.Sprintf("%s/%s:link?%s", w.config.BaseURL, w.config.RoleContract, params.Encode())
 	} else {
 		// Unlink claim format: blockHeight,discordAccountID,discordGuildID,realmPath,roleName
 		if len(parts) < 5 {
 			return "" // Invalid claim data
 		}
-		
+
 		// Build URL with query parameters for unlink
 		params := url.Values{}
 		params.Add("blockHeight", parts[0])
@@ -139,7 +139,7 @@ func (w *RoleLinkingWorkflowImpl) GetClaimURL(claim *core.Claim) string {
 		params.Add("realmPath", parts[3])
 		params.Add("roleName", parts[4])
 		params.Add("signature", claim.Signature)
-		
+
 		return fmt.Sprintf("%s/%s:unlink?%s", w.config.BaseURL, w.config.RoleContract, params.Encode())
 	}
 }

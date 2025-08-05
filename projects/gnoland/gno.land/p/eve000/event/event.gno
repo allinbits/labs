@@ -9,9 +9,6 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-// FIXME either change interface or satisfy it
-//var _ Api = (*Event)(nil)
-
 type Api interface {
 	AddOrganizer(addr std.Address)
 	AddProposer(addr, sender std.Address)
@@ -24,6 +21,8 @@ type Api interface {
 	JoinAsAttendee()
 	JoinWaitlist()
 	ListRoles() []string
+	// REVIEW: should setLive Event be part of the API? - we may not use due to versioning issues
+	PublishEvent(evt *Event, opts map[string]interface{}) string
 	RegisterEvent(evt *Event, opts map[string]interface{}) string
 	RemoveOrganizer(addr std.Address)
 	RemoveProposer(addr, sender std.Address)

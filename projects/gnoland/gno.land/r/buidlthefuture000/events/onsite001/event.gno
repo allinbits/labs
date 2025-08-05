@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"gno.land/p/eve000/event"
-	"gno.land/p/eve000/event/component"
+	eve "gno.land/p/eve000/event/component"
 )
 
 func init() {
@@ -16,12 +16,12 @@ func init() {
 }
 
 // banner content block is shown in the top section of the event page
-var banner = component.Content{
+var banner = eve.Content{
 	Published: true,
 	Markdown:  "\n\n#### Status: Pre-planning",
 }
 
-var locations = map[string]*component.Location{
+var locations = map[string]*eve.Location{
 	"null": {
 		Name:        "Null Island",
 		Coordinates: "0.0, 0.0",
@@ -35,11 +35,11 @@ var locations = map[string]*component.Location{
 	},
 }
 
-var sessions = map[string]*component.Session{
+var sessions = map[string]*eve.Session{
 	"kickoff": {
 		Title:       "A Visit To Null Island",
 		Description: "Welcome to nowhere - there is nothing here, but we can still have a good time!",
-		Speaker:     &component.Speaker{},
+		Speaker:     &eve.Speaker{},
 		StartTime:   time.Date(2025, 7, 17, 13, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 7, 17, 13, 30, 0, 0, time.UTC),
 		Location:    locations["null"],
@@ -47,7 +47,7 @@ var sessions = map[string]*component.Session{
 	"summit": {
 		Title:       "Summit in Austin",
 		Description: "Join us for a summit in Austin, Texas to discuss the future of Gnoland and how we can build it together.",
-		Speaker:     &component.Speaker{},
+		Speaker:     &eve.Speaker{},
 		StartTime:   time.Date(2025, 7, 18, 10, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2025, 7, 18, 17, 0, 0, 0, time.UTC),
 		Location:    locations["atx"],
@@ -59,10 +59,10 @@ var gnolandlaunch = &event.Event{
 	Location:       locations["gnowhere"],
 	StartDate:      time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC),
 	EndDate:        time.Date(2025, 8, 29, 0, 0, 0, 0, time.UTC),
-	Status:         component.EventMovedOnline, // it was planned as an IRL event example, but it was moved online ;-P
-	AttendanceMode: component.OfflineEventAttendanceMode,
+	Status:         eve.EventMovedOnline, // it was planned as an IRL event example, but it was moved online ;-P
+	AttendanceMode: eve.OfflineEventAttendanceMode,
 	Description:    "Join this event to become a beta tester for Gnoland, help us think about planning the launch, and provide feedback on the platform. \n\n This is a pre-planning event to gather ideas and feedback from the community.",
-	Sessions: []*component.Session{
+	Sessions: []*eve.Session{
 		sessions["kickoff"],
 		sessions["summit"],
 	},

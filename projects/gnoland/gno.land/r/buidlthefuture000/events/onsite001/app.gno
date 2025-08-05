@@ -47,11 +47,15 @@ func (*App) LiveEvent() *event.Event {
 	return registry.GetEvent(registry.LiveEventId)
 }
 
-func (*App) RegisterEvent(evt *event.Event, opts map[string]interface{}) string {
-	registry.SetRenderOpts(opts)
-	id := registry.RegisterEvent(evt, opts)
+func (*App) PublishEvent(evt *event.Event, opts map[string]interface{}) string {
+	id := app.RegisterEvent(evt, opts)
 	registry.LiveEventId = id
 	return id
+}
+
+func (*App) RegisterEvent(evt *event.Event, opts map[string]interface{}) string {
+	registry.SetRenderOpts(opts)
+	return registry.RegisterEvent(evt, opts)
 }
 
 func (*App) AdminSetRole(role string, addr std.Address) {

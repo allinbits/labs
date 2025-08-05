@@ -4,7 +4,7 @@ import (
 	"std"
 
 	"gno.land/p/eve000/event"
-	"gno.land/p/eve000/event/component"
+	eve "gno.land/p/eve000/event/component"
 )
 
 type App struct{}
@@ -23,7 +23,7 @@ func (*App) Render(path string) (out string) {
 }
 
 func (*App) RenderCalendar(path string) string {
-	return app.LiveEvent().Render(path, component.IcsCalendarFile)
+	return app.LiveEvent().Render(path, eve.IcsCalendarFile)
 }
 
 func (*App) SetContent(key, markdown string) {
@@ -47,11 +47,15 @@ func (*App) LiveEvent() *event.Event {
 	return registry.GetEvent(registry.LiveEventId)
 }
 
-func (*App) RegisterEvent(evt *event.Event, opts map[string]interface{}) string {
-	registry.SetRenderOpts(opts)
-	id := registry.RegisterEvent(evt, opts)
+func (*App) PublishEvent(evt *event.Event, opts map[string]interface{}) string {
+	id := app.RegisterEvent(evt, opts)
 	registry.LiveEventId = id
 	return id
+}
+
+func (*App) RegisterEvent(evt *event.Event, opts map[string]interface{}) string {
+	registry.SetRenderOpts(opts)
+	return registry.RegisterEvent(evt, opts)
 }
 
 func (*App) AdminSetRole(role string, addr std.Address) {

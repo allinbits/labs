@@ -14,6 +14,9 @@ func init() {
 		"CalendarDataUrl": struct{}{},
 		//"CalendarHost": "webcal://127.0.0.1:8080",
 	})
+	// REVIEW: register the event with  the event registry
+	// reg "gno.land/r/buidlthefuture000/events/"
+	// events.RegisterEvent(evt, map[string]interface{}{
 }
 
 var banner = eve.Content{
@@ -37,25 +40,22 @@ var evt = &event.Event{
 }
 
 func Render(path string) string {
-	return render(path, banner)
-}
-
-func RenderCalendar(path string) string {
-	return evt.Render(path, eve.IcsCalendarFile)
-}
-
-func render(path string, body ...eve.Content) string {
 	q := eve.QueryValues(path)
 	switch {
+	// FIXME: component view is not working
 	case eve.HasQueryParam(q, "session"):
-		return eve.RenderComponent(path, evt.GetSession(q.Get("session")))
+		id := q.Get("session")
+		return id[0]
+		//s := evt.GetSession(string(id[0])) // REVIEW: why is id a slice?
+		return eve.RenderComponent(path, s)
 	case eve.HasQueryParam(q, "location"):
 		return eve.RenderComponent(path, evt.GetLocation(q.Get("location")))
 	case eve.HasQueryParam(q, "speaker"):
 		return eve.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
 	default:
-		return eve.RenderPage(path, evt.Flyer(), body...)
+		return eve.RenderPage(path, evt.Flyer(), banner)
 	}
+	return "Rendering failed: no valid query parameters found."
 }
 
 var locations = map[string]*eve.Location{
@@ -72,7 +72,7 @@ var locations = map[string]*eve.Location{
 var speakerBios = map[string]*eve.Speaker{
 	"mason": {
 		Name:        "Mason",
-		Biography:   "Nathan is a member of AIBLabs working on Eve event platform.",
+		Biography:   "Mason is a member of AIBLabs working on Eve event platform.",
 		Affiliation: "allinbits.com",
 		PictureURL:  "",
 	},

@@ -144,7 +144,7 @@ func (r *Registry) Iterate(callback RegistryCallback, matcher RegistryMatcher) {
 	})
 }
 
-// TODO: test + use this w/ a feed
+// FIXME: test + use this w/ a feed
 func (r *Registry) getItems() []*feed.Item {
 	var items []*feed.Item
 	host := r.renderOpts["host"].(string)
@@ -172,7 +172,7 @@ func (r *Registry) Render(path string) string {
 	if idx, ok := u["i"]; ok && len(idx) > 0 {
 		return r.renderItem(idx[0], u)
 	}
-	return r.renderIndex()
+	return r.renderIndex(path)
 }
 
 func (r *Registry) renderItem(indexStr string, u url.Values) string {
@@ -211,21 +211,47 @@ func (r *Registry) thumbnail(key string, obj interface{}) string {
 	}
 }
 
-func (r *Registry) renderIndex() string {
+func (r *Registry) renderIndex(path string) string {
+	const pageSize = 4
 	var sb strings.Builder
 	sb.WriteString("### Metamodel Index\n\n")
-	sb.WriteString("This is the index of the metamodel. " +
-		"You can use the `?i=` query parameter to navigate through the models.\n\n")
-	sb.WriteString("Available models:\n\n")
 
-	for i := 0; i < r.tree.Size(); i++ {
+	total := r.tree.Size()
+	page := 0
+	if u := parseQuery(path); u != nil {
+		if idx, ok := u["p"]; ok && len(idx) > 0 {
+			if i, err := strconv.Atoi(idx[0]); err == nil {
+				page = i
+			}
+		}
+	}
+	start := page * pageSize
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+
+	for i := start; i < end; i++ {
 		key, obj := r.tree.GetByIndex(i)
-		sb.WriteString("- [" + upcaseWords(key) + "](?i=" + ufmt.Sprintf("%d", i) + ")\n")
+		sb.WriteString("### [" + upcaseWords(key) + "](?i=" + ufmt.Sprintf("%d", i) + ")\n")
 		sb.WriteString(r.thumbnail(key, obj))
 	}
+
+	// Pagination navigation
+	if total > pageSize {
+		sb.WriteString("\n")
+		if page > 0 {
+			sb.WriteString("[Prev Page](?p=" + ufmt.Sprintf("%d", page-1) + ") ")
+		}
+		sb.WriteString(ufmt.Sprintf("Page %d/%d", page+1, (total+pageSize-1)/pageSize))
+		if end < total {
+			sb.WriteString(" [Next Page](?p=" + ufmt.Sprintf("%d", page+1) + ")")
+		}
+		sb.WriteString("\n")
+	}
+
 	return sb.String()
 }
-
 func parseQuery(path string) url.Values {
 	if len(path) > 0 && path[0] == '?' {
 		u, err := url.Parse(std.CurrentRealm().PkgPath() + path)

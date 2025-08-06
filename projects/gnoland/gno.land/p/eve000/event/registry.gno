@@ -30,17 +30,7 @@ func (r *Registry) Render(path string, body ...eve.Content) string {
 	if event_id == "" {
 		event_id = r.LiveEventId
 	}
-	evt := r.GetEvent(event_id)
-	switch {
-	case eve.HasQueryParam(q, "session"):
-		return eve.RenderComponent(path, evt.GetSession(q.Get("session")))
-	case eve.HasQueryParam(q, "location"):
-		return eve.RenderComponent(path, evt.GetLocation(q.Get("location")))
-	case eve.HasQueryParam(q, "speaker"):
-		return eve.RenderComponent(path, evt.GetSpeaker(q.Get("speaker")))
-	default:
-		return eve.RenderPage(path, evt.Flyer(), body...)
-	}
+	return r.GetEvent(event_id).RenderPage(path, body...)
 }
 
 func (r *Registry) GetPatchLevel() string {
@@ -76,7 +66,7 @@ func (r *Registry) RegisterEvent(e *Event, opts map[string]interface{}) string {
 	if r.Events == nil {
 		r.Events = avl.NewTree()
 	}
-	e.SetRenderOpts(opts) // REVIEW: consider moving this into the Event constructor
+	e.SetRenderOpts(opts)
 	id := eve.Pad3(r.Events.Size())
 	r.Events.Set(id, e)
 	return id

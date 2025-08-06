@@ -293,7 +293,10 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 
 func slugify(s string) string {
 	re := regexp.MustCompile(`[^a-z0-9]+`)
-	return strings.Trim(re.ReplaceAllString(strings.ToLower(s), "-"), "-")
+    // KLUDGE: make sure this conforms to a standard rather than extending with on-offs
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, "'", "")
+	return strings.Trim(re.ReplaceAllString(s, "-"), "-")
 }
 
 func Pad3(val interface{}) string {

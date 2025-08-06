@@ -24,7 +24,25 @@ var (
 
     body = eve.Content{
         Published: true,
-        Markdown: ` A meeting that never happens - this could definitely just be an e-mail.
+        Markdown: `
+---
+### (Fig 1) Above is the essential event details without any session data.
+
+0 or more content blocks can be injected into the event flyer, by convention we use banner and body.
+
+---
+
+***Banner*** - this section is used for call-to-action, such as subscribing to the calendar or downloading the calendar file.
+
+---
+
+***Body*** - this section contains the event description and additional information.
+In markdown here may reference the other parts of the event by anchor tags.
+
+---
+### (Fig 2) Below - we have use the injectable component.Content to provide documentation.
+
+---
 
 ## Overview of Components
 
@@ -36,7 +54,7 @@ This is a breakdown of components used in this realm
 ### Structures
 * ***event.Event*** -> provides read/write methods for a realm object
   * **MUST** not be exposed directly without auth
-* ***event.Flyer()*** -> presents a view of the event
+* ***event.Flyer()*** -> presents an Agenda View of the event with injectable markdown content
   * copies the event for sharing across realms
 * ***component.Component*** -> interfaces to render sub-components
   * i.e. ToSvg, ToMarkdown, ToJson, ToIcs, ToJsonLD
@@ -68,6 +86,16 @@ Location is a place where the event is happening. (In this case, it is an online
   - [Markdown](?location=0) - view location
   - [Json](?location=0&format=json) - view location json
 
+---
+### Fig (3) Below is the rendered event with sessions and speakers(optional).
+
+---
+
+***Agenda View*** - this is the main view of the event, it shows the event details, sessions, speakers, and location.
+
+***SVG Footer*** - a compactly rendered footer with all flyer details. (links back to Event title by anchor tag)
+
+---
 `}
 )
 
@@ -80,13 +108,14 @@ func tomorrowEvent() *event.Event {
         AttendanceMode: eve.OnlineEventAttendanceMode,
         Description:    "An event that is always tomorrow at 1pm UTC.",
         StartDate:   utc1pm(),
-        EndDate:     utc2pm(),
+        EndDate:   utc2pm(),
     }
     evt.Sessions = []*eve.Session{
         {
             Title:       "Tomorrow's just a day away",
             Description: "This is a test event that is always tomorrow at 1pm UTC.",
             StartTime:   utc1pm(),
+            EndTime:   utc2pm(),
             Sequence:    daysSincePublish(),
             Location:    &eve.Location{
                 Name:        "Online",

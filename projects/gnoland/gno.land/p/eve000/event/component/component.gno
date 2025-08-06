@@ -413,3 +413,15 @@ func QueryValues(fullURL string) url.Values {
 	}
 	return u.Query()
 }
+
+func DatesOnSameDay(t ...time.Time) bool {
+    if len(t) < 2 {
+        panic("DatesOnSameDay requires at least two dates")
+    }
+    for i := 1; i < len(t); i++ {
+        if t[i].Year() != t[0].Year() || t[i].YearDay() != t[0].YearDay() {
+            return false
+        }
+    }
+    return true
+}

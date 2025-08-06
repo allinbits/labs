@@ -21,32 +21,45 @@ var (
             "CalendarFile": "https://gnocal.aiblabs.net",
         },
     }
+    banner = eve.Content{
+        Published: true,
+        Markdown: `
+
+[Jump to Agenda View ↓](#agenda) to see the event sessions
+
+---
+
+| (Fig 1) See above |
+|-------------------------------------------------------------------|
+| ↑ Top - Heading contains the essential event details (no session data). |
+
+***Banner*** - section is used for call-to-action, such as subscribing to the calendar or downloading the calendar file.
+
+`}
 
     body = eve.Content{
         Published: true,
         Markdown: `
----
-### (Fig 1) Above is the essential event details without any session data.
+| (Fig 2) See Below |
+|--------------------------------------------------------------------------|
+| In this section, expect to find more unstructured paragraphs of markdown here.|
+| For this test case: we store component docs in the body. |
 
-0 or more content blocks can be injected into the event flyer, by convention we use banner and body.
+***Body*** - section contains the event description and additional information.
 
----
-
-***Banner*** - this section is used for call-to-action, such as subscribing to the calendar or downloading the calendar file.
-
----
-
-***Body*** - this section contains the event description and additional information.
-In markdown here may reference the other parts of the event by anchor tags.
+NOTE: Markdown here may link the other parts of the flyer by anchor tags. (e.g [Agenda View](#agenda))
 
 ---
-### (Fig 2) Below - we have use the injectable component.Content to provide documentation.
+`}
 
----
-
+    overview = eve.Content{
+        Published: true,
+        Markdown: `
 ## Overview of Components
 
-This is a breakdown of components used in this realm
+**Overview** - Documents components used in this realm.
+
+Use links below to view the component data in different formats.
 
 ### Files
  - [event.gno](gnopriv001$source&file=event.gno) - Contains the event definition and rendering configuration
@@ -85,18 +98,22 @@ Speaker is a person who is presenting at the event.
 Location is a place where the event is happening. (In this case, it is an online event.)
   - [Markdown](?location=0) - view location
   - [Json](?location=0&format=json) - view location json
+`}
 
----
-### Fig (3) Below is the rendered event with sessions and speakers(optional).
+    footer = eve.Content{
+        Published: true,
+        Markdown: `
+| Fig (3) Below |
+|-----------------------------------------------------------------------------|
+|Rendered event agenda with sessions and speakers(optional).|
 
----
+***Agenda View*** - this is the main view of the event, it shows the event details, sessions, speakers, and location (when populated & enabled by renderOpts).
 
-***Agenda View*** - this is the main view of the event, it shows the event details, sessions, speakers, and location.
-
-***SVG Footer*** - a compactly rendered footer with all flyer details. (links back to Event title by anchor tag)
+***SVG Footer*** - a compactly rendered footer with all flyer details. (links back to [Event title ↑ by anchor tag](#tomorrows-just-a-day-away))
 
 ---
 `}
+
 )
 
 
@@ -140,7 +157,7 @@ func daysSincePublish() int {
 }
 
 func Render(path string) string {
-	return tomorrowEvent().RenderPage(path, body)
+	return tomorrowEvent().RenderPage(path, banner, body, overview, footer)
 }
 
 func RenderCalendar(path string) string {

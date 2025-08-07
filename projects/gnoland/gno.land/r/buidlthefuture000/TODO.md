@@ -7,7 +7,8 @@ High level TODOs for eve
 - [ ] Test /events api with all registered events
 - [ ] Audit for security issues with event permissions re: realm-based perms
 - [ ] add rendering tests for each type of supported event config location/speaker/cancelled events
-
+- [ ] ics sequence
+- [ ] calander landing page - on gnocal server - help / informational.. 
 Consider a possible work-around for inability to share directly
 - we could integrate w/ google calendar - manually importing and ICS then sharing that link
 

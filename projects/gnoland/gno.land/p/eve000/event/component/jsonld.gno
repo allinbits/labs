@@ -49,7 +49,6 @@ func EventJsonLD(_ string, a *Flyer) string {
 	sb.WriteString(`],`)
 
 	sb.WriteString(`
-        "description": "` + ufmt.Sprintf("%s", a.Description) + `"
-    }`)
+        "description": "` + ufmt.Sprintf("%s", a.Description) + "\"\n}")
 	return sb.String()
 }

@@ -1,6 +1,7 @@
 package component
 
 import (
+    "std"
 	"net/url"
 	"strings"
 	"time"
@@ -34,6 +35,9 @@ func IcsCalendarFile(path string, a *Flyer) string {
 	}
 	include := func(id string) bool { return useAll || allowed[id] }
 
+	fullPath := std.CurrentRealm().PkgPath()
+	prodID := strings.ReplaceAll(fullPath, "/", "//") + "//EN"
+
 	switch format {
 	case "json":
 		b.WriteString(a.ToJson())
@@ -43,15 +47,15 @@ func IcsCalendarFile(path string, a *Flyer) string {
 		w("BEGIN:VCALENDAR")
 		w("VERSION:2.0")
 		w("CALSCALE:GREGORIAN")
-		w("PRODID:-//gno.land//Launch Calendar//EN")
+		w("PRODID:-" + prodID)
 		w("METHOD:PUBLISH\n")
 
 		w("BEGIN:VEVENT")
-		w(f("UID:event-%s@%s", slugify(a.Name), "gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar"))
+		w(f("UID:event-%s@%s", slugify(a.Name), fullPath))
 		w("SEQUENCE:0")
 		w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
 		w(f("DTSTART;VALUE=DATE:%s", a.StartDate.Format("20060102")))
-		w(f("DTEND;VALUE=DATE:%s", a.StartDate.AddDate(0, 0, 1).Format("20060102"))) // 👈 Fix: DTEND is exclusive
+		w(f("DTEND;VALUE=DATE:%s", a.StartDate.AddDate(0, 0, 1).Format("20060102")))
 		w(f("SUMMARY:%s", a.Name))
 		w(f("DESCRIPTION:%s", a.Description))
 		if a.Location != nil && a.Location.Name != "" {
@@ -69,7 +73,7 @@ func IcsCalendarFile(path string, a *Flyer) string {
 			w(f("UID:%s-%d@%s",
 				slugify(s.Title)[:5],
 				s.StartTime.Unix(),
-				"gno.land/r/buidlthefuture000/events/gnolandlaunch/calendar",
+				fullPath,
 			))
 			w(f("SEQUENCE:%d", s.Sequence))
 			w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))

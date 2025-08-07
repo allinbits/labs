@@ -155,7 +155,7 @@ func (a *Flyer) ToSVGFragment(y *int) string {
 		svg += RenderSVGLine(y, "text", "label", "Status: Canceled")
 	}
 	if a.Status != EventPostponed {
-		if a.StartDate == a.EndDate {
+		if DatesOnSameDay(a.StartDate, a.EndDate) {
 			svg += RenderSVGLine(y, "text", "", FormatDate(a.StartDate))
 		} else {
 			svg += RenderSVGLine(y, "text", "", FormatDate(a.StartDate)+" - "+FormatDate(a.EndDate))

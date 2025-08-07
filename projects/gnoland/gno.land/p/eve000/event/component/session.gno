@@ -78,19 +78,24 @@ func (s *Session) ToMarkdown(_ ...Content) string {
 
 func (s *Session) ToJson() string {
 	json := "{\n"
-	json += "\"Location\":\"" + s.Location.Name + "\",\n"
-	json += "\"Title\":\"" + s.Title + "\",\n"
-	json += "\"Description\":\"" + s.Description + "\",\n"
-	json += "\"StartTime\":\"" + s.StartTime.Format(time.RFC3339) + "\",\n"
-	json += "\"EndTime\":\"" + s.EndTime.Format(time.RFC3339) + "\",\n"
-	json += "\"Speaker\":{\n"
-	json += "    \"Name\":\"" + s.Speaker.Name + "\",\n"
-	json += "    \"Biography\":\"" + s.Speaker.Biography + "\",\n"
-	json += "    \"Affiliation\":\"" + s.Speaker.Affiliation + "\",\n"
-	if s.Speaker.PictureURL != "" {
-		json += "    \"PictureURL\":\"" + s.Speaker.PictureURL + "\",\n"
-	}
-	json += "}}\n" // speaker
+	if s.Location != nil && s.Location.Name != "" {
+        json += "    \"Location\":\"" + s.Location.Name + "\",\n"
+    }
+	json += "    \"Title\":\"" + s.Title + "\",\n"
+	json += "     \"Description\":\"" + s.Description + "\",\n"
+	json += "    \"StartTime\":\"" + s.StartTime.Format(time.RFC3339) + "\",\n"
+	json += "    \"EndTime\":\"" + s.EndTime.Format(time.RFC3339) + "\",\n"
+	if s.Speaker != nil && s.Speaker.Name != "" {
+        json += "    \"Speaker\":{\n"
+        json += "        \"Name\":\"" + s.Speaker.Name + "\",\n"
+        json += "        \"Biography\":\"" + s.Speaker.Biography + "\",\n"
+        json += "        \"Affiliation\":\"" + s.Speaker.Affiliation + "\",\n"
+        if s.Speaker.PictureURL != "" {
+            json += "        \"PictureURL\":\"" + s.Speaker.PictureURL + "\",\n"
+        }
+        json += "}" // speaker
+    }
+	json += "}"
 	return json
 }
 

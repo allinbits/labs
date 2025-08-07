@@ -293,7 +293,10 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 
 func slugify(s string) string {
 	re := regexp.MustCompile(`[^a-z0-9]+`)
-	return strings.Trim(re.ReplaceAllString(strings.ToLower(s), "-"), "-")
+    // KLUDGE: make sure this conforms to a standard rather than extending with on-offs
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, "'", "")
+	return strings.Trim(re.ReplaceAllString(s, "-"), "-")
 }
 
 func Pad3(val interface{}) string {
@@ -409,4 +412,16 @@ func QueryValues(fullURL string) url.Values {
 		panic("Error Parsing URL")
 	}
 	return u.Query()
+}
+
+func DatesOnSameDay(t ...time.Time) bool {
+    if len(t) < 2 {
+        panic("DatesOnSameDay requires at least two dates")
+    }
+    for i := 1; i < len(t); i++ {
+        if t[i].Year() != t[0].Year() || t[i].YearDay() != t[0].YearDay() {
+            return false
+        }
+    }
+    return true
 }

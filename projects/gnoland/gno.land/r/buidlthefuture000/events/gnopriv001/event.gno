@@ -27,7 +27,20 @@ func  contentBlock (content string) eve.Content {
     return eve.Content{ Published: true, Markdown: content }
 }
 
-var banner = contentBlock(`
+var landing = contentBlock(`
+This is an algorithmic event that is always tomorrow at 1pm UTC.
+
+It's also a self-documenting event flyer that provides a view of the event, its sessions, speakers, and location.
+Read the docs to see how this event is built and rendered.
+
+` + eve.Button("ReadDocs →  ", "?p=docs") + `
+
+`)
+
+var banner = contentBlock(
+eve.Button("← Back to Event ", "?p") +
+`
+
 [Jump to Agenda View ↓](#agenda) to see the event sessions
 
 ---
@@ -132,6 +145,7 @@ func tomorrowEvent() *event.Event {
             Sequence:    daysSincePublish(), // REVIEW: session changes daily
             Location:    &eve.Location{
                 Name:        "Online",
+                Description: "This is an on-chain event.",
             },
             Speaker: &eve.Speaker{
                 Name:        "Gnobody Uknow",
@@ -167,7 +181,13 @@ func utc2pm() time.Time {
 }
 
 func Render(path string) string {
-	return tomorrowEvent().RenderPage(path, banner, body, overview, footer)
+	q := eve.ParseQuery(path)
+	format := q.Get("p")
+	switch format {
+	case "docs":
+        return tomorrowEvent().RenderPage(path, banner, body, overview, footer)
+	}
+	return tomorrowEvent().RenderPage(path, landing)
 }
 
 func RenderCalendar(path string) string {

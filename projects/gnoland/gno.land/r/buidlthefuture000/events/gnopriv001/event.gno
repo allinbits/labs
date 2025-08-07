@@ -21,10 +21,13 @@ var (
             "CalendarFile": "https://gnocal.aiblabs.net",
         },
     }
-    banner = eve.Content{
-        Published: true,
-        Markdown: `
+)
 
+func  contentBlock (content string) eve.Content {
+    return eve.Content{ Published: true, Markdown: content }
+}
+
+var banner = contentBlock(`
 [Jump to Agenda View ↓](#agenda) to see the event sessions
 
 ---
@@ -35,11 +38,9 @@ var (
 
 ***Banner*** - section is used for call-to-action, such as subscribing to the calendar or downloading the calendar file.
 
-`}
+`)
 
-    body = eve.Content{
-        Published: true,
-        Markdown: `
+var body = contentBlock(`
 | (Fig 2) See Below |
 |--------------------------------------------------------------------------|
 | In this section, expect to find more unstructured paragraphs of markdown here.|
@@ -50,11 +51,9 @@ var (
 NOTE: Markdown here may link the other parts of the flyer by anchor tags. (e.g [Agenda View](#agenda))
 
 ---
-`}
+`)
 
-    overview = eve.Content{
-        Published: true,
-        Markdown: `
+var overview = contentBlock(`
 ## Overview of Components
 
 **Overview** - Documents components used in this realm.
@@ -98,11 +97,9 @@ Speaker is a person who is presenting at the event.
 Location is a place where the event is happening. (In this case, it is an online event.)
   - [Markdown](?location=0) - view location
   - [Json](?location=0&format=json) - view location json
-`}
+`)
 
-    footer = eve.Content{
-        Published: true,
-        Markdown: `
+var footer = contentBlock(`
 | Fig (3) Below |
 |-----------------------------------------------------------------------------|
 |Rendered event agenda with sessions and speakers(optional).|
@@ -112,9 +109,7 @@ Location is a place where the event is happening. (In this case, it is an online
 ***SVG Footer*** - a compactly rendered footer with all flyer details. (links back to [Event title ↑ by anchor tag](#tomorrows-just-a-day-away))
 
 ---
-`}
-
-)
+`)
 
 
 // build an event for tomorrow at 1pm UTC
@@ -126,6 +121,7 @@ func tomorrowEvent() *event.Event {
         Description:    "An event that is always tomorrow at 1pm UTC.",
         StartDate:   utc1pm(),
         EndDate:   utc2pm(),
+        // REVIEW: why is there no Sequence here?
     }
     evt.Sessions = []*eve.Session{
         {
@@ -133,7 +129,7 @@ func tomorrowEvent() *event.Event {
             Description: "This is a test event that is always tomorrow at 1pm UTC.",
             StartTime:   utc1pm(),
             EndTime:   utc2pm(),
-            Sequence:    daysSincePublish(),
+            Sequence:    daysSincePublish(), // REVIEW: session changes daily
             Location:    &eve.Location{
                 Name:        "Online",
             },
@@ -150,18 +146,9 @@ func tomorrowEvent() *event.Event {
     return evt
 }
 
-
 func daysSincePublish() int {
     daysSincePublished := time.Since(publishedDate).Hours() / 24
     return int(daysSincePublished) + 1
-}
-
-func Render(path string) string {
-	return tomorrowEvent().RenderPage(path, banner, body, overview, footer)
-}
-
-func RenderCalendar(path string) string {
-	return tomorrowEvent().Render(path, eve.IcsCalendarFile)
 }
 
 func tomorrow() *time.Time {
@@ -177,4 +164,12 @@ func utc1pm() time.Time {
 func utc2pm() time.Time {
     t := tomorrow()
     return time.Date(t.Year(), t.Month(), t.Day(), 14, 0, 0, 0, time.UTC)
+}
+
+func Render(path string) string {
+	return tomorrowEvent().RenderPage(path, banner, body, overview, footer)
+}
+
+func RenderCalendar(path string) string {
+	return tomorrowEvent().Render(path, eve.IcsCalendarFile)
 }

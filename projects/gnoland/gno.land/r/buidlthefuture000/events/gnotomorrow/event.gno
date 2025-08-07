@@ -182,12 +182,16 @@ func utc2pm() time.Time {
 
 func Render(path string) string {
 	q := eve.ParseQuery(path)
-	format := q.Get("p")
-	switch format {
+	evt := tomorrowEvent()
+	var content []eve.Content
+	page := q.Get("p")
+	switch page {
 	case "docs":
-        return tomorrowEvent().RenderPage(path, banner, body, overview, footer)
+	    content = []eve.Content{banner, body, overview, footer}
+    default:
+        content = []eve.Content{landing}
 	}
-	return tomorrowEvent().RenderPage(path, landing)
+    return evt.RenderPage(path, content...)
 }
 
 func RenderCalendar(path string) string {

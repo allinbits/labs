@@ -22,7 +22,7 @@ var upcoming = `
 - [gno.land Pre-Launch Event](/r/buidlthefuture000/events/gnoplan001) - a pre-launch month-long event
 - [gno.land Launch Event](/r/buidlthefuture000/events/gnolandlaunch) - an event that is postponed
 - (fictional) [demo OnSite Event](/r/buidlthefuture000/events/onsite001) - an in-person event
-- (tomorrow!) [SYNC TEST - always tomorrow](/r/buidlthefuture000/events/gnopriv001) - a test event that is always tomorrow at 1pm UTC
+- (tomorrow!) [SYNC TEST - always tomorrow](/r/buidlthefuture000/events/gnotomorrow) - algorithmic event that is always tomorrow at 1pm UTC
 `
 
 var intro = `

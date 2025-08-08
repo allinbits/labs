@@ -1,0 +1,26 @@
+# fly.toml app configuration file generated for labsnet-gnofaucet-as3z on 2025-08-08T10:57:35-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'labsnet-gnofaucet-as3z'
+primary_region = 'dfw'
+
+[build]
+dockerfile = "Dockerfile"
+
+[env]
+CHAIN_ID = 'labsnet1'
+REMOTE = 'http://labsnet.internal:26657'
+
+[http_service]
+internal_port = 5050
+force_https = true
+auto_stop_machines = 'stop'
+auto_start_machines = true
+min_machines_running = 1
+processes = ['app']
+
+
+[[vm]]
+size = 'shared-cpu-1x'

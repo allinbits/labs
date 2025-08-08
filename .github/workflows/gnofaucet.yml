@@ -1,0 +1,34 @@
+name: gnofaucet
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "projects/gnoland/faucet/**"
+      - ".github/workflows/gnofaucet.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "projects/gnoland/faucet/**"
+      - ".github/workflows/gnofaucet.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: labsnet-prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy Faucet to Fly.io
+        run: |
+          cd projects/gnoland/faucet
+          flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_FAUCET }}

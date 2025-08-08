@@ -23,21 +23,9 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
-type ModelFactory func(...interface{}) *Model
-
-var _ ModelFactory = New
-
-type ModelFunc func() *Model
-
 func HasModelApi(input interface{}) bool {
 	if _, ok := input.(*Model); ok {
 		return true // Input is a Model
-	}
-	if _, ok := input.(ModelFunc); ok {
-		return true // Input is a ModelFunc
-	}
-	if _, ok := input.(ModelFactory); ok {
-		return true // Input is a ModelFactory
 	}
 	return false // No Model API found
 }
@@ -70,6 +58,8 @@ func New(inputs ...interface{}) *Model {
 			}
 		case []Arrow:
 			m.Arrows = append(m.Arrows, v...)
+		case map[string]interface{}:
+			m.RenderOpts = v
 		default:
 			continue
 		}
@@ -171,10 +161,11 @@ type Transition struct {
 
 // Model represents a Petri-Net.
 type Model struct {
-	Places      map[string]Place      // Map of places.
-	Transitions map[string]Transition // Map of transitions.
-	Arrows      []Arrow               // List of arcs.
-	Binding     interface{}           // Optional binding for the model.
+	RenderOpts  map[string]interface{} // Rendering options for the model.
+	Places      map[string]Place       // Map of places.
+	Transitions map[string]Transition  // Map of transitions.
+	Arrows      []Arrow                // List of arcs.
+	Binding     interface{}            // Optional binding for the model.
 }
 
 func (model *Model) State() []TokenType {

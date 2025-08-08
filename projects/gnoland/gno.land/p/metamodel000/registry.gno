@@ -16,6 +16,32 @@ type ContentBlock = func(path string) string
 type RegistryCallback = func(key string, value interface{}) bool
 type RegistryMatcher = func(value interface{}) bool
 
+type Record struct {
+	Value    interface{}
+	Keywords []string
+}
+
+func (record Record) String() string {
+	var sb strings.Builder
+	sb.WriteString("Record{")
+	sb.WriteString("Value: ")
+	if record.Value != nil {
+		sb.WriteString("interface{}")
+	} else {
+		sb.WriteString("nil")
+	}
+
+	sb.WriteString(", Keywords: [")
+	for i, keyword := range record.Keywords {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(keyword)
+	}
+	sb.WriteString("]}")
+	return sb.String()
+}
+
 type Registry struct {
 	tree          *avl.Tree
 	allowPrefixes []string
@@ -47,92 +73,87 @@ func (r *Registry) assertAccess() {
 	}
 }
 
-func (r *Registry) Register(key string, obj interface{}) {
+func (r *Registry) Register(key string, obj interface{}, kw ...string) {
 	r.assertAccess()
-	r.register(key, obj)
+	r.register(key, obj, kw...)
 }
 
-func (r *Registry) register(key string, obj interface{}) {
+func (r *Registry) Exists(key string) bool {
+	_, ok := r.tree.Get(key)
+	return ok
+}
+
+// formatting keywords to lowercase
+func keywords(kw []string) (out []string) {
+	for _, k := range kw {
+		multiWords := strings.Split(k, " ")
+		for _, word := range multiWords {
+			if len(word) == 0 {
+				continue // skip empty words
+			}
+			out = append(out, strings.ToLower(word))
+		}
+	}
+	return out
+}
+
+func (r *Registry) register(key string, obj interface{}, kw ...string) {
+	if r.Exists(key) {
+		panic("Key already exists: " + key)
+	}
+	kw = append(kw, key) // ensure the key is always included in keywords
 	switch obj := obj.(type) {
-	case ContentBlock:
-		r.tree.Set(key, obj)
 	case *Model:
-		r.tree.Set(key, ModelFactory(func(_ ...interface{}) *Model {
-			return obj
-		}))
-	case ModelFunc:
-		r.tree.Set(key, ModelFactory(func(_ ...interface{}) *Model {
-			return obj()
-		}))
-	case ModelFactory:
-		r.tree.Set(key, obj)
+		r.tree.Set(key, Record{
+			Value:    func(...interface{}) *Model { return obj },
+			Keywords: keywords(kw),
+		})
 	default:
 		panic(ufmt.Sprintf("Invalid type for key %s: %T", key, obj))
 	}
 }
 
 func (r *Registry) Preview(key, path string) string {
-	obj, ok := r.tree.Get(key)
+	val, ok := r.tree.Get(key)
+
 	if !ok {
 		panic("Key not found: " + key)
 	}
-
+	rec := val.(Record)
+	model := rec.Value.(func(...interface{}) *Model)()
 	lineCount := 3
-
-	switch obj := obj.(type) {
-	case ContentBlock:
-		content := obj(path)
+	var content string
+	if binding, ok := model.Binding.(ContentBlock); ok {
+		content = binding(path)
 		lines := strings.Split(content, "\n")
 		if len(lines) > lineCount {
 			return strings.Join(lines[:lineCount], "\n") + "\n"
 		}
-		return content
-	case ModelFactory:
-		model := obj()
-		if binding, ok := model.Binding.(ContentBlock); ok {
-			content := binding(path)
-			lines := strings.Split(content, "\n")
-			if len(lines) > lineCount {
-				return strings.Join(lines[:lineCount], "\n") + "\n"
-			}
-			return content
-		}
-		return model.ToMarkdown()
-	default:
-		panic("Key is not a ContentBlock or ModelFactory: " + key)
+	} else {
+		content = model.ToMarkdown()
 	}
+	return markdownPreview(content)
+}
+
+// drop anything that breaks formating on index page
+func markdownPreview(content string) string {
+	regexImages := `!\[.*?\]\(.*?\)`
+	content = strings.ReplaceAll(content, regexImages, "")
+	return content
 }
 
 func (r *Registry) Content(key, path string) string {
-	obj, ok := r.tree.Get(key)
+	val, ok := r.tree.Get(key)
 	if !ok {
 		panic("Key not found: " + key)
 	}
 
-	switch obj := obj.(type) {
-	case ContentBlock:
-		return obj(path)
-	case ModelFactory:
-		model := obj()
-		if binding, ok := model.Binding.(ContentBlock); ok {
-			return binding(path)
-		}
-		return model.ToMarkdown()
-	default:
-		panic("Key is not a ContentBlock or ModelFactory: " + key)
+	rec := val.(Record)
+	model := rec.Value.(func(...interface{}) *Model)()
+	if binding, ok := model.Binding.(ContentBlock); ok {
+		return binding(path)
 	}
-}
-
-func (r *Registry) Model(key string, inputs ...interface{}) *Model {
-	factory, ok := r.tree.Get(key)
-	if !ok {
-		panic("Key not found: " + key)
-	}
-
-	if modelFactory, ok := factory.(ModelFactory); ok {
-		return modelFactory(inputs...)
-	}
-	panic("Key is not a ModelFactory: " + key)
+	return model.ToMarkdown()
 }
 
 func (r *Registry) Iterate(callback RegistryCallback, matcher RegistryMatcher) {
@@ -199,16 +220,13 @@ func (r *Registry) renderNavigation(i int, u url.Values) string {
 }
 
 func (r *Registry) thumbnail(key string, obj interface{}) string {
-	switch obj := obj.(type) {
-	case ModelFactory:
-		model := obj()
-		return "![" + key + "](" + model.ThumbnailDataUrl() + ")\n" +
-			r.Preview(key, "") + "\n"
-	case ContentBlock:
-		return "[POST] - " + r.Preview(key, "") + "\n"
-	default:
-		return "[default]\n"
-	}
+	rec := obj.(Record)
+	var sb strings.Builder
+	sb.WriteString("**Keywords:** " + strings.Join(rec.Keywords, ", ") + "\n\n")
+	model := rec.Value.(func(...interface{}) *Model)()
+	sb.WriteString("![" + key + "](" + model.ThumbnailDataUrl() + ")\n")
+	sb.WriteString(r.Preview(key, "") + "\n")
+	return sb.String()
 }
 
 func (r *Registry) renderIndex(path string) string {

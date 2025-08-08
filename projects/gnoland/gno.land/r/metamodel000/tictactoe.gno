@@ -53,6 +53,21 @@ next = O → X
 This dual lens allows the model to serve both as a game simulator and as a general symbolic rewriting engine.
 
 The Petri net’s native concurrency also reveals how multiple board positions can be independently available, but player turns enforce a strict global alternation constraint.
+
+
+#### Continuous Model Interpretation (Expert System Mode)
+In addition to its discrete gameplay semantics, this Petri net also supports a continuous interpretation using weighted rates and token flows.
+
+By assigning firing rates to transitions and interpreting token values as real-valued densities (rather than integer counts), the model behaves like a continuous-time system. In this formulation, tokens represent probabilities distributed over possible game states.
+
+For example, if transitions like "X00" or "O11" are assigned rates proportional to their strategic value, the net evolves over time into a probabilistic expert system: each place accumulates a token density corresponding to the likelihood of that board position being selected next under optimal play.
+
+This expert system view is implemented and visualized in the following notebook:
+
+📓 [Tic Tac Toe Expert System (Petri.jl)](https://gist.github.com/stackdump/06e7ccc96dd08b478b0da781a88c8d7a#file-tic-tac-toe-expert-system-ipynb)
+
+It uses Petri.jl to simulate the continuous dynamics and solve the resulting ODEs, giving insight into how the strategy space unfolds over time. This interpretation provides a bridge between symbolic gameplay and fluid probabilistic reasoning.
+
 `
 
 func init() {

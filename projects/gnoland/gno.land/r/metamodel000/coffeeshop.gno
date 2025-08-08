@@ -14,7 +14,7 @@ func init() {
 	coffeeShopModel.Binding = func(_ string) string {
 		return coffeeShopDescription + coffeeShopModel.ToMarkdown()
 	}
-	register("coffeeShop", coffeeShopModel)
+	register("Coffee Shop", coffeeShopModel)
 }
 
 func coffeeShop() *mm.Model {

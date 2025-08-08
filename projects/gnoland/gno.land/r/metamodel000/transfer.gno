@@ -7,24 +7,47 @@ import (
 	mm "gno.land/p/metamodel000"
 )
 
-// TODO: make this form populate from URL http://127.0.0.1:8888/r/metamodel000?amount=3&toAddress=g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz
-
 var transferDescription = `
 This is a model to transfer tokens from a wallet to a specified address.
 
-`
 
-var transferForm = `
-<gno-form>
-    <gno-input name="amount" placeholder="3" />
-    <gno-input name="toAddress" placeholder="g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz" />
-</gno-form>
+> “A wallet *sends* tokens *to an address*.”
+> — Declarative semantics in motion
+
+This Petri net model represents a **token transfer** as a semantic flow:
+
+- **Subject**: $wallet (the sender)
+- **Verb**: PAY2ADDR (the action/transition)
+- **Object**: toAddress (the recipient)
+
+The model uses **places** to represent account balances and a **transition** to model the act of transferring tokens.
+The multiple parameter defines how many tokens move through the flow.
+` + "```go" + `
+func transfer(toAddress string, action string, multiple int64) *mm.Model {
+	return &mm.Model{
+		Places: map[string]mm.Place{
+			"$wallet": {Offset: 0, Initial: mm.T(9), Capacity: mm.T(0), X: 30, Y: 50},
+			toAddress: {Offset: 0, Initial: mm.T(0), Capacity: mm.T(0), X: 280, Y: 50},
+		},
+		Transitions: map[string]mm.Transition{
+			action: {X: 160, Y: 50},
+		},
+		Arrows: []mm.Arrow{
+			{Source: "$wallet", Target: action, Weight: mm.T(multiple)},
+			{Source: action, Target: toAddress, Weight: mm.T(multiple)},
+		},
+	}
+}
+` + "```" + `
+This structure emphasizes **declarative flow-based semantics**, ideal for modeling composable financial operations.
+
+
 `
 
 func init() {
 	exampleModel := transfer("g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz", "PAY2ADDR", 3)
 	exampleModel.Binding = func(_ string) string {
-		return transferDescription + transferForm + exampleModel.ToMarkdown()
+		return transferDescription + exampleModel.ToMarkdown()
 	}
 	register("transfer", exampleModel)
 }

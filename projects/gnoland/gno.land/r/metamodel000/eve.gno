@@ -23,7 +23,7 @@ func init() {
 	folderModel.Binding = func(_ string) string {
 		return folderLayout + folderModel.ToMarkdown()
 	}
-	register("EventFolderLayout", folderModel)
+	register("Event Folder Layout", folderModel)
 }
 
 // eve model shows the layout of the event folder
@@ -90,7 +90,7 @@ func init() {
 	eventModel.Binding = func(_ string) string {
 		return eventCompositionLayout + eventModel.ToMarkdown()
 	}
-	register("EventComposition", eventModel)
+	register("Event Composition", eventModel)
 }
 
 func eventComposition() *mm.Model {

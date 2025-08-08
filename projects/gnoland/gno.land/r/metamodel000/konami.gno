@@ -13,7 +13,8 @@ func init() {
 	model.Binding = func(_ string) string {
 		return konamiCodeDescription + model.ToMarkdown()
 	}
-	register("konamiCode", model)
+	keywords := []string{"cheat", "games", "nintendo"}
+	register("Konami Code", model, keywords...)
 }
 
 func konamiCodeModel() *mm.Model {

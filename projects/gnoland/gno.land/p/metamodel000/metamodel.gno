@@ -23,21 +23,9 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
-type ModelFactory func(...interface{}) *Model
-
-var _ ModelFactory = New
-
-type ModelFunc func() *Model
-
 func HasModelApi(input interface{}) bool {
 	if _, ok := input.(*Model); ok {
 		return true // Input is a Model
-	}
-	if _, ok := input.(ModelFunc); ok {
-		return true // Input is a ModelFunc
-	}
-	if _, ok := input.(ModelFactory); ok {
-		return true // Input is a ModelFactory
 	}
 	return false // No Model API found
 }

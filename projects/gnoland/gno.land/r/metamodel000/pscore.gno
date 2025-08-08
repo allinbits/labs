@@ -19,7 +19,8 @@ func init() {
 	m.Binding = func(_ string) string {
 		return overview + m.ToMarkdown()
 	}
-	register("pScoreVoting", m)
+	keywords := []string{"ranking", "governance", "dao", "budgeting", "prioritization"}
+	register("pScore Voting", m, keywords...)
 }
 
 func pScoreVoting(budget int, proposals []Proposal) *mm.Model {

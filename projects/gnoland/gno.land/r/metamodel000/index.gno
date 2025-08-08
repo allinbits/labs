@@ -10,26 +10,25 @@ var (
 			"Title":       "Metamodel000",
 			"Description": "Metamodel Public Registry",
 			"Version":     "0.0.1",
-			"Date":        "2023-10-01",
 		},
 	}
 
 	// consider any path that ends with /metamodel/
 	authorizedPaths = []string{
 		"gno.land/r/metamodel000",
-		"gno.land/p/metamodel000",
-		"", // account holder wallet
+		"", // EOA - externally owned account
 	}
 
 	registry = mm.NewRegistry(authorizedPaths, renderOpts)
 )
 
-func Register(cur realm, key string, obj interface{}) {
-	registry.Register(key, obj)
+func Register(cur realm, key string, m *mm.Model) {
+	registry.Register(key, m)
 }
 
-func register(key string, obj interface{}) {
-	registry.Register(key, obj)
+// REVIEW: could we remove this?
+func register(key string, m *mm.Model, kw ...string) {
+	registry.Register(key, m, kw...)
 }
 
 func Render(path string) string {

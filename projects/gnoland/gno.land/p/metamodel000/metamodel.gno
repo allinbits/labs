@@ -70,6 +70,8 @@ func New(inputs ...interface{}) *Model {
 			}
 		case []Arrow:
 			m.Arrows = append(m.Arrows, v...)
+		case map[string]interface{}:
+			m.RenderOpts = v
 		default:
 			continue
 		}
@@ -171,10 +173,11 @@ type Transition struct {
 
 // Model represents a Petri-Net.
 type Model struct {
-	Places      map[string]Place      // Map of places.
-	Transitions map[string]Transition // Map of transitions.
-	Arrows      []Arrow               // List of arcs.
-	Binding     interface{}           // Optional binding for the model.
+	RenderOpts  map[string]interface{} // Rendering options for the model.
+	Places      map[string]Place       // Map of places.
+	Transitions map[string]Transition  // Map of transitions.
+	Arrows      []Arrow                // List of arcs.
+	Binding     interface{}            // Optional binding for the model.
 }
 
 func (model *Model) State() []TokenType {

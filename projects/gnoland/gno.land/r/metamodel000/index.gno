@@ -6,17 +6,19 @@ import (
 
 var (
 	renderOpts = map[string]interface{}{
-		"Title":       "Metamodel000",
-		"Description": "A metamodel for Gno.land, providing various models and examples.",
-		"Author":      "Gno.land Team",
-		"Version":     "0.0.1",
-		"Date":        "2023-10-01",
+		"dev": map[string]interface{}{
+			"Title":       "Metamodel000",
+			"Description": "Metamodel Public Registry",
+			"Version":     "0.0.1",
+			"Date":        "2023-10-01",
+		},
 	}
 
+	// consider any path that ends with /metamodel/
 	authorizedPaths = []string{
 		"gno.land/r/metamodel000",
 		"gno.land/p/metamodel000",
-		"",
+		"", // account holder wallet
 	}
 
 	registry = mm.NewRegistry(authorizedPaths, renderOpts)

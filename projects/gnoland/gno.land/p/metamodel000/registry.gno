@@ -52,7 +52,15 @@ func (r *Registry) Register(key string, obj interface{}) {
 	r.register(key, obj)
 }
 
+func (r *Registry) Exists(key string) bool {
+	_, ok := r.tree.Get(key)
+	return ok
+}
+
 func (r *Registry) register(key string, obj interface{}) {
+	if r.Exists(key) {
+		panic("Key already exists: " + key)
+	}
 	switch obj := obj.(type) {
 	case ContentBlock:
 		r.tree.Set(key, obj)
@@ -79,28 +87,37 @@ func (r *Registry) Preview(key, path string) string {
 
 	lineCount := 3
 
+	var content string
+
 	switch obj := obj.(type) {
 	case ContentBlock:
-		content := obj(path)
+		content = obj(path)
 		lines := strings.Split(content, "\n")
 		if len(lines) > lineCount {
 			return strings.Join(lines[:lineCount], "\n") + "\n"
 		}
-		return content
 	case ModelFactory:
 		model := obj()
 		if binding, ok := model.Binding.(ContentBlock); ok {
-			content := binding(path)
+			content = binding(path)
 			lines := strings.Split(content, "\n")
 			if len(lines) > lineCount {
 				return strings.Join(lines[:lineCount], "\n") + "\n"
 			}
-			return content
+		} else {
+			content = model.ToMarkdown()
 		}
-		return model.ToMarkdown()
 	default:
 		panic("Key is not a ContentBlock or ModelFactory: " + key)
 	}
+	return markdownPreview(content)
+}
+
+// drop anything that breaks formating on index page
+func markdownPreview(content string) string {
+	regexImages := `!\[.*?\]\(.*?\)`
+	content = strings.ReplaceAll(content, regexImages, "")
+	return content
 }
 
 func (r *Registry) Content(key, path string) string {

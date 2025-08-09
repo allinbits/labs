@@ -8,23 +8,23 @@ import (
 )
 
 var (
-    publishedDate = time.Now()
-    renderOpts = map[string]interface{}{
-        "dev": map[string]interface{}{
-            "SvgFooter":    struct{}{},
-            "CalendarHost": "webcal://127.0.0.1:8080",
-            "CalendarFile": "http://127.0.0.1:8080",
-        },
-        "labsnet1": map[string]interface{}{
-            "SvgFooter":    struct{}{},
-            "CalendarHost": "webcal://gnocal.aiblabs.net",
-            "CalendarFile": "https://gnocal.aiblabs.net",
-        },
-    }
+	publishedDate = time.Now()
+	renderOpts    = map[string]interface{}{
+		"dev": map[string]interface{}{
+			"SvgFooter":    struct{}{},
+			"CalendarHost": "webcal://127.0.0.1:8080",
+			"CalendarFile": "http://127.0.0.1:8080",
+		},
+		"labsnet1": map[string]interface{}{
+			"SvgFooter":    struct{}{},
+			"CalendarHost": "webcal://gnocal.aiblabs.net",
+			"CalendarFile": "https://gnocal.aiblabs.net",
+		},
+	}
 )
 
-func  contentBlock (content string) eve.Content {
-    return eve.Content{ Published: true, Markdown: content }
+func contentBlock(content string) eve.Content {
+	return eve.Content{Published: true, Markdown: content}
 }
 
 var landing = contentBlock(`
@@ -38,8 +38,8 @@ Read the docs to see how this event is built and rendered.
 `)
 
 var banner = contentBlock(
-eve.Button("← Back to Event ", "?p") +
-`
+	eve.Button("← Back to Event ", "?p") +
+		`
 
 [Jump to Agenda View ↓](#agenda) to see the event sessions
 
@@ -124,60 +124,59 @@ var footer = contentBlock(`
 ---
 `)
 
-
 // build an event for tomorrow at 1pm UTC
 func tomorrowEvent() *event.Event {
-    evt := &event.Event{
-        Name:           "Tomorrow's just a day away",
-        Status:         eve.EventScheduled,
-        AttendanceMode: eve.OnlineEventAttendanceMode,
-        Description:    "An event that is always tomorrow at 1pm UTC.",
-        StartDate:   utc1pm(),
-        EndDate:   utc2pm(),
-        // REVIEW: why is there no Sequence here?
-    }
-    evt.Sessions = []*eve.Session{
-        {
-            Title:       "Tomorrow's just a day away",
-            Description: "This is a test event that is always tomorrow at 1pm UTC.",
-            StartTime:   utc1pm(),
-            EndTime:   utc2pm(),
-            Sequence:    daysSincePublish(), // REVIEW: session changes daily
-            Location:    &eve.Location{
-                Name:        "Online",
-                Description: "This is an on-chain event.",
-            },
-            Speaker: &eve.Speaker{
-                Name:        "Gnobody Uknow",
-                Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
-                Biography: "A test speaker for the event.",
-                Affiliation: "AIB,BTF",
-                PictureURL:  "",
-            },
-        },
-    }
-    evt.SetRenderOpts(renderOpts)
-    return evt
+	evt := &event.Event{
+		Name:           "Tomorrow's just a day away",
+		Status:         eve.EventScheduled,
+		AttendanceMode: eve.OnlineEventAttendanceMode,
+		Description:    "An event that is always tomorrow at 1pm UTC.",
+		StartDate:      utc1pm(),
+		EndDate:        utc2pm(),
+		// REVIEW: why is there no Sequence here?
+	}
+	evt.Sessions = []*eve.Session{
+		{
+			Title:       "Tomorrow's just a day away",
+			Description: "This is a test event that is always tomorrow at 1pm UTC.",
+			StartTime:   utc1pm(),
+			EndTime:     utc2pm(),
+			Sequence:    daysSincePublish(), // REVIEW: session changes daily
+			Location: &eve.Location{
+				Name:        "Online",
+				Description: "This is an on-chain event.",
+			},
+			Speaker: &eve.Speaker{
+				Name:        "Gnobody Uknow",
+				Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
+				Biography:   "A test speaker for the event.",
+				Affiliation: "AIB,BTF",
+				PictureURL:  "",
+			},
+		},
+	}
+	evt.SetRenderOpts(renderOpts)
+	return evt
 }
 
 func daysSincePublish() int {
-    daysSincePublished := time.Since(publishedDate).Hours() / 24
-    return int(daysSincePublished) + 1
+	daysSincePublished := time.Since(publishedDate).Hours() / 24
+	return int(daysSincePublished) + 1
 }
 
 func tomorrow() *time.Time {
-    t := time.Now().Add(24 * time.Hour)
-    return &t
+	t := time.Now().Add(24 * time.Hour)
+	return &t
 }
 
 func utc1pm() time.Time {
-    t := tomorrow()
-    return time.Date(t.Year(), t.Month(), t.Day(), 13, 0, 0, 0, time.UTC)
+	t := tomorrow()
+	return time.Date(t.Year(), t.Month(), t.Day(), 13, 0, 0, 0, time.UTC)
 }
 
 func utc2pm() time.Time {
-    t := tomorrow()
-    return time.Date(t.Year(), t.Month(), t.Day(), 14, 0, 0, 0, time.UTC)
+	t := tomorrow()
+	return time.Date(t.Year(), t.Month(), t.Day(), 14, 0, 0, 0, time.UTC)
 }
 
 func Render(path string) string {
@@ -187,11 +186,11 @@ func Render(path string) string {
 	page := q.Get("p")
 	switch page {
 	case "docs":
-	    content = []eve.Content{banner, body, overview, footer}
-    default:
-        content = []eve.Content{landing}
+		content = []eve.Content{banner, body, overview, footer}
+	default:
+		content = []eve.Content{landing}
 	}
-    return evt.RenderPage(path, content...)
+	return evt.RenderPage(path, content...)
 }
 
 func RenderCalendar(path string) string {

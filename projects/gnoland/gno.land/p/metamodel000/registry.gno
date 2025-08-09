@@ -146,15 +146,15 @@ func (r *Registry) Render(path string) string {
         if idx, ok := q["i"]; ok && len(idx) > 0 {
             return r.renderItem(idx[0], q)
         }
-    } else {
+    } else if path != "" {
         key := sanitizeAnchorKey(path)
+       var sb strings.Builder
         if _, ok := r.tree.Get(key); ok {
             return r.Content(key, path)
         }
-         if c, ok := r.keywordIndex.Get(strings.ToLower(key)); ok {
-             var sb strings.Builder
-                sb.WriteString("## Search Results for: " + key + "\n\n")
-                sb.WriteString("Found " + ufmt.Sprintf("%d", len(c.([]string))) + " results:\n\n")
+        if c, ok := r.keywordIndex.Get(strings.ToLower(key)); ok {
+            sb.WriteString("## Search Results for: " + key + "\n\n")
+            sb.WriteString("Found " + ufmt.Sprintf("%d", len(c.([]string))) + " results:\n\n")
             for _, k := range c.([]string) {
                 obj, ok := r.tree.Get(k)
                 if !ok {
@@ -162,7 +162,6 @@ func (r *Registry) Render(path string) string {
                 }
                 rec := obj.(Record)
                 sb.WriteString("### [" + upcaseWords(rec.Title) + "](/r/metamodel000?i=" + k + ")\n")
-                sb.WriteString("**Keywords:** " + strings.Join(rec.Keywords, ", ") + "\n\n")
                 sb.WriteString(r.thumbnail(k, obj) + "\n")
             }
             sb.WriteString("\n[<- Home](/r/metamodel000)\n")
@@ -184,7 +183,6 @@ func (r *Registry) renderItem(indexStr string, u url.Values) string {
 	sb.WriteString(r.renderNavigation(i, u))
 	sb.WriteString(r.Content(key, ""))
 	sb.WriteString(r.renderNavigation(i, u))
-	sb.WriteString("**Keywords:** " + strings.Join(rec.Keywords, ", ") + "\n\n")
 	sb.WriteString("\n[<- Home](/r/metamodel000)")
 
 	return sb.String()
@@ -209,6 +207,7 @@ func (r *Registry) renderIndex(path string) string {
 		"This is a public registry of metamodels.\n\n" +
 		"TODO: You can view the RSS Feed for updates.\n\n" +
 		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n" +
+		"![tag cloud visualized](" + r.TagCloudDataUrl() + ")\n\n" +
 		r.TagCloudMarkdown() + "\n\n" +
 		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n"
 }
@@ -312,7 +311,9 @@ func (r *Registry) TagCloudMarkdown() string {
 	var sb strings.Builder
 	sb.WriteString("### Index Keywords\n\n")
 	for _, tag := range tags {
-		sb.WriteString("- " + tag + " (" + strconv.Itoa(tagCounts[tag]) + ")\n")
+		sb.WriteString("- [")
+		sb.WriteString(tag)
+		sb.WriteString("](/r/metamodel000:" + tag + ") (" + strconv.Itoa(tagCounts[tag]) + ")\n")
 	}
 	return sb.String()
 }
@@ -402,4 +403,93 @@ func sanitizeAnchorKey(key string) string {
 		}
 	}
 	return sb.String()
+}
+
+func (r *Registry) TagCloudDataUrl() string {
+    svg := r.TagCloudSVG()
+    return "data:image/svg+xml;utf8," + url.PathEscape(svg)
+}
+
+const tagCloudSVGStyles = `<style>
+    text { font-family: Arial, sans-serif; }
+    .scale-1  { font-size: 1em;   fill: #b3c6e7; }
+    .scale-2  { font-size: 1.1em; fill: #a3d8f4; }
+    .scale-3  { font-size: 1.2em; fill: #b2f7ef; }
+    .scale-4  { font-size: 1.3em; fill: #f7d6e0; }
+    .scale-5  { font-size: 1.4em; fill: #ffe5b4; }
+    .scale-6  { font-size: 1.5em; fill: #f9f871; }
+    .scale-7  { font-size: 1.6em; fill: #c1fba4; }
+    .scale-8  { font-size: 1.7em; fill: #f7b2ad; }
+    .scale-9  { font-size: 1.8em; fill: #b5ead7; }
+    .scale-10 { font-size: 1.9em; fill: #ffdac1; }
+    .scale-11 { font-size: 2em;   fill: #e2f0cb; }
+    .scale-12 { font-size: 2.1em; fill: #b5ead7; }
+    .scale-13 { font-size: 2.2em; fill: #c7ceea; }
+    .scale-14 { font-size: 2.3em; fill: #f6dfeb; }
+    .scale-15 { font-size: 2.4em; fill: #f7cac9; }
+    .scale-16 { font-size: 2.5em; fill: #f9f871; }
+    .scale-17 { font-size: 2.6em; fill: #b2f7ef; }
+    .scale-18 { font-size: 2.7em; fill: #a3d8f4; }
+    .scale-19 { font-size: 2.8em; fill: #b3c6e7; }
+    .scale-20 { font-size: 2.9em; fill: #f7b2ad; }
+</style>
+`
+
+func (r *Registry) TagCloudSVG() string {
+    tagCounts := r.TagCloud()
+    var tags []string
+    for tag := range tagCounts {
+        tags = append(tags, tag)
+    }
+    sort.Strings(tags)
+
+    // Find min and max counts for scaling
+    minCount, maxCount := 1<<31-1, 0
+    for _, count := range tagCounts {
+        if count < minCount {
+            minCount = count
+        }
+        if count > maxCount {
+            maxCount = count
+        }
+    }
+    if minCount == maxCount {
+        minCount = 1 // avoid division by zero
+    }
+
+    // Make SVG wider and add another column
+    svgWidth := 800
+    svgHeight := 600
+    colWidth := 300
+    maxY := 580
+    x, y := 20, 40
+    col := 0
+
+    var sb strings.Builder
+    sb.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ` + strconv.Itoa(svgWidth) + ` ` + strconv.Itoa(svgHeight) + `">` + "\n")
+    sb.WriteString(tagCloudSVGStyles + "\n")
+
+    for _, tag := range tags {
+        count := tagCounts[tag]
+        // Scale to 1..20
+        scale := 1 + int(float64(count-minCount)*19/float64(maxCount-minCount))
+        if scale < 1 {
+            scale = 1
+        }
+        if scale > 20 {
+            scale = 20
+        }
+        sb.WriteString(`<text class="scale-` + strconv.Itoa(scale) + `" x="` + strconv.Itoa(x) + `" y="` + strconv.Itoa(y) + `">`)
+        sb.WriteString(tag)
+        sb.WriteString(`</text>` + "\n")
+        y += 20 + scale*2
+        if y > maxY {
+            y = 40
+            col++
+            x = 20 + col*colWidth
+        }
+    }
+
+    sb.WriteString(`</svg>`)
+    return sb.String()
 }

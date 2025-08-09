@@ -61,7 +61,7 @@ func init() {
 	model.Binding = func(_ string) string {
 		return model101Intro + model.ToMarkdown() + model101Description
 	}
-	keywords := []string{"metamodel", "modeling101", "modelCitizen"}
+	keywords := []string{"modeling101", "modelCitizen"}
 	register("Metamodel Codex", model, keywords...)
 }
 

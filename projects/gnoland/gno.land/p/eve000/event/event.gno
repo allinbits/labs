@@ -192,7 +192,7 @@ func (evt *Event) SetRenderOpts(opts map[string]interface{}) {
 	}
 	renderOpts, ok := opts[chainId].(map[string]interface{})
 	if !ok {
-	    panic("render options must be a map[string]interface{} for the current chain: " + chainId)
+		panic("render options must be a map[string]interface{} for the current chain: " + chainId)
 	}
 	evt.renderOpts = renderOpts
 
@@ -202,15 +202,15 @@ func (evt *Event) SetRenderOpts(opts map[string]interface{}) {
 	for _, s := range evt.Sessions {
 		s.SetRenderOpts(evt.renderOpts)
 		if s.Speaker != nil {
-            s.Speaker.SetRenderOpts(evt.renderOpts)
-        } else {
-            s.Speaker = &eve.Speaker{}
-        }
-        if s.Location != nil {
-            s.Location.SetRenderOpts(evt.renderOpts)
-        } else {
-            s.Location = &eve.Location{}
-        }
+			s.Speaker.SetRenderOpts(evt.renderOpts)
+		} else {
+			s.Speaker = &eve.Speaker{}
+		}
+		if s.Location != nil {
+			s.Location.SetRenderOpts(evt.renderOpts)
+		} else {
+			s.Location = &eve.Location{}
+		}
 	}
 }
 

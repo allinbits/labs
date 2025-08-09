@@ -61,7 +61,7 @@ func UnlinkByClaim(cur realm, blockHeight int64, discordAccountID, discordGuildI
 	}
 
 	ds.removeByPathRoleGuild(claim.realmPath, claim.roleName, claim.discordGuildID)
-	
+
 	// Mark signature as used
 	ds.markSignatureUsed(signature, blockHeight)
 }

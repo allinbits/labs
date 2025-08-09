@@ -1,8 +1,8 @@
 package component
 
 import (
-    "std"
 	"net/url"
+	"std"
 	"strings"
 	"time"
 

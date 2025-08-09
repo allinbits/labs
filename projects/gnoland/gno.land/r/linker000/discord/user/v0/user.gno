@@ -73,7 +73,7 @@ func UnlinkByClaim(cur realm, blockHeight int64, discordID string, signature str
 	}
 
 	ds.removeByDiscordID(claim.discordID)
-	
+
 	// Mark signature as used
 	ds.markSignatureUsed(signature, blockHeight)
 }

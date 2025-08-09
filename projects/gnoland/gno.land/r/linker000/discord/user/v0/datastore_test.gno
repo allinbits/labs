@@ -47,8 +47,8 @@ func TestDatastoreSet(t *testing.T) {
 	// Test 3: Cannot link same discord ID twice
 	claim3 := &Claim{
 		blockHeight: 1002,
-		discordID: "alice_discord_123", // same discord ID
-		addr:      bob,
+		discordID:   "alice_discord_123", // same discord ID
+		addr:        bob,
 	}
 
 	err = ds.set(claim3)
@@ -62,8 +62,8 @@ func TestDatastoreSet(t *testing.T) {
 	// Test 4: Different address and discord ID should succeed
 	claim4 := &Claim{
 		blockHeight: 1000,
-		discordID: "bob_discord_789",
-		addr:      bob,
+		discordID:   "bob_discord_789",
+		addr:        bob,
 	}
 
 	err = ds.set(claim4)
@@ -91,8 +91,8 @@ func TestDatastoreGetByAddress(t *testing.T) {
 	// Test 2: Add claim and verify retrieval
 	claim := &Claim{
 		blockHeight: 1000,
-		discordID: "alice_discord_123",
-		addr:      alice,
+		discordID:   "alice_discord_123",
+		addr:        alice,
 	}
 	ds.set(claim)
 
@@ -132,8 +132,8 @@ func TestDatastoreGetByDiscordID(t *testing.T) {
 	// Test 2: Add claim and verify retrieval
 	claim := &Claim{
 		blockHeight: 1000,
-		discordID: "alice_discord_123",
-		addr:      alice,
+		discordID:   "alice_discord_123",
+		addr:        alice,
 	}
 	ds.set(claim)
 
@@ -168,13 +168,13 @@ func TestDatastoreRemoveByAddress(t *testing.T) {
 	// Setup: Add two claims
 	claim1 := &Claim{
 		blockHeight: 1000,
-		discordID: "alice_discord_123",
-		addr:      alice,
+		discordID:   "alice_discord_123",
+		addr:        alice,
 	}
 	claim2 := &Claim{
 		blockHeight: 1000,
-		discordID: "bob_discord_456",
-		addr:      bob,
+		discordID:   "bob_discord_456",
+		addr:        bob,
 	}
 	ds.set(claim1)
 	ds.set(claim2)
@@ -216,13 +216,13 @@ func TestDatastoreRemoveByDiscordID(t *testing.T) {
 	// Setup: Add two claims
 	claim1 := &Claim{
 		blockHeight: 1000,
-		discordID: "alice_discord_123",
-		addr:      alice,
+		discordID:   "alice_discord_123",
+		addr:        alice,
 	}
 	claim2 := &Claim{
 		blockHeight: 1000,
-		discordID: "bob_discord_456",
-		addr:      bob,
+		discordID:   "bob_discord_456",
+		addr:        bob,
 	}
 	ds.set(claim1)
 	ds.set(claim2)
@@ -264,8 +264,8 @@ func TestDatastoreComplexScenario(t *testing.T) {
 	// Step 1: Add alice
 	claimAlice := &Claim{
 		blockHeight: 1000,
-		discordID: "alice_discord_123",
-		addr:      alice,
+		discordID:   "alice_discord_123",
+		addr:        alice,
 	}
 	err := ds.set(claimAlice)
 	if err != nil {
@@ -275,8 +275,8 @@ func TestDatastoreComplexScenario(t *testing.T) {
 	// Step 2: Try to add bob with alice's discord ID (should fail)
 	claimBob := &Claim{
 		blockHeight: 1000,
-		discordID: "alice_discord_123", // same discord ID
-		addr:      bob,
+		discordID:   "alice_discord_123", // same discord ID
+		addr:        bob,
 	}
 	err = ds.set(claimBob)
 	if err == nil {
@@ -302,8 +302,8 @@ func TestDatastoreComplexScenario(t *testing.T) {
 	// Step 5: Add charlie with different discord ID
 	claimCharlie := &Claim{
 		blockHeight: 1000,
-		discordID: "charlie_discord_789",
-		addr:      charlie,
+		discordID:   "charlie_discord_789",
+		addr:        charlie,
 	}
 	err = ds.set(claimCharlie)
 	if err != nil {

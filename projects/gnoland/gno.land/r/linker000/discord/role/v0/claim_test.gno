@@ -9,49 +9,49 @@ import (
 // TestVerifyBlockHeight tests block height validation logic
 func TestVerifyBlockHeight(t *testing.T) {
 	tt := []struct {
-		claimHeight  int64
+		claimHeight   int64
 		currentHeight int64
-		shouldFail   bool
-		expectedErr  string
-		description  string
+		shouldFail    bool
+		expectedErr   string
+		description   string
 	}{
 		{
-			claimHeight:  1000,
+			claimHeight:   1000,
 			currentHeight: 1050,
-			shouldFail:   false,
-			description:  "claim within maxBlockAge should pass",
+			shouldFail:    false,
+			description:   "claim within maxBlockAge should pass",
 		},
 		{
-			claimHeight:  1000,
+			claimHeight:   1000,
 			currentHeight: 1499,
-			shouldFail:   false,
-			description:  "claim near maxBlockAge limit should pass",
+			shouldFail:    false,
+			description:   "claim near maxBlockAge limit should pass",
 		},
 		{
-			claimHeight:  1000,
+			claimHeight:   1000,
 			currentHeight: 1501,
-			shouldFail:   true,
-			expectedErr:  "claim: block height too old (age: 501 blocks, max: 500 blocks, claim: 1000, current: 1501)",
-			description:  "claim exceeding maxBlockAge should fail",
+			shouldFail:    true,
+			expectedErr:   "claim: block height too old (age: 501 blocks, max: 500 blocks, claim: 1000, current: 1501)",
+			description:   "claim exceeding maxBlockAge should fail",
 		},
 		{
-			claimHeight:  2000,
+			claimHeight:   2000,
 			currentHeight: 1999,
-			shouldFail:   true,
-			expectedErr:  "claim: block height is in the future (claim: 2000, current: 1999)",
-			description:  "claim from future block should fail",
+			shouldFail:    true,
+			expectedErr:   "claim: block height is in the future (claim: 2000, current: 1999)",
+			description:   "claim from future block should fail",
 		},
 		{
-			claimHeight:  1000,
+			claimHeight:   1000,
 			currentHeight: 1000,
-			shouldFail:   false,
-			description:  "claim at exact same block should pass",
+			shouldFail:    false,
+			description:   "claim at exact same block should pass",
 		},
 		{
-			claimHeight:  0,
+			claimHeight:   0,
 			currentHeight: 100,
-			shouldFail:   false,
-			description:  "genesis block claim should pass if within age limit",
+			shouldFail:    false,
+			description:   "genesis block claim should pass if within age limit",
 		},
 	}
 

@@ -1,8 +1,8 @@
 package role
 
 import (
-	"testing"
 	"net/url"
+	"testing"
 )
 
 func TestURLDecodingIdempotency(t *testing.T) {
@@ -60,12 +60,12 @@ func TestURLDecodingIdempotency(t *testing.T) {
 			if decodedPath == "" && tt.input != "" {
 				decodedPath = tt.input
 			}
-			
+
 			if decodedPath != tt.expected {
-				t.Errorf("URL decoding failed for %s: expected %q, got %q", 
+				t.Errorf("URL decoding failed for %s: expected %q, got %q",
 					tt.name, tt.expected, decodedPath)
 			}
-			
+
 			// Test idempotency - decoding an already decoded string should return the same result
 			// For double-encoded strings, we only expect single decoding
 			if tt.name != "double encoded path (should only decode once)" {
@@ -73,9 +73,9 @@ func TestURLDecodingIdempotency(t *testing.T) {
 				if decodedAgain == "" && decodedPath != "" {
 					decodedAgain = decodedPath
 				}
-				
+
 				if decodedAgain != tt.expected {
-					t.Errorf("URL decoding is not idempotent for %s: expected %q, got %q", 
+					t.Errorf("URL decoding is not idempotent for %s: expected %q, got %q",
 						tt.name, tt.expected, decodedAgain)
 				}
 			}
@@ -97,10 +97,10 @@ func TestValidRealmPaths(t *testing.T) {
 	for _, path := range validPaths {
 		// Encode the path
 		encoded := url.QueryEscape(path)
-		
+
 		// Decode it back
 		decoded, _ := url.QueryUnescape(encoded)
-		
+
 		if decoded != path {
 			t.Errorf("Round-trip encoding/decoding failed for %q: got %q", path, decoded)
 		}

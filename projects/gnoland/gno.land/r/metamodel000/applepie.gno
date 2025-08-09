@@ -18,7 +18,8 @@ func init() {
 	applePieModel.Binding = func(_ string) string {
 		return applePieDescription + applePieModel.ToMarkdown()
 	}
-	register("Apple Pie", applePieModel)
+	keywords := []string{"recipe", "baking","apple pie","apple pie", "apple pie", "cooking", "food"}
+	register("Apple Pie", applePieModel, keywords...)
 }
 
 func applePie() *mm.Model {

@@ -96,7 +96,7 @@ func renderLink(w *mux.ResponseWriter, r *mux.Request) {
 		w.Write("It appears your claim is invalid: ")
 		w.Write(err.Error())
 		w.Write("\n\n")
-		
+
 		// Still show the claim details so user can see what they tried to claim
 		w.Write(ufmt.Sprintf(`
 ## Claim Details (Invalid)
@@ -118,12 +118,12 @@ func renderLink(w *mux.ResponseWriter, r *mux.Request) {
 %v
 
 `, blockHeightStr, discordID, addr, signature))
-		
+
 		w.Write("\n## What to do?\n\n")
 		if err.Error() == "claim: signature already used" {
 			w.Write("This signature has already been used. ")
 			w.Write(ufmt.Sprintf("[Check if Discord ID %s is already linked](/r/linker000/discord/user/v0:link/d/%s)\n\n", discordID, discordID))
-		} else if err.Error() == "claim: block height too old (age: 501 blocks, max: 500 blocks, claim: " + blockHeightStr + ", current: " {
+		} else if err.Error() == "claim: block height too old (age: 501 blocks, max: 500 blocks, claim: "+blockHeightStr+", current: " {
 			w.Write("- The claim is too old. Please generate a new claim from Discord\n")
 		} else if err.Error() == "datastore: discord id is already linked" {
 			w.Write(ufmt.Sprintf("- This Discord ID is already linked. [View existing link](/r/linker000/discord/user/v0:link/d/%s)\n", discordID))
@@ -219,7 +219,7 @@ func renderUnlink(w *mux.ResponseWriter, r *mux.Request) {
 		w.Write("It appears your claim is invalid: ")
 		w.Write(err.Error())
 		w.Write("\n\n")
-		
+
 		// Still show the claim details so user can see what they tried to claim
 		w.Write(ufmt.Sprintf(`
 ## Claim Details (Invalid)
@@ -237,7 +237,7 @@ func renderUnlink(w *mux.ResponseWriter, r *mux.Request) {
 %v
 
 `, blockHeightStr, discordID, signature))
-		
+
 		w.Write("\n## What to do?\n\n")
 		if err.Error() == "claim: signature already used" {
 			w.Write("This signature has already been used. The unlink may have already been processed.\n")

@@ -95,7 +95,7 @@ func renderLink(w *mux.ResponseWriter, r *mux.Request) {
 	w.Write("View your claim details from the discord linker bot. Sign the transaction with the magic link to link these roles to your server.\n")
 
 	// Validate that all required parameters are present
-	if blockHeightStr == "" || discordAccountID == "" || discordGuildID == "" || 
+	if blockHeightStr == "" || discordAccountID == "" || discordGuildID == "" ||
 		discordRoleID == "" || addr == "" || roleName == "" || realmPath == "" || signature == "" {
 		w.Write("\nError: Missing required parameters\n")
 		return
@@ -116,7 +116,7 @@ func renderLink(w *mux.ResponseWriter, r *mux.Request) {
 		w.Write("It appears your claim is invalid: ")
 		w.Write(err.Error())
 		w.Write("\n\n")
-		
+
 		// Still show the claim details
 		w.Write(ufmt.Sprintf(`
 ## Claim Details (Invalid)
@@ -140,7 +140,7 @@ func renderLink(w *mux.ResponseWriter, r *mux.Request) {
 %v
 
 `, blockHeightStr, discordGuildID, discordRoleID, realmPath, roleName, signature))
-		
+
 		w.Write("\n## What to do?\n\n")
 		if err.Error() == "claim: signature already used" {
 			w.Write("This signature has already been used. ")
@@ -205,7 +205,7 @@ func renderUnlink(w *mux.ResponseWriter, r *mux.Request) {
 	w.Write("View your claim details from the discord linker bot. Sign the transaction with the magic link to unlink these roles from your server.\n")
 
 	// Validate that all required parameters are present
-	if blockHeightStr == "" || discordAccountID == "" || discordGuildID == "" || 
+	if blockHeightStr == "" || discordAccountID == "" || discordGuildID == "" ||
 		realmPath == "" || roleName == "" || signature == "" {
 		w.Write("\nError: Missing required parameters\n")
 		return
@@ -226,7 +226,7 @@ func renderUnlink(w *mux.ResponseWriter, r *mux.Request) {
 		w.Write("It appears your claim is invalid: ")
 		w.Write(err.Error())
 		w.Write("\n\n")
-		
+
 		// Still show the claim details
 		w.Write(ufmt.Sprintf(`
 ## Claim Details (Invalid)
@@ -247,7 +247,7 @@ func renderUnlink(w *mux.ResponseWriter, r *mux.Request) {
 %v
 
 `, blockHeightStr, discordGuildID, realmPath, roleName, signature))
-		
+
 		w.Write("\n## What to do?\n\n")
 		if err.Error() == "claim: signature already used" {
 			w.Write("This signature has already been used. The unlink may have already been processed.\n")

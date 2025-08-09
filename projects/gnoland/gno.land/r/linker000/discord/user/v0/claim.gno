@@ -35,7 +35,7 @@ func validateLinkClaim(blockHeight int64, discordID string, addr std.Address, si
 	if ds.isSignatureUsed(signature) {
 		return nil, errors.New("claim: signature already used")
 	}
-	
+
 	// Decode the signature
 	decodedSignature, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
@@ -44,7 +44,7 @@ func validateLinkClaim(blockHeight int64, discordID string, addr std.Address, si
 
 	// Reconstruct the payload that was signed
 	payload := ufmt.Sprintf("%d,%s,%s", blockHeight, discordID, addr)
-	
+
 	// Verify signature with primary public key, and failover to previous public key
 	verified := ed25519.Verify(keyring.PubKey(), []byte(payload), decodedSignature)
 	if !verified {
@@ -95,7 +95,7 @@ func validateUnlinkClaim(blockHeight int64, discordID string, signature string) 
 	if ds.isSignatureUsed(signature) {
 		return nil, errors.New("claim: signature already used")
 	}
-	
+
 	// Decode the signature
 	decodedSignature, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
@@ -104,7 +104,7 @@ func validateUnlinkClaim(blockHeight int64, discordID string, signature string) 
 
 	// Reconstruct the payload that was signed (just block_height and discord_id for unlink)
 	payload := ufmt.Sprintf("%d,%s", blockHeight, discordID)
-	
+
 	// Verify signature with primary public key, and failover to previous public key
 	verified := ed25519.Verify(keyring.PubKey(), []byte(payload), decodedSignature)
 	if !verified {
@@ -139,7 +139,6 @@ func validateUnlinkClaim(blockHeight int64, discordID string, signature string) 
 	}, nil
 }
 
-
 func verifyAddress(addr std.Address) error {
 	caller := std.PreviousRealm().Address()
 	if addr != caller {
@@ -168,17 +167,17 @@ func validateDiscordID(discordID string) error {
 func verifyBlockHeight(claimHeight, currentHeight int64) error {
 	// Check if claim is from the future
 	if claimHeight > currentHeight {
-		return errors.New(ufmt.Sprintf("claim: block height is in the future (claim: %d, current: %d)", 
+		return errors.New(ufmt.Sprintf("claim: block height is in the future (claim: %d, current: %d)",
 			claimHeight, currentHeight))
 	}
-	
+
 	// Check if claim is too old
 	age := currentHeight - claimHeight
 	if age > maxBlockAge {
-		return errors.New(ufmt.Sprintf("claim: block height too old (age: %d blocks, max: %d blocks, claim: %d, current: %d)", 
+		return errors.New(ufmt.Sprintf("claim: block height too old (age: %d blocks, max: %d blocks, claim: %d, current: %d)",
 			age, maxBlockAge, claimHeight, currentHeight))
 	}
-	
+
 	return nil
 }
 

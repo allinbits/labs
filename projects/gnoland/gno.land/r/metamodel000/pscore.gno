@@ -19,7 +19,7 @@ func init() {
 	m.Binding = func(_ string) string {
 		return overview + m.ToMarkdown()
 	}
-	keywords := []string{"ranking", "governance", "dao", "budgeting", "prioritization"}
+	keywords := []string{"game", "ranking", "governance", "dao", "budgeting", "prioritization"}
 	register("pScore Voting", m, keywords...)
 }
 

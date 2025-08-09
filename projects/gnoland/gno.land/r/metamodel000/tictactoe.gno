@@ -75,7 +75,8 @@ func init() {
 	model.Binding = func(_ string) string {
 		return ticTacToeDescription + model.ToMarkdown() + ticTacToeNotes
 	}
-	register("TicTacToe", model)
+	keywords := []string{"tictactoe", "game", "board", "symbolic", "rewriting", "expert system"}
+	register("TicTacToe", model, keywords...)
 }
 
 func ticTacToe() *mm.Model {

@@ -49,7 +49,8 @@ func init() {
 	exampleModel.Binding = func(_ string) string {
 		return transferDescription + exampleModel.ToMarkdown()
 	}
-	register("transfer", exampleModel)
+	keywords := []string{"transfer", "token", "wallet", "address", "payment"}
+	register("transfer payment", exampleModel, keywords...)
 }
 
 // transfer creates a model to transfer tokens from a wallet to a specified address.

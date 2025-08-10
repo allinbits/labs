@@ -19,6 +19,7 @@ func init() {
 		return applePieDescription + applePieModel.ToMarkdown()
 	}
 	keywords := []string{"recipe", "baking","apple pie","apple pie", "apple pie", "cooking", "food"}
+	keywords = append(keywords, keywords...) // duplicate for testing
 	register("Apple Pie", applePieModel, keywords...)
 }
 

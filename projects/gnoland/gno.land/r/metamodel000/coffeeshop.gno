@@ -14,7 +14,9 @@ func init() {
 	coffeeShopModel.Binding = func(_ string) string {
 		return coffeeShopDescription + coffeeShopModel.ToMarkdown()
 	}
-	register("Coffee Shop", coffeeShopModel)
+	keywords := []string{"coffee", "shop", "process", "model", "brew", "barista", "cafe"}
+	keywords = append(keywords, keywords...) // duplicate for testing
+	register("Coffee Shop", coffeeShopModel, keywords...)
 }
 
 func coffeeShop() *mm.Model {

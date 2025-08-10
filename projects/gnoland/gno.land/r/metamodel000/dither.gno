@@ -32,7 +32,7 @@ func init() {
 		return ditherDescription + ditherForm + exampleModel.ToMarkdown()
 	}
 	keywords := []string{"message", "memo", "spam"}
-	register("dither", exampleModel, keywords...)
+	register("dither spam", exampleModel, keywords...)
 }
 
 // dither creates a model that always sends 1 token from $wallet to address

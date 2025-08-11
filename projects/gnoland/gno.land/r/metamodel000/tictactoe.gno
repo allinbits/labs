@@ -66,7 +66,14 @@ This expert system view is implemented and visualized in the following notebook:
 
 📓 [Tic Tac Toe Expert System (Petri.jl)](https://gist.github.com/stackdump/06e7ccc96dd08b478b0da781a88c8d7a#file-tic-tac-toe-expert-system-ipynb)
 
+This augmented model appends win-detection logic, allowing it to recognize winning states and update the "next" place accordingly. It also includes a continuous simulation mode that runs the game dynamics over time, showing how strategies evolve.
+[![pflow](https://pflow.dev/img/zb2rhosFBUreeqMAKLc5XW7aSy6hCgAJJrq93i6B2vRJS3VhN.svg)](https://pflow.dev/p/zb2rhosFBUreeqMAKLc5XW7aSy6hCgAJJrq93i6B2vRJS3VhN/)
+
 It uses Petri.jl to simulate the continuous dynamics and solve the resulting ODEs, giving insight into how the strategy space unfolds over time. This interpretation provides a bridge between symbolic gameplay and fluid probabilistic reasoning.
+
+### Try the interactive demo at pflow.xyz
+[![pflow](https://pflow.dev/img/zb2rhfp7ZoggzxF7orkkjEU6Emq6N7VB9pATsi9vLdHSKy1t7.svg)](https://pflow.dev/p/zb2rhfp7ZoggzxF7orkkjEU6Emq6N7VB9pATsi9vLdHSKy1t7/)
+
 
 `
 

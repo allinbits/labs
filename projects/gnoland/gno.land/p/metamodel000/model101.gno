@@ -41,8 +41,9 @@ to output places. Firing is an atomic operation that changes the state of the mo
 - **Coloring**: A way to extend places and tokens with structured data, allowing for richer semantics beyond simple integers. Colored tokens can carry additional information, enabling more complex interactions and behaviors.
 - **Composability**: The ability to combine smaller models into larger ones, allowing for modular design and reuse of patterns. This enables building complex systems from simpler components.
 - **Inhibitory Arrows**: Arrows that prevent a transition from firing if tokens exist in the source place. This allows for conditional logic and mutual exclusion within the model.
-- **Simulation**: The process of executing a model step-by-step or continuously, observing how tokens flow through places and transitions over time. Simulation can be used to validate logic, explore behavior, and visualize system dynamics.
 - **Read Arc**: An arrow that allows a transition to read the number of tokens in a place without consuming them. This is useful for implementing logic that depends on the state of a place without modifying it.
+- **Simulation**: The process of executing a model step-by-step or continuously, observing how tokens flow through places and transitions over time. Simulation can be used to validate logic, explore behavior, and visualize system dynamics.
+- **Parameter Sweep**: A technique for exploring how changes in model parameters affect behavior. This allows users to test different configurations and understand the sensitivity of the model to various inputs.
 
 #### Petri Net vs. Blockchain Analogy
 
@@ -75,7 +76,20 @@ Submit your models to a public index to become a model citizen and share your wo
 
 func Tutorial() *Model {
     m := model101()
-    m.Binding = func(_ string) string {
+    m.Binding = func(path string) string {
+        switch path {
+        case "intro":
+            return model101Intro
+        case "description":
+            return model101Description
+        case "markdown":
+            return m.ToMarkdown()
+        case "svg":
+            return m.ToSvg()
+        case "json":
+            return m.ToJson()
+        default:
+        }
         return model101Intro + m.ToMarkdown() + model101Description
     }
     return m

@@ -14,43 +14,22 @@ import (
 	"gno.land/p/rss000/feed"
 )
 
-// FIXME: this isn't pure anymore since we link to metamodel000 directly.
+// --- Types ---
 
 type RegistryCallback = func(key string, value interface{}) bool
 type RegistryMatcher = func(value interface{}) bool
 
-type Record struct {
-	Id       int
-	Title    string
-	Content  interface{}
-	Keywords []string
-}
-
-func (record Record) String() string {
-	var sb strings.Builder
-	sb.WriteString("Record{Content: ")
-	if record.Content != nil {
-		sb.WriteString("interface{}")
-	} else {
-		sb.WriteString("nil")
-	}
-	sb.WriteString(", Keywords: [")
-	for i, keyword := range record.Keywords {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(keyword)
-	}
-	sb.WriteString("]}")
-	return sb.String()
-}
 
 type Registry struct {
 	tree          *avl.Tree
 	allowPrefixes []string
 	renderOpts    map[string]interface{}
 	keywordIndex  *avl.Tree // maps keyword -> []string (keys)
+	idIndex       *avl.Tree // maps id (int) -> string (key)
+	sequence      int
 }
+
+// --- Constructor ---
 
 func NewRegistry(allowedPrefixes []string, renderOpts map[string]interface{}) *Registry {
 	return &Registry{
@@ -58,6 +37,8 @@ func NewRegistry(allowedPrefixes []string, renderOpts map[string]interface{}) *R
 		allowPrefixes: allowedPrefixes,
 		renderOpts:    renderOpts,
 		keywordIndex:  avl.NewTree(),
+		idIndex:       avl.NewTree(),
+		sequence:      0,
 	}
 }
 
@@ -73,27 +54,45 @@ func (r *Registry) register(name string, obj interface{}, kw ...string) {
 	if r.Exists(key) {
 		panic("Key already exists: " + key)
 	}
-	kw = append(kw, name)
-	kwords := keywords(kw)
+	kwords := keywords(append(kw, name))
 	switch obj := obj.(type) {
 	case *Model:
-		r.tree.Set(key, Record{
-			Id:       r.tree.Size(),
-			Title:    name,
-			Content:  func(...interface{}) *Model { return obj },
-			Keywords: kwords,
-		})
-		for _, word := range kwords {
-			val, _ := r.keywordIndex.Get(word)
-			var keys []string
-			if val != nil {
-				keys = val.([]string)
-			}
-			keys = append(keys, key)
-			r.keywordIndex.Set(word, keys)
-		}
+		r.addRecord(key, name, obj, kwords)
+		r.indexKeywords(key, kwords)
+		r.sequence++
 	default:
 		panic(ufmt.Sprintf("Invalid type for key %s: %T", key, obj))
+	}
+}
+
+func (r *Registry) addRecord(key, name string, obj *Model, kwords []string) {
+	rec := Record{
+		Id:       r.sequence,
+		Title:    name,
+		Content:  func(...interface{}) *Model { return obj },
+		Keywords: kwords,
+	}
+	r.tree.Set(key, rec)
+	r.idIndex.Set(strconv.Itoa(rec.Id), key) // convert int to string
+}
+
+func (r *Registry) KeyById(id int) (string, bool) {
+	key, ok := r.idIndex.Get(strconv.Itoa(id)) // convert int to string
+	if !ok {
+		return "", false
+	}
+	return key.(string), true
+}
+
+func (r *Registry) indexKeywords(key string, kwords []string) {
+	for _, word := range kwords {
+		val, _ := r.keywordIndex.Get(word)
+		var keys []string
+		if val != nil {
+			keys = val.([]string)
+		}
+		keys = append(keys, key)
+		r.keywordIndex.Set(word, keys)
 	}
 }
 
@@ -142,33 +141,83 @@ func (r *Registry) Iterate(callback RegistryCallback, matcher RegistryMatcher) {
 
 func (r *Registry) Render(path string) string {
 	if strings.HasPrefix(path, "?") {
-        q := parseQuery(path)
-        if idx, ok := q["i"]; ok && len(idx) > 0 {
-            return r.renderItem(idx[0], q)
-        }
-    } else if path != "" {
-        key := sanitizeAnchorKey(path)
-       var sb strings.Builder
-        if _, ok := r.tree.Get(key); ok {
-            return r.Content(key, path)
-        }
-        if c, ok := r.keywordIndex.Get(strings.ToLower(key)); ok {
-            sb.WriteString("## Search Results for: " + key + "\n\n")
-            sb.WriteString("Found " + ufmt.Sprintf("%d", len(c.([]string))) + " results:\n\n")
-            for _, k := range c.([]string) {
-                obj, ok := r.tree.Get(k)
-                if !ok {
-                    continue
-                }
-                rec := obj.(Record)
-                sb.WriteString("### [" + upcaseWords(rec.Title) + "](/r/metamodel000?i=" + k + ")\n")
-                sb.WriteString(r.thumbnail(k, obj) + "\n")
-            }
-            sb.WriteString("\n[<- Home](/r/metamodel000)\n")
-            return sb.String()
-         }
-    }
+		q := parseQuery(path)
+		if idx, ok := q["i"]; ok && len(idx) > 0 {
+			return r.renderItem(idx[0], q)
+		}
+	} else if path != "" {
+		key := sanitizeAnchorKey(path)
+		if _, ok := r.tree.Get(key); ok {
+			return r.Content(key, path)
+		}
+		if c, ok := r.keywordIndex.Get(strings.ToLower(key)); ok {
+			return r.renderSearchResults(key, c.([]string))
+		}
+	}
 	return r.renderIndex(path)
+}
+
+func (r *Registry) renderSearchResults(key string, keys []string) string {
+	const pageSize = 5
+	var sb strings.Builder
+	sb.WriteString("## Search Results for: " + key + "\n\n")
+	total := len(keys)
+	page, cleanKey := parsePageFromKey(key)
+	start, end := getPageBounds(page, pageSize, total)
+	sb.WriteString("Found " + ufmt.Sprintf("%d", total) + " results:\n\n")
+	r.renderSearchItems(&sb, keys, start, end)
+	r.renderSearchPagination(&sb, cleanKey, page, pageSize, total, end)
+	sb.WriteString("\n[<- Home](/r/metamodel000)\n")
+	return sb.String()
+}
+
+func parsePageFromKey(key string) (page int, cleanKey string) {
+	page = 0
+	cleanKey = key
+	if idx := strings.Index(key, "?p="); idx != -1 {
+		pageStr := key[idx+3:]
+		cleanKey = key[:idx]
+		if i, err := strconv.Atoi(pageStr); err == nil {
+			page = i
+		}
+	}
+	return
+}
+
+func getPageBounds(page, pageSize, total int) (start, end int) {
+	start = page * pageSize
+	end = start + pageSize
+	if end > total {
+		end = total
+	}
+	return
+}
+
+func (r *Registry) renderSearchItems(sb *strings.Builder, keys []string, start, end int) {
+	for i := start; i < end; i++ {
+		k := keys[i]
+		obj, ok := r.tree.Get(k)
+		if !ok {
+			continue
+		}
+		rec := obj.(Record)
+		sb.WriteString("### [" + upcaseWords(rec.Title) + "](/r/metamodel000:" + k + ")\n")
+		sb.WriteString(r.thumbnail(k, obj) + "\n")
+	}
+}
+
+func (r *Registry) renderSearchPagination(sb *strings.Builder, key string, page, pageSize, total, end int) {
+	if total > pageSize {
+		sb.WriteString("\n")
+		if page > 0 {
+			sb.WriteString("[Prev Page](/r/metamodel000:" + key + "?p=" + ufmt.Sprintf("%d", page-1) + ") ")
+		}
+		sb.WriteString(ufmt.Sprintf("Page %d/%d", page+1, (total+pageSize-1)/pageSize))
+		if end < total {
+			sb.WriteString(" [Next Page](/r/metamodel000:" + key + "?p=" + ufmt.Sprintf("%d", page+1) + ")")
+		}
+		sb.WriteString("\n")
+	}
 }
 
 func (r *Registry) renderItem(indexStr string, u url.Values) string {
@@ -177,14 +226,14 @@ func (r *Registry) renderItem(indexStr string, u url.Values) string {
 	key, obj := r.tree.GetByIndex(i)
 	rec := obj.(Record)
 	var sb strings.Builder
+	sb.WriteString("id: " + ufmt.Sprintf("%d", rec.Id) + "\n\n")
 	sb.WriteString("### " + upcaseWords(rec.Title) + "\n\n")
 	sb.WriteString("**[" + key + "🔗](/r/metamodel000:" + key + ")**\n\n")
-	sb.WriteString("**Keywords:** " + strings.Join(rec.Keywords, ", ") + "\n\n") // TODO: make links
+	sb.WriteString("**Keywords:** " + strings.Join(rec.Keywords, ", ") + "\n\n")
 	sb.WriteString(r.renderNavigation(i, u))
 	sb.WriteString(r.Content(key, ""))
 	sb.WriteString(r.renderNavigation(i, u))
 	sb.WriteString("\n[<- Home](/r/metamodel000)")
-
 	return sb.String()
 }
 
@@ -205,16 +254,15 @@ func (r *Registry) renderIndex(path string) string {
 	}
 	return "## Models\n\n" +
 		"This is a public registry of metamodels.\n\n" +
-		"TODO: You can view the RSS Feed for updates.\n\n" +
 		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n" +
-		"![tag cloud visualized](" + r.TagCloudDataUrl() + ")\n\n" +
+		"### Word Cloud\n\n" +
+		"[![tag cloud visualized](" + r.TagCloudDataUrl() + ")](#keyword-index)\n\n" +
 		r.TagCloudMarkdown() + "\n\n" +
 		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n"
 }
 
 func (r *Registry) renderList(path string) string {
 	const pageSize = 5
-	var sb strings.Builder
 	total := r.tree.Size()
 	page := 0
 	if u := parseQuery(path); u != nil {
@@ -224,6 +272,17 @@ func (r *Registry) renderList(path string) string {
 			}
 		}
 	}
+	sb := r.renderListItems(page, pageSize, total)
+	nav := r.renderListNav(page, pageSize, total)
+	sb.WriteString(nav)
+	return "## Metamodel Index\n\n" +
+		nav +
+		sb.String() +
+		"\n[<- Home](/r/metamodel000)\n"
+}
+
+func (r *Registry) renderListItems(page, pageSize, total int) *strings.Builder {
+	sb := &strings.Builder{}
 	start := page * pageSize
 	end := start + pageSize
 	if end > total {
@@ -234,6 +293,10 @@ func (r *Registry) renderList(path string) string {
 		sb.WriteString("### [" + upcaseWords(key) + "](?i=" + ufmt.Sprintf("%d", i) + ")\n")
 		sb.WriteString(r.thumbnail(key, obj))
 	}
+	return sb
+}
+
+func (r *Registry) renderListNav(page, pageSize, total int) string {
 	var nav strings.Builder
 	if total > pageSize {
 		nav.WriteString("\n")
@@ -241,16 +304,12 @@ func (r *Registry) renderList(path string) string {
 			nav.WriteString("[Prev Page](?p=" + ufmt.Sprintf("%d", page-1) + ") ")
 		}
 		nav.WriteString(ufmt.Sprintf("Page %d/%d", page+1, (total+pageSize-1)/pageSize))
-		if end < total {
+		if (page+1)*pageSize < total {
 			nav.WriteString(" [Next Page](?p=" + ufmt.Sprintf("%d", page+1) + ")")
 		}
 		nav.WriteString("\n")
 	}
-	sb.WriteString(nav.String())
-	return "## Metamodel Index\n\n" +
-		nav.String() +
-		sb.String() +
-		"\n[<- Home](/r/metamodel000)\n"
+	return nav.String()
 }
 
 func (r *Registry) Content(key, path string) string {
@@ -299,36 +358,7 @@ func (r *Registry) thumbnail(key string, obj interface{}) string {
 	return sb.String()
 }
 
-// --- Tag Cloud & RSS ---
-
-func (r *Registry) TagCloudMarkdown() string {
-	tagCounts := r.TagCloud()
-	var tags []string
-	for tag := range tagCounts {
-		tags = append(tags, tag)
-	}
-	sort.Strings(tags)
-	var sb strings.Builder
-	sb.WriteString("### Index Keywords\n\n")
-	for _, tag := range tags {
-		sb.WriteString("- [")
-		sb.WriteString(tag)
-		sb.WriteString("](/r/metamodel000:" + tag + ") (" + strconv.Itoa(tagCounts[tag]) + ")\n")
-	}
-	return sb.String()
-}
-
-func (r *Registry) TagCloud() map[string]int {
-	tagCounts := make(map[string]int)
-	r.tree.IterateByOffset(0, r.tree.Size(), func(_ string, value interface{}) bool {
-		rec := value.(Record)
-		for _, kw := range rec.Keywords {
-			tagCounts[kw]++
-		}
-		return false
-	})
-	return tagCounts
-}
+// --- Feed ---
 
 func (r *Registry) getItems() []*feed.Item {
 	var items []*feed.Item
@@ -352,16 +382,43 @@ func (r *Registry) getItems() []*feed.Item {
 
 // --- Helpers ---
 
+// KLUDGE: set to false allows tags to show up as duplicate results in the tag cloud
+var useSorted = true
+
 func keywords(kw []string) (out []string) {
+	if useSorted {
+		return keywordsSorted(kw)
+	}
+	return keywordsSimple(kw)
+}
+
+func keywordsSimple(kw []string) (out []string) {
 	for _, k := range kw {
-		multiWords := strings.Split(k, " ")
-		for _, word := range multiWords {
+		for _, word := range strings.Split(k, " ") {
 			if len(word) == 0 {
 				continue
 			}
 			out = append(out, strings.ToLower(word))
 		}
 	}
+	return out
+}
+
+func keywordsSorted(kw []string) (out []string) {
+	seen := make(map[string]struct{})
+	for _, k := range kw {
+		for _, word := range strings.Split(k, " ") {
+			word = strings.ToLower(word)
+			if len(word) == 0 {
+				continue
+			}
+			if _, exists := seen[word]; !exists {
+				seen[word] = struct{}{}
+				out = append(out, word)
+			}
+		}
+	}
+	sort.Strings(out)
 	return out
 }
 
@@ -391,11 +448,9 @@ func markdownPreview(content string) string {
 	return content
 }
 
-// Add this helper function
 func sanitizeAnchorKey(key string) string {
 	key = strings.ToLower(key)
 	key = strings.ReplaceAll(key, " ", "-")
-	// Remove all non-alphanumeric and non-hyphen characters
 	var sb strings.Builder
 	for _, r := range key {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
@@ -403,93 +458,4 @@ func sanitizeAnchorKey(key string) string {
 		}
 	}
 	return sb.String()
-}
-
-func (r *Registry) TagCloudDataUrl() string {
-    svg := r.TagCloudSVG()
-    return "data:image/svg+xml;utf8," + url.PathEscape(svg)
-}
-
-const tagCloudSVGStyles = `<style>
-    text { font-family: Arial, sans-serif; }
-    .scale-1  { font-size: 1em;   fill: #b3c6e7; }
-    .scale-2  { font-size: 1.1em; fill: #a3d8f4; }
-    .scale-3  { font-size: 1.2em; fill: #b2f7ef; }
-    .scale-4  { font-size: 1.3em; fill: #f7d6e0; }
-    .scale-5  { font-size: 1.4em; fill: #ffe5b4; }
-    .scale-6  { font-size: 1.5em; fill: #f9f871; }
-    .scale-7  { font-size: 1.6em; fill: #c1fba4; }
-    .scale-8  { font-size: 1.7em; fill: #f7b2ad; }
-    .scale-9  { font-size: 1.8em; fill: #b5ead7; }
-    .scale-10 { font-size: 1.9em; fill: #ffdac1; }
-    .scale-11 { font-size: 2em;   fill: #e2f0cb; }
-    .scale-12 { font-size: 2.1em; fill: #b5ead7; }
-    .scale-13 { font-size: 2.2em; fill: #c7ceea; }
-    .scale-14 { font-size: 2.3em; fill: #f6dfeb; }
-    .scale-15 { font-size: 2.4em; fill: #f7cac9; }
-    .scale-16 { font-size: 2.5em; fill: #f9f871; }
-    .scale-17 { font-size: 2.6em; fill: #b2f7ef; }
-    .scale-18 { font-size: 2.7em; fill: #a3d8f4; }
-    .scale-19 { font-size: 2.8em; fill: #b3c6e7; }
-    .scale-20 { font-size: 2.9em; fill: #f7b2ad; }
-</style>
-`
-
-func (r *Registry) TagCloudSVG() string {
-    tagCounts := r.TagCloud()
-    var tags []string
-    for tag := range tagCounts {
-        tags = append(tags, tag)
-    }
-    sort.Strings(tags)
-
-    // Find min and max counts for scaling
-    minCount, maxCount := 1<<31-1, 0
-    for _, count := range tagCounts {
-        if count < minCount {
-            minCount = count
-        }
-        if count > maxCount {
-            maxCount = count
-        }
-    }
-    if minCount == maxCount {
-        minCount = 1 // avoid division by zero
-    }
-
-    // Make SVG wider and add another column
-    svgWidth := 800
-    svgHeight := 600
-    colWidth := 300
-    maxY := 580
-    x, y := 20, 40
-    col := 0
-
-    var sb strings.Builder
-    sb.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ` + strconv.Itoa(svgWidth) + ` ` + strconv.Itoa(svgHeight) + `">` + "\n")
-    sb.WriteString(tagCloudSVGStyles + "\n")
-
-    for _, tag := range tags {
-        count := tagCounts[tag]
-        // Scale to 1..20
-        scale := 1 + int(float64(count-minCount)*19/float64(maxCount-minCount))
-        if scale < 1 {
-            scale = 1
-        }
-        if scale > 20 {
-            scale = 20
-        }
-        sb.WriteString(`<text class="scale-` + strconv.Itoa(scale) + `" x="` + strconv.Itoa(x) + `" y="` + strconv.Itoa(y) + `">`)
-        sb.WriteString(tag)
-        sb.WriteString(`</text>` + "\n")
-        y += 20 + scale*2
-        if y > maxY {
-            y = 40
-            col++
-            x = 20 + col*colWidth
-        }
-    }
-
-    sb.WriteString(`</svg>`)
-    return sb.String()
 }

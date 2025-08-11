@@ -20,7 +20,7 @@ func init() {
 	keyboard.Binding = func(_ string) string {
 		return qwertyNotes + keyboard.ToMarkdown() + externalLink
 	}
-	register("Keyboard", keyboard)
+	register("Qwerty Keyboard", keyboard)
 }
 
 func qwertyModel() *mm.Model {

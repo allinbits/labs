@@ -1,13 +1,14 @@
 package metamodel
 
-import mm "gno.land/p/metamodel000"
-
 var model101Intro = `
 The **metamodel** library provides a foundation for modeling dynamic systems using **places**, **transitions**, and **arrows**, grounded in the theory of **Petri nets**. It powers tools like [pflow.xyz](https://pflow.xyz), which lets users visually design, simulate, and export executable models.
 
 `
 
 var model101Description = `
+
+### Try the interactive demo at pflow.xyz
+[![pflow](https://pflow.dev/img/zb2rhgiVZBVmUHsTUyr63mjFMuVksT3zqFMBGtoxzJyYkJUNv.svg)](https://pflow.dev/p/zb2rhgiVZBVmUHsTUyr63mjFMuVksT3zqFMBGtoxzJyYkJUNv/)
 
 #### Core Concepts
 
@@ -26,6 +27,22 @@ var model101Description = `
 - **Interactive Simulation**: Visual Tools allow users to click transitions to fire them, explore enabled states, and debug logic.
 - **Continuous Simulation**: Models can be extended to support continuous dynamics, where transitions fire at rates over time rather than instantaneously. This allows modeling of fluid systems, such as economic flows or resource consumption.
 - **ODE Export**: Continuous models can be exported to Julia for differential equation solving using [Petri.jl](https://github.com/AlgebraicJulia/Petri.jl) and [pflow-jl](https://github.com/pflow-xyz/pflow-jl)
+
+#### Terms
+- **Metamodel**: A framework for modeling dynamic systems using places, transitions, and arrows, inspired by Petri nets.
+- **Token**: A unit of state within a place, representing resources, entities, or values. Tokens can be integers or structured data.
+- **Enabled**: A transition is enabled when all its input places have enough tokens to satisfy
+the transition's requirements. Enabled transitions can be fired.
+- **Firing**: The process of a transition consuming tokens from input places and producing tokens
+to output places. Firing is an atomic operation that changes the state of the model.
+- **Capacity**: The maximum number of tokens a place can hold. If a place reaches its capacity, no more tokens can be added until some are consumed.
+- **Rate**: For continuous transitions, the rate at which tokens are produced or consumed over time. This allows modeling of fluid dynamics where changes occur continuously rather than instantaneously.
+- **Guard**: A logical condition that must be satisfied for a transition to fire. Guards can be used to implement complex logic and constraints within the model.
+- **Coloring**: A way to extend places and tokens with structured data, allowing for richer semantics beyond simple integers. Colored tokens can carry additional information, enabling more complex interactions and behaviors.
+- **Composability**: The ability to combine smaller models into larger ones, allowing for modular design and reuse of patterns. This enables building complex systems from simpler components.
+- **Inhibitory Arrows**: Arrows that prevent a transition from firing if tokens exist in the source place. This allows for conditional logic and mutual exclusion within the model.
+- **Simulation**: The process of executing a model step-by-step or continuously, observing how tokens flow through places and transitions over time. Simulation can be used to validate logic, explore behavior, and visualize system dynamics.
+- **Read Arc**: An arrow that allows a transition to read the number of tokens in a place without consuming them. This is useful for implementing logic that depends on the state of a place without modifying it.
 
 #### Petri Net vs. Blockchain Analogy
 
@@ -52,32 +69,31 @@ The library is designed to be extensible, allowing users to bind model objects t
 The goal is to provide a powerful yet intuitive framework for modeling dynamic systems, enabling users to explore
 the behavior of their models, validate logic, and export them for execution or further analysis.
 
-Submit your models to the public index to become a model citizen and share your work with the community!
+Submit your models to a public index to become a model citizen and share your work with the community!
 
 `
 
-func init() {
-	model := model101()
-	model.Binding = func(_ string) string {
-		return model101Intro + model.ToMarkdown() + model101Description
-	}
-	keywords := []string{"modeling101", "modelCitizen"}
-	register("Metamodel Codex", model, keywords...)
+func Tutorial() *Model {
+    m := model101()
+    m.Binding = func(_ string) string {
+        return model101Intro + m.ToMarkdown() + model101Description
+    }
+    return m
 }
 
-func model101() *mm.Model {
-	places := map[string]mm.Place{
-		"start":  {Offset: 0, Initial: mm.T(1), Capacity: mm.T(1), X: 40, Y: 50},
-		"finish": {Offset: 1, Capacity: mm.T(1), X: 200, Y: 50},
+func model101() *Model {
+	places := map[string]Place{
+		"start":  {Offset: 0, Initial: T(1), Capacity: T(1), X: 40, Y: 50},
+		"finish": {Offset: 1, Capacity: T(1), X: 200, Y: 50},
 	}
-	transitions := map[string]mm.Transition{
+	transitions := map[string]Transition{
 		"go": {X: 120, Y: 50},
 	}
-	arrows := []mm.Arrow{
+	arrows := []Arrow{
 		{Source: "start", Target: "go"},
 		{Source: "go", Target: "finish"},
 	}
-	return &mm.Model{
+	return &Model{
 		Places:      places,
 		Transitions: transitions,
 		Arrows:      arrows,

@@ -21,6 +21,11 @@ var (
 
 	registry = mm.NewRegistry(authorizedPaths, renderOpts)
 )
+func init() {
+    codex := mm.Tutorial()
+    keywords := []string{"modeling101", "modelCitizen"}
+    register("Metamodel Codex", codex, keywords...)
+}
 
 func Register(cur realm, key string, m *mm.Model) {
 	registry.Register(key, m)

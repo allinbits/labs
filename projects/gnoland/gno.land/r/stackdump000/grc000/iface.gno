@@ -8,18 +8,15 @@ type Result struct {
 	Error string // empty on success; standardized codes below
 }
 
-// Read-only
-func TotalSupply() uint64
-func BalanceOf(owner Address) uint64
+type Methods interface {
+    // Queries (read-only)
+    TotalSupply() uint64
+    BalanceOf(owner Address) uint64
 
-// State-changing
-func Transfer(to Address, amount uint64) Result
+    // State-changing
+    Transfer(to Address, amount uint64) Result
 
-// Hooks (optional, but reserved names). If present, MUST enforce access control.
-func Mint(to Address, amount uint64) Result
-func Burn(from Address, amount uint64) Result
-
-// Metadata is an extension (GRC-001). If implemented, expose:
-// func Name() string
-// func Symbol() string
-// func Decimals() uint8
+    // Hooks (optional, but reserved names). If present, MUST enforce access control.
+    Mint(to Address, amount uint64) Result
+    Burn(from Address, amount uint64) Result
+}

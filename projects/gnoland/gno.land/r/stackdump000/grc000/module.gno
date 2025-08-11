@@ -1,5 +1,6 @@
 package grc000
 
+/*
 var balances = make(map[Address]uint64)
 var totalSupply uint64
 
@@ -112,3 +113,4 @@ func Burn(from Address, amount uint64) Result {
 	EventLog = append(EventLog, Event{"burn", from, "", amount})
 	return Result{true, ""}
 }
+*/

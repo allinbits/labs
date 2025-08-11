@@ -31,5 +31,6 @@ Labs Net is our dedicated testnet environment:
 - [linker000](/r/linker000) - Gno Linker - a tool for linking Gno Addresses to External Resources
 - [metamodel000](/r/metamodel000) - Library of metamodels for gnolang (WIP)
 - [stackdump000/home](/r/stackdump000/home) - Stackdump home page
+- [stackdump000/grc000](/r/stackdump000/grc000) - Experimental GRC000 Petri Net Model
 `
 }

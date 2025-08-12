@@ -1,7 +1,6 @@
 package grc000
 
-// Address is a chain address string.
-type Address = string
+type Address = string // alias
 
 type Result struct {
 	Ok    bool

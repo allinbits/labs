@@ -25,7 +25,7 @@ func getIntOpt(opts map[string]interface{}, key string, def int) int {
 func GRC000_Wallet(opts map[string]interface{}) *mm.Model {
     initial := mm.T(getIntOpt(opts, "balance", 1))
     return mm.New(map[string]mm.Place{
-        "$wallet": {Offset: 0, Initial: initial, Capacity: mm.T(0), X: 60, Y: 60},
+        "$wallet": {Initial: initial, Capacity: mm.T(0), X: 60, Y: 60},
     })
 }
 
@@ -35,7 +35,7 @@ func GRC000_Transfer(opts map[string]interface{}) *mm.Model {
     return mm.New(
         GRC000_Wallet(opts),
         map[string]mm.Place{
-            "$recipient": {Offset: 1, Initial: recipientInitial, X: 240, Y: 60},
+            "$recipient": {Initial: recipientInitial, X: 240, Y: 60},
         },
         map[string]mm.Transition{
             "transfer": {X: 150, Y: 60},
@@ -54,7 +54,7 @@ func GRC000_MintBurn(opts map[string]interface{}) *mm.Model {
     return mm.New(
         GRC000_Wallet(opts),
         map[string]mm.Place{
-            "$minter": {Offset: 0, Initial: minterInitial, X: 60, Y: 140},
+            "$minter": {Initial: minterInitial, X: 60, Y: 140},
         },
         map[string]mm.Transition{
             "mint": {X: 150, Y: 140},

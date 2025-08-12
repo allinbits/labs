@@ -73,7 +73,7 @@ func GRC000_Token(opts map[string]interface{}) *mm.Model {
         GRC000_Wallet(opts),
         GRC000_Transfer(opts),
         GRC000_MintBurn(opts),
-        map[string]interface{}{"version": "v0"}, // RenderOpts
+        map[string]interface{}{"version": "v0"},
     )
 }
 

@@ -6,7 +6,8 @@
 
 ## Abstract
 
-This lite paper introduces the concept of **append-only Petri-net logic** for Governance Realm Contracts (GRCs). 
+This lite paper introduces the concept of **append-only Petri-net logic** for GRC (gno.land equiv of ERC) Token Standards.
+
 Append-only semantics offer a path to upgrade on-chain models while preserving determinism, reproducibility, and composability. 
 By extending nets through additions only — without mutation of existing rules — we achieve a rare balance between *immutability* and *evolution*.
 

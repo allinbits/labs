@@ -10,6 +10,10 @@ but **composable-first** with Petri-net semantics.
 **GRC-000** defines the **minimal, safe, deterministic** interface for fungible tokens on `gno.land`, with first-class support for **Petri-net composition**.  
 The goal is not to ship every possible feature in one spec, but to define a **core set of primitives** — small, deterministic Petri-net fragments that can be composed into more complex systems.
 
+This code follows the **"Smart Objects, Dumb Code"** principle, inspired by the Yoneda Lemma: each object’s identity is defined entirely by how it behaves in all possible contexts. The logic and rules for valid actions live inside the object itself, while the surrounding code remains minimal and declarative, simply triggering actions without re-implementing internal details.
+
+This keeps complexity encapsulated, encourages composability, and ensures the system is maintainable by letting interactions—not internals—define behavior.
+
 ---
 
 ## 2 Primitives — “Lemmas” of Token Logic

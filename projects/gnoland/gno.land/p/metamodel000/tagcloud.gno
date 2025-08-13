@@ -34,7 +34,7 @@ func (r *Registry) TagCloudMarkdown() string {
 
 func (r *Registry) TagCloud() map[string]int {
 	tagCounts := make(map[string]int)
-	r.tree.IterateByOffset(0, r.tree.Size(), func(_ string, value interface{}) bool {
+	r.tree.IterateByOffset(0, r.tree.Size(), func(_ string, value any) bool {
 		rec := value.(Record)
 		for _, kw := range rec.Keywords {
 			tagCounts[kw]++

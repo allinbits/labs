@@ -23,14 +23,14 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
-func HasModelApi(input interface{}) bool {
+func HasModelApi(input any) bool {
 	if _, ok := input.(*Model); ok {
 		return true // Input is a Model
 	}
 	return false // No Model API found
 }
 
-func New(inputs ...interface{}) *Model {
+func New(inputs ...any) *Model {
 	m := &Model{
 		Places:      map[string]Place{},
 		Transitions: map[string]Transition{},
@@ -58,7 +58,7 @@ func New(inputs ...interface{}) *Model {
 			}
 		case []Arrow:
 			m.Arrows = append(m.Arrows, v...)
-		case map[string]interface{}:
+		case map[string]any:
 			m.RenderOpts = v
 		default:
 			continue
@@ -102,7 +102,7 @@ func (tt TokenType) String() string {
 }
 
 // T creates a TokenType from a list of integers or strings.
-func T(t ...interface{}) TokenType {
+func T(t ...any) TokenType {
 	ts := make(TokenType, len(t))
 	for i, v := range t {
 		switch v := v.(type) {
@@ -121,7 +121,7 @@ func T(t ...interface{}) TokenType {
 }
 
 // S creates a TokenType state vector from a list of TokenType.
-func S(ts ...interface{}) []TokenType {
+func S(ts ...any) []TokenType {
 	state := make([]TokenType, len(ts))
 	for i, v := range ts {
 		state[i] = T(v)
@@ -138,7 +138,7 @@ type Place struct {
 	Capacity TokenType   // Maximum capacity for each token type (0 = unlimited).
 	X        int         // X coordinate of the place.
 	Y        int         // Y coordinate of the place.
-	Binding  interface{} // Optional binding for the place.
+	Binding  any // Optional binding for the place.
 }
 
 // Arrow represents an arc in the Petri net.
@@ -147,7 +147,7 @@ type Arrow struct {
 	Target  string      // Target place or transition.
 	Weight  TokenType   // Weight for each token type.
 	Inhibit bool        // Indicates if the arc inhibits the transition.
-	Binding interface{} // Optional binding for the arc.
+	Binding any // Optional binding for the arc.
 }
 
 // Transition represents a transition in the Petri net.
@@ -156,16 +156,16 @@ type Transition struct {
 	Offset  int         // Offset of the transition in the Petri net.
 	X       int         // X coordinate of the transition.
 	Y       int         // Y coordinate of the transition.
-	Binding interface{} // Optional binding for the transition.
+	Binding any // Optional binding for the transition.
 }
 
 // Model represents a Petri-Net.
 type Model struct {
-	RenderOpts  map[string]interface{} // Rendering options for the model.
+	RenderOpts  map[string]any // Rendering options for the model.
 	Places      map[string]Place       // Map of places.
 	Transitions map[string]Transition  // Map of transitions.
 	Arrows      []Arrow                // List of arcs.
-	Binding     interface{}            // Optional binding for the model.
+	Binding     any            // Optional binding for the model.
 }
 
 func (model *Model) State() []TokenType {

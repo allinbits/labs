@@ -16,14 +16,14 @@ import (
 
 // --- Types ---
 
-type RegistryCallback = func(key string, value interface{}) bool
-type RegistryMatcher = func(value interface{}) bool
+type RegistryCallback = func(key string, value any) bool
+type RegistryMatcher = func(value any) bool
 
 
 type Registry struct {
 	tree          *avl.Tree
 	allowPrefixes []string
-	renderOpts    map[string]interface{}
+	renderOpts    map[string]any
 	keywordIndex  *avl.Tree // maps keyword -> []string (keys)
 	idIndex       *avl.Tree // maps id (int) -> string (key)
 	sequence      int
@@ -31,7 +31,7 @@ type Registry struct {
 
 // --- Constructor ---
 
-func NewRegistry(allowedPrefixes []string, renderOpts map[string]interface{}) *Registry {
+func NewRegistry(allowedPrefixes []string, renderOpts map[string]any) *Registry {
 	return &Registry{
 		tree:          avl.NewTree(),
 		allowPrefixes: allowedPrefixes,
@@ -44,12 +44,12 @@ func NewRegistry(allowedPrefixes []string, renderOpts map[string]interface{}) *R
 
 // --- Registration & Access Control ---
 
-func (r *Registry) Register(key string, obj interface{}, kw ...string) {
+func (r *Registry) Register(key string, obj any, kw ...string) {
 	r.assertAccess()
 	r.register(key, obj, kw...)
 }
 
-func (r *Registry) register(name string, obj interface{}, kw ...string) {
+func (r *Registry) register(name string, obj any, kw ...string) {
 	key := sanitizeAnchorKey(name)
 	if r.Exists(key) {
 		panic("Key already exists: " + key)
@@ -69,7 +69,7 @@ func (r *Registry) addRecord(key, name string, obj *Model, kwords []string) {
 	rec := Record{
 		Id:       r.sequence,
 		Title:    name,
-		Content:  func(...interface{}) *Model { return obj },
+		Content:  func(...any) *Model { return obj },
 		Keywords: kwords,
 	}
 	r.tree.Set(key, rec)
@@ -129,7 +129,7 @@ func (r *Registry) KeysByKeyword(word string) []string {
 }
 
 func (r *Registry) Iterate(callback RegistryCallback, matcher RegistryMatcher) {
-	r.tree.IterateByOffset(0, r.tree.Size(), func(key string, value interface{}) bool {
+	r.tree.IterateByOffset(0, r.tree.Size(), func(key string, value any) bool {
 		if matcher(value) {
 			return callback(key, value)
 		}
@@ -319,7 +319,7 @@ func (r *Registry) Content(key, path string) string {
 		panic("Key not found: " + key)
 	}
 	rec := val.(Record)
-	model := rec.Content.(func(...interface{}) *Model)()
+	model := rec.Content.(func(...any) *Model)()
 	if binding, ok := model.Binding.(func(path string) string); ok {
 		return binding(path)
 	}
@@ -333,7 +333,7 @@ func (r *Registry) Preview(key, path string) string {
 		panic("Key not found: " + key)
 	}
 	rec := val.(Record)
-	model := rec.Content.(func(...interface{}) *Model)()
+	model := rec.Content.(func(...any) *Model)()
 	lineCount := 3
 	var content string
 	if binding, ok := model.Binding.(func(string) string); ok {
@@ -348,11 +348,11 @@ func (r *Registry) Preview(key, path string) string {
 	return markdownPreview(content)
 }
 
-func (r *Registry) thumbnail(key string, obj interface{}) string {
+func (r *Registry) thumbnail(key string, obj any) string {
 	rec := obj.(Record)
 	var sb strings.Builder
 	sb.WriteString("**Keywords:** " + strings.Join(rec.Keywords, ", ") + "\n\n")
-	model := rec.Content.(func(...interface{}) *Model)()
+	model := rec.Content.(func(...any) *Model)()
 	sb.WriteString("![" + key + "](" + model.ThumbnailDataUrl() + ")\n")
 	sb.WriteString(r.Preview(key, "") + "\n")
 	return sb.String()
@@ -363,7 +363,7 @@ func (r *Registry) thumbnail(key string, obj interface{}) string {
 func (r *Registry) getItems() []*feed.Item {
 	var items []*feed.Item
 	host := r.renderOpts["host"].(string)
-	r.Iterate(func(key string, value interface{}) bool {
+	r.Iterate(func(key string, value any) bool {
 		if _, ok := value.(*Model); ok {
 			items = append(items, &feed.Item{
 				Title:       key,

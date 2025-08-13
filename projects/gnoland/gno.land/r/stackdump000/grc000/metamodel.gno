@@ -4,7 +4,7 @@ import (
     mm "gno.land/p/metamodel000"
 )
 
-var renderOpts = map[string]interface{}{
+var renderOpts = map[string]any{
     "balance":           100,
     "recipient_balance": 50,
     "transfer_amount":   10,
@@ -13,7 +13,7 @@ var renderOpts = map[string]interface{}{
     "burn_amount":       2,
 }
 
-func getIntOpt(opts map[string]interface{}, key string, def int) int {
+func getIntOpt(opts map[string]any, key string, def int) int {
     if v, ok := opts[key]; ok {
         if i, ok := v.(int); ok {
             return i
@@ -22,23 +22,23 @@ func getIntOpt(opts map[string]interface{}, key string, def int) int {
     return def
 }
 
-func GRC000_Wallet(opts map[string]interface{}) *mm.Model {
+func GRC000_Wallet(opts map[string]any) *mm.Model {
     initial := mm.T(getIntOpt(opts, "balance", 1))
     return mm.New(map[string]mm.Place{
-        "$wallet": {Initial: initial, Capacity: mm.T(0), X: 60, Y: 60},
+        "$wallet": {Initial: initial, Capacity: mm.T(0), X: 160, Y: 180},
     })
 }
 
-func GRC000_Transfer(opts map[string]interface{}) *mm.Model {
+func GRC000_Transfer(opts map[string]any) *mm.Model {
     recipientInitial := mm.T(getIntOpt(opts, "recipient_balance", 0))
     transferWeight := mm.T(getIntOpt(opts, "transfer_amount", 1))
     return mm.New(
         GRC000_Wallet(opts),
         map[string]mm.Place{
-            "$recipient": {Initial: recipientInitial, X: 240, Y: 60},
+            "$recipient": {Initial: recipientInitial, X: 360, Y: 180},
         },
         map[string]mm.Transition{
-            "transfer": {X: 150, Y: 60},
+            "transfer": {X: 260, Y: 180},
         },
         []mm.Arrow{
             {Source: "$wallet", Target: "transfer", Weight: transferWeight},
@@ -47,18 +47,18 @@ func GRC000_Transfer(opts map[string]interface{}) *mm.Model {
     )
 }
 
-func GRC000_MintBurn(opts map[string]interface{}) *mm.Model {
+func GRC000_MintBurn(opts map[string]any) *mm.Model {
     minterInitial := mm.T(getIntOpt(opts, "minter_initial", 1))
     mintWeight := mm.T(getIntOpt(opts, "mint_amount", 1))
     burnWeight := mm.T(getIntOpt(opts, "burn_amount", 1))
     return mm.New(
         GRC000_Wallet(opts),
         map[string]mm.Place{
-            "$minter": {Initial: minterInitial, X: 60, Y: 140},
+            "$minter": {Initial: minterInitial, X: 40, Y: 80},
         },
         map[string]mm.Transition{
-            "mint": {X: 150, Y: 140},
-            "burn": {X: 150, Y: 200},
+            "mint": {X: 160, Y: 80},
+            "burn": {X: 160, Y: 280},
         },
         []mm.Arrow{
             {Source: "$minter", Target: "mint", Weight: mintWeight},
@@ -68,12 +68,12 @@ func GRC000_MintBurn(opts map[string]interface{}) *mm.Model {
     )
 }
 
-func GRC000_Token(opts map[string]interface{}) *mm.Model {
+func GRC000_Token(opts map[string]any) *mm.Model {
     return mm.New(
         GRC000_Wallet(opts),
         GRC000_Transfer(opts),
         GRC000_MintBurn(opts),
-        map[string]interface{}{"version": "v0"},
+        map[string]any{"version": "v0"},
     )
 }
 

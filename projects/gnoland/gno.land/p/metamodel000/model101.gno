@@ -107,9 +107,5 @@ func model101() *Model {
 		{Source: "start", Target: "go"},
 		{Source: "go", Target: "finish"},
 	}
-	return &Model{
-		Places:      places,
-		Transitions: transitions,
-		Arrows:      arrows,
-	}
+	return New(places, transitions, arrows, map[string]any{})
 }

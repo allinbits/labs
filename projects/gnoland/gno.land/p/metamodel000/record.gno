@@ -7,7 +7,7 @@ import (
 type Record struct {
 	Id       int
 	Title    string
-	Content  interface{}
+	Content  any
 	Keywords []string
 }
 
@@ -15,7 +15,7 @@ func (record Record) String() string {
 	var sb strings.Builder
 	sb.WriteString("Record{Content: ")
 	if record.Content != nil {
-		sb.WriteString("interface{}")
+		sb.WriteString("any")
 	} else {
 		sb.WriteString("nil")
 	}

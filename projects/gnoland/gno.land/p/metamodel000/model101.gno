@@ -74,7 +74,7 @@ Submit your models to a public index to become a model citizen and share your wo
 
 `
 
-func Tutorial() *Model {
+func Tutorial101() *Model {
     m := model101()
     m.Binding = func(path string) string {
         switch path {

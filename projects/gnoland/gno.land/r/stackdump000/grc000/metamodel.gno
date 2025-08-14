@@ -1,16 +1,70 @@
 package grc000
 
 import (
+    "strings"
     mm "gno.land/p/metamodel000"
 )
 
-var renderOpts = map[string]any{
-    "balance":           100,
-    "recipient_balance": 50,
-    "transfer_amount":   10,
-    "minter_initial":    1,
-    "mint_amount":       5,
-    "burn_amount":       2,
+type Record struct {
+    Name        string
+    Description string
+    Model       *mm.Model
+}
+
+var (
+    basePath = "/r/stackdump000/grc000"
+
+    modelOpts = map[string]any{
+        "balance":           100,
+        "recipient_balance": 50,
+        "transfer_amount":   10,
+        "minter_initial":    1,
+        "mint_amount":       5,
+        "burn_amount":       2,
+    }
+
+    registry = map[string]Record{
+        "wallet":    {
+            Name: "GRC000_Wallet",
+            Description: "A simple wallet model that holds tokens.",
+            Model:  GRC000_Wallet(modelOpts),
+        },
+        "transfer":  {
+            Name: "GRC000_Transfer",
+            Description: "A model for transferring tokens between wallets.",
+            Model:  mm.New(GRC000_Wallet(modelOpts),GRC000_Transfer(modelOpts)),
+        },
+        "mintburn":  {
+            Name: "GRC000_MintBurn",
+            Description: "A model for minting and burning tokens in a wallet.",
+            Model:  mm.New(GRC000_Wallet(modelOpts),GRC000_MintBurn(modelOpts)),
+        },
+        "token": {
+            Name: "GRC000_Token",
+            Description: "A comprehensive model that combines wallet, transfer, and mint/burn functionalities.",
+            Model:  GRC000_Token(modelOpts),
+        },
+    }
+
+    description = map[string]string{
+        "wallet":    "A simple wallet model that holds tokens.",
+        "transfer":  "A model for transferring tokens between wallets.",
+        "mintburn":  "A model for minting and burning tokens in a wallet.",
+        "token":     "A comprehensive model that combines wallet, transfer, and mint/burn functionalities.",
+    }
+)
+
+func init() {
+    for _, record := range registry {
+        record.Model.Binding = func(path string) string {
+            var sb strings.Builder
+            sb.WriteString("# " + record.Name + "\n")
+            sb.WriteString(record.Description + "\n\n")
+            sb.WriteString("## Model\n")
+            sb.WriteString(record.Model.ToMarkdown() + "\n")
+            return sb.String()
+        }
+    }
 }
 
 func getIntOpt(opts map[string]any, key string, def int) int {
@@ -33,7 +87,6 @@ func GRC000_Transfer(opts map[string]any) *mm.Model {
     recipientInitial := mm.T(getIntOpt(opts, "recipient_balance", 0))
     transferWeight := mm.T(getIntOpt(opts, "transfer_amount", 1))
     return mm.New(
-        GRC000_Wallet(opts),
         map[string]mm.Place{
             "$recipient": {Initial: recipientInitial, X: 360, Y: 180},
         },
@@ -52,7 +105,6 @@ func GRC000_MintBurn(opts map[string]any) *mm.Model {
     mintWeight := mm.T(getIntOpt(opts, "mint_amount", 1))
     burnWeight := mm.T(getIntOpt(opts, "burn_amount", 1))
     return mm.New(
-        GRC000_Wallet(opts),
         map[string]mm.Place{
             "$minter": {Initial: minterInitial, X: 40, Y: 80},
         },
@@ -77,31 +129,33 @@ func GRC000_Token(opts map[string]any) *mm.Model {
     )
 }
 
-func indexPath(_ string) string {
-    return `
-# GRC000 Metamodel
-This is the GRC000 metamodel, which provides a foundation for modeling token-based systems in Gno.
-![grc000_Token](` + GRC000_Token(renderOpts).ThumbnailDataUrl() + `)
+func indexPage(_ string) string {
+    content := `# GRC000 Metamodel
+![grc000_Token combines all models](` + GRC000_Token(modelOpts).ThumbnailDataUrl() + `)
+This is a collection of GRC000 metamodels that demonstrate various token-related functionalities such as wallets, transfers, and minting/burning tokens.
 
-## Available Models
-- [Wallet](./grc000:wallet) - A simple wallet model that holds tokens.
-- [Transfer](./grc000:transfer) - A model for transferring tokens between wallets.
-- [Mint/Burn](./grc000:mintburn) - A model for minting and burning tokens in a wallet.
-- [Token](./grc000:token) - A comprehensive model that combines wallet, transfer, and mint/burn functionalities.
+Each model is designed to illustrate specific aspects of token management and can be used as a foundation for building more complex token systems.
+
+All of these models compose to form a comprehensive token model called **GRC000_Token** (pictured above).
+## Models
 `
+    for name, record := range registry {
+        content += "- [" + record.Name + "](" + basePath + ":" + name + "): " + record.Description + "\n"
+    }
+    content += `## How can this be used?
+- This metamodel can be extended to include more complex token behaviors, such as staking, governance, and multi-token systems.
+- It can serve as a foundation for building decentralized applications (dApps) that require token management functionalities.
+- The models can be used to simulate and analyze token flows off-chain, providing insights into the behavior of token economies.
+`
+    return content
 }
 
 func Render(path string) string {
-    switch path {
-    case "wallet":
-        return GRC000_Wallet(renderOpts).ToMarkdown()
-    case "transfer":
-        return GRC000_Transfer(renderOpts).ToMarkdown()
-    case "mintburn":
-        return GRC000_MintBurn(renderOpts).ToMarkdown()
-    case "token":
-        return GRC000_Token(renderOpts).ToMarkdown()
-    default:
-        return indexPath(path)
+    if record, ok := registry[path]; ok {
+        if content, ok := record.Model.Binding.(func(string) string); ok {
+            return content(path)
+        }
+        return record.Model.ToMarkdown()
     }
+    return indexPage(path)
 }

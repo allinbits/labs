@@ -40,7 +40,6 @@ func New(inputs ...any) *Model {
 	for _, input := range inputs {
 		switch v := input.(type) {
 		case *Model:
-			// Merge another model into the current one
 			for label, place := range v.Places {
 				m.Places[label] = place
 			}
@@ -156,6 +155,7 @@ type Transition struct {
 	Offset  int         // Offset of the transition in the Petri net.
 	X       int         // X coordinate of the transition.
 	Y       int         // Y coordinate of the transition.
+	Rate    float64     // Rate of the transition (for continuous models).
 	Binding any // Optional binding for the transition.
 }
 

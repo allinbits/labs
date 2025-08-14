@@ -1,134 +1,195 @@
-# **GRC-000 — Metamodel Token Standard**
+# GRC-000 — Metamodel Token Standard
 
-**Status:** Draft **Version:** GRC-based core balance primitives,
-but **composable-first** with Petri-net semantics.
-
----
-
-## 1 Overview
-
-**GRC-000** defines the **minimal, safe, deterministic** interface for fungible tokens on `gno.land`, with first-class support for **Petri-net composition**.  
-The goal is not to ship every possible feature in one spec, but to define a **core set of primitives** — small, deterministic Petri-net fragments that can be composed into more complex systems.
-
-This code follows the **"Smart Objects, Dumb Code"** principle, inspired by the Yoneda Lemma: each object’s identity is defined entirely by how it behaves in all possible contexts. The logic and rules for valid actions live inside the object itself, while the surrounding code remains minimal and declarative, simply triggering actions without re-implementing internal details.
-
-This keeps complexity encapsulated, encourages composability, and ensures the system is maintainable by letting interactions—not internals—define behavior.
+**Status:** Draft **Version:** v0 **Target chain:** gno.land  
+**Focus:** Minimal **GRC-based balance primitives**, **composable-first** via Petri-net semantics.
 
 ---
 
-## 2 Primitives — “Lemmas” of Token Logic
-
-We call the core Petri-net fragments **primitives**.  
-A primitive is like a **lemma** in mathematics:
-
-- On its own, it may seem trivial or uninteresting.
-- Its real power appears **when composed** with other primitives into larger, higher-level transaction models.
-- Each primitive is **self-contained**, deterministic, and composable without modification.
-
-For example:
-- A **wallet primitive** defines “an account holds tokens.”
-- A **transfer primitive** defines “tokens move from one account to another.”
-- A **mint/burn primitive** defines “tokens are created or destroyed.”
-
-By combining these lemmas, you can build a DEX, a staking module, a faucet, or a DAO treasury without rewriting the fundamentals.
+### Document Navigation
+1. [Overview](#1-overview)
+2. [Primitives](#2-primitives)
+3. [Terms](#3-terms)
+4. [Petri-Net Ports & Composition](#4-petri-net-ports--composition)
+5. [Composition Principles & Append-Only Evolution](#5-composition-principles--append-only-evolution)
+6. [GRC000 as a Little Language](#6-grc000-as-a-little-language)
 
 ---
 
-## 3 Core Terminology
+## 1. Overview
 
-| Term        | Meaning |
-|-------------|---------|
-| **Account** | A `gno.land` address string. |
-| **Amount**  | `uint64` by default. Future upgrade path to big integers via **GRC-010**. |
-| **Module**  | A realm implementing this interface. |
-| **Port**    | A named Petri-net boundary place (e.g. `$wallet`, `$recipient`, `$minter`) used for composition. |
-| **Primitive** | A minimal Petri-net submodel that captures one atomic behavior, designed to be composed with others. |
+**GRC-000** specifies a **safe, deterministic, minimal** interface for fungible tokens on `gno.land`, designed for **Petri-net composition**.  
 
----
+The aim: provide a **core set of primitives**—small, deterministic Petri-net fragments—that can be composed into more complex transaction models.
 
-## 4 Petri-Net Ports & Composition
+This follows the **“Smart Objects, Dumb Code”** principle [(Yoneda-inspired)](https://ncatlab.org/nlab/show/Yoneda+lemma): each object’s identity is defined by behavior in all contexts, with internal rules embedded in the object and minimal external orchestration.
 
-The standard expresses wallet and token flows as **Petri-net primitives** using [`pflow/mm`](https://pflow.xyz).  
-Named **ports** are preserved across compositions so the token net can slot directly into other transaction models.
+These primitives are developed under **append-only** rules: new behaviors are added without mutating existing ones, preserving determinism and backward compatibility.
 
 ---
 
-### 4.1 Wallet Primitive
+## 2. Primitives
 
-```go
-func GRC000_Wallet() *mm.Model {
+A **primitive** is a minimal Petri-net fragment capturing one atomic behavior.
+
+- Trivial alone, powerful when **composed**.
+- Deterministic, self-contained, and reusable.
+- Designed for **append-only growth**: the primitive’s logic is fixed, but new primitives can be added to extend functionality.
+- These basic elements combine to form DEXs, staking, DAOs, faucets—without redefining basics.
+### 2.1 **Wallet:** account holds tokens.
+ ```go
+func GRC000_Wallet(opts map[string]any) *mm.Model {
     return mm.New(map[string]mm.Place{
-        "$wallet": {Offset: 0, Initial: mm.T(1), Capacity: mm.T(0), X: 60, Y: 60},
+        "$wallet": {Initial: initial, Capacity: mm.T(0), X: 160, Y: 180},
     })
 }
 ```
-
----
-
-### 4.2 Transfer Primitive
-
+### 2.2 **Transfer:** tokens move between accounts.
 ```go
-func GRC000_Transfer() *mm.Model {
+func GRC000_Transfer(opts map[string]any) *mm.Model {
     return mm.New(
         map[string]mm.Place{
-            "$wallet":    {Offset: 0, Initial: mm.T(1), X: 60,  Y: 60}, // sender
-            "$recipient": {Offset: 1, Initial: mm.T(0), X: 240, Y: 60}, // recipient
+            "$recipient": {Initial: recipientInitial, X: 360, Y: 180},
         },
         map[string]mm.Transition{
-            "transfer": {X: 150, Y: 60},
+            "transfer": {X: 210, Y: 180},
         },
         []mm.Arrow{
-            {Source: "$wallet", Target: "transfer", Weight: mm.T(1)},
-            {Source: "transfer", Target: "$recipient", Weight: mm.T(1)},
+            {Source: "$wallet", Target: "transfer", Weight: transferWeight},
+            {Source: "transfer", Target: "$recipient", Weight: transferWeight},
         },
     )
 }
 ```
-
----
-
-### 4.3 Mint / Burn Primitive
-
+### 2.3 **Mint/Burn:** tokens created or destroyed.
 ```go
-func GRC000_MintBurn() *mm.Model {
+func GRC000_MintBurn(opts map[string]any) *mm.Model {
     return mm.New(
         map[string]mm.Place{
-            "$minter": {Offset: 0, Initial: mm.T(1), X: 60, Y: 140},
-            "$wallet": {Offset: 1, Initial: mm.T(0), X: 240, Y: 140},
+            "$minter": {Initial: minterInitial, X: 60, Y: 180},
+            "$burner": {Initial: burnerInitial, X: 360, Y: 180},
         },
         map[string]mm.Transition{
-            "mint": {X: 150, Y: 140},
-            "burn": {X: 150, Y: 200},
+            "mint": {X: 210, Y: 120},
+            "burn": {X: 210, Y: 240},
         },
         []mm.Arrow{
-            {Source: "$minter", Target: "mint", Weight: mm.T(1)},
-            {Source: "mint", Target: "$wallet", Weight: mm.T(1)},
-            {Source: "$wallet", Target: "burn", Weight: mm.T(1)},
+            {Source: "$minter", Target: "mint", Weight: mintWeight},
+            {Source: "mint", Target: "$wallet", Weight: mintWeight},
+            {Source: "$burner", Target: "burn", Weight: burnWeight},
+            {Source: "burn", Target: "$wallet", Weight: burnWeight},
         },
     )
 }
 ```
 
----
-
-### 4.4 Composed Token Model
-
+### 2.4 **Token:** combines wallet, transfer, mint/burn.
 ```go
-func GRC000_Token() *mm.Model {
+func GRC000_Token(opts map[string]any) *mm.Model {
     return mm.New(
-        GRC000_Wallet(),
-        GRC000_Transfer(),
-        GRC000_MintBurn(),
-        map[string]interface{}{"version": "v0"}, // RenderOpts
+        GRC000_Wallet(opts),
+        GRC000_Transfer(opts),
+        GRC000_MintBurn(opts),
     )
 }
 ```
 
----
-
-## 5 Composition Principle
-
-> **Rule:** Port names remain stable across primitives.  
-> **Benefit:** Any higher-level Petri-net (DEX, DAO, faucet, staking) can directly connect to `$wallet`, `$recipient`, or `$minter` without glue code.
 
 ---
+
+## 3. Terms
+
+| Term                                                     | Meaning                                                                                    |
+|----------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| **Account**                                              | `gno.land` address string.                                                                 |
+| **Amount**                                               | `uint64` (upgrade path to `uint256`).                                                      |
+| **Port**                                                 | Named Petri-net boundary place (e.g. `$wallet`, `$recipient`).                             |
+| **Primitive**                                            | Atomic Petri-net submodel for composition.                                                 |
+| **Append-Only**                                          | A design constraint ensuring primitives evolve by addition only—never removal or mutation. |
+| **Deterministic**                                        | Behavior is predictable and consistent across all contexts.                             |
+| [**Petri-Net**](https://ncatlab.org/nlab/show/Petri+net) | A mathematical model of computation using places, transitions, and arrows
+
+---
+
+## 4. Petri-Net Ports & Composition
+
+Named **ports** are consistent across primitives, enabling direct integration into larger Petri-nets.
+
+Primitives are **composed** into useful models, and models are bound to code by these ports.
+This allows for **deterministic behavior** and **reproducibility** across different contexts
+
+### 4.1 Port Definitions
+By design each port name starts with `$` to distinguish them from places in the Petri-net.
+
+- **$wallet**: Holds the token balance.
+- **$recipient**: Destination for transfers.
+- **$minter**: Source for minting new tokens.
+
+### 4.2 Port Usage
+Models use ports as a means for code to interact with the Petri-net.
+
+When executing a model, ports are populated with values from the context (e.g. a transaction).
+
+---
+
+## 5. Composition Principles & Append-Only Evolution
+
+### 5.1 Principles
+1. **Stable Ports:** `$wallet`, `$recipient`, `$minter` stay consistent for easy integration.
+2. **Append-Only Development:**
+    - **Add** new primitives or transitions.
+    - **Never** change or remove existing ones.
+    - All past states and invariants remain valid.
+3. **Merge by Ports:**
+    - Unify shared ports.
+    - Append transitions/arrows.
+    - Preserve determinism.
+
+### 5.2 Why Append-Only?
+- **Composable Upgrades:** New features can be layered without breaking integrations.
+- **Trust Preservation:** Contracts referencing old primitives remain correct.
+- **Reproducibility:** State can be replayed from genesis without divergence.
+- **Formal Verification:** Old proofs remain valid.
+
+### 5.3 Deployment Lifecycle
+1. **Design:** Draft primitive with fixed ports & logic.
+2. **Simulation:** Test in isolation and in compositions.
+3. **Freeze:** Lock logic; assign version.
+4. **Publish:** Deploy to GRC-000 standard library.
+5. **Compose:** Integrate with existing primitives in append-only fashion.
+
+---
+
+## 6. GRC000 as a Little Language
+
+### 6.1 Primitives as Vocabulary
+- **Place** → noun (state: `$wallet`, `$recipient`, `$minter`)
+- **Transition** → verb (action: `transfer`, `mint`, `burn`)
+- **Arrow** → grammar rule (mapping how verbs consume/produce nouns)
+
+These are the alphabet and grammar of the *inner* Petri-net language.
+
+---
+
+### 6.2 Combinators as Phrases
+Functions like `GRC000_Wallet`, `GRC000_Transfer`, and `GRC000_MintBurn` are idioms in this inner language — sentences that express atomic token behaviors.
+
+---
+
+### 6.3 Model Composition as Nested Syntax
+`GRC000_Token` composes smaller idioms into paragraphs.  
+The **outer Go syntax** orchestrates; the **inner Petri-net language** defines behavior.  
+Append-only rules ensure new “paragraphs” never rewrite history.
+
+---
+
+### 6.4 Rendering as Translation
+`Render(path string)` translates the nested Petri-net model into Markdown + SVG — akin to compiling or translating to another language.  
+Because the net is append-only, all renderings are reproducible over time.
+
+---
+
+### References
+
+- [Open Petri Nets](https://arxiv.org/abs/1808.05415) - a foundational paper on Petri nets.
+- [Petri Nets](https://ncatlab.org/nlab/show/Petri+net) - all-purpose reference.
+- [Yoneda Lemma](https://ncatlab.org/nlab/show/Yoneda+lemma) - foundational concept in category theory, relevant to compositionality.

@@ -38,7 +38,6 @@ A **primitive** is a minimal Petri-net fragment capturing one atomic behavior.
 ### 2.1 **Wallet:** account holds tokens.
  ```go
 func GRC000_Wallet(opts map[string]any) *mm.Model {
-    initial := mm.T(getIntOpt(opts, "balance", 1))
     return mm.New(map[string]mm.Place{
         "$wallet": {Initial: initial, Capacity: mm.T(0), X: 160, Y: 180},
     })

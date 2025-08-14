@@ -40,7 +40,6 @@ func New(inputs ...any) *Model {
 	for _, input := range inputs {
 		switch v := input.(type) {
 		case *Model:
-			// Merge another model into the current one
 			for label, place := range v.Places {
 				m.Places[label] = place
 			}

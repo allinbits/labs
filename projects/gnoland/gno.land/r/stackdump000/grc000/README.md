@@ -7,8 +7,8 @@
 
 ### Document Navigation
 1. [Overview](#1-overview)
-2. [Primitives — “Lemmas” of Token Logic](#2-primitives--lemmas-of-token-logic)
-3. [Core Terms](#3-core-terms)
+2. [Primitives](#2-primitives)
+3. [Terms](#3-terms)
 4. [Petri-Net Ports & Composition](#4-petri-net-ports--composition)
 5. [Composition Principles & Append-Only Evolution](#5-composition-principles--append-only-evolution)
 6. [GRC000 as a Little Language](#6-grc000-as-a-little-language)
@@ -49,14 +49,13 @@ func GRC000_Wallet(opts map[string]any) *mm.Model {
 func GRC000_Transfer(opts map[string]any) *mm.Model {
     return mm.New(
         map[string]mm.Place{
-            "$sender": {Initial: senderInitial, X: 60, Y: 180},
             "$recipient": {Initial: recipientInitial, X: 360, Y: 180},
         },
         map[string]mm.Transition{
             "transfer": {X: 210, Y: 180},
         },
         []mm.Arrow{
-            {Source: "$sender", Target: "transfer", Weight: transferWeight},
+            {Source: "$wallet", Target: "transfer", Weight: transferWeight},
             {Source: "transfer", Target: "$recipient", Weight: transferWeight},
         },
     )
@@ -116,8 +115,20 @@ func GRC000_Token(opts map[string]any) *mm.Model {
 
 Named **ports** are consistent across primitives, enabling direct integration into larger Petri-nets.
 
-Primitives are **developed** in isolation, with fixed ports and deterministic behavior, then **deployed** into the standard library.  
-Once deployed, they become **immutable** building blocks, referenced by ID and version.
+Primitives are **composed** into useful models, and models are bound to code by these ports.
+This allows for **deterministic behavior** and **reproducibility** across different contexts
+
+### 4.1 Port Definitions
+By design each port name starts with `$` to distinguish them from places in the Petri-net.
+
+- **$wallet**: Holds the token balance.
+- **$recipient**: Destination for transfers.
+- **$minter**: Source for minting new tokens.
+
+### 4.2 Port Usage
+Models use ports as a means for code to interact with the Petri-net.
+
+When executing a model, ports are populated with values from the context (e.g. a transaction).
 
 ---
 

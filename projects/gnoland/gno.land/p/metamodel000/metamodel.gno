@@ -156,6 +156,7 @@ type Transition struct {
 	Offset  int         // Offset of the transition in the Petri net.
 	X       int         // X coordinate of the transition.
 	Y       int         // Y coordinate of the transition.
+	Rate    float64     // Rate of the transition (for continuous models).
 	Binding any // Optional binding for the transition.
 }
 

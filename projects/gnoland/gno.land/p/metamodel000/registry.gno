@@ -275,18 +275,14 @@ func (r *Registry) renderIndex(path string, cb ...func( string) string) string {
 		return r.renderList(path)
 	}
 	var sb strings.Builder
-	sb.WriteString("## Models\n\n")
-	sb.WriteString("This is a public registry of metamodels.\n\n")
-	sb.WriteString("- Models are defined as a set of objects, each with a **unique identity**.\n")
-	sb.WriteString("- Each object is defined by its behavior **in all contexts**.\n\n")
-	sb.WriteString("### Index\n\n")
-    sb.WriteString(searchForm + "\n\n")
-
 	for _, content := range cb {
         if content != nil {
             sb.WriteString(content(path) + "\n\n")
         }
     }
+	sb.WriteString("### Index\n\n")
+    sb.WriteString(searchForm + "\n\n")
+
 	sb.WriteString("### Word Cloud\n\n")
 	sb.WriteString("[![tag cloud visualized](" + r.TagCloudDataUrl() + ")](#keyword-index)\n\n")
 	sb.WriteString(r.TagCloudMarkdown() + "\n\n")
@@ -491,3 +487,41 @@ func sanitizeAnchorKey(key string) string {
 	}
 	return sb.String()
 }
+
+func EscapeHtml(s string) string {
+	replacements := map[string]string{
+		"&":  "&amp;",
+		"<":  "&lt;",
+		">":  "&gt;",
+		"\"": "&quot;",
+		"'":  "&#39;",
+	}
+	for old, new := range replacements {
+		s = strings.ReplaceAll(s, old, new)
+	}
+	return s
+}
+
+func SubmitButton(label, path string, fontSize, minWidth int) string {
+	charWidth := int(0.6 * float64(fontSize))
+	padding := 40
+	h := 2 * fontSize
+	w := len(label)*charWidth + padding
+	if w < minWidth {
+		w = minWidth
+	}
+
+	svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
+<foreignObject x="16" y="-5" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
+  <body xmlns="http://www.w3.org/1999/xhtml">
+    <button style="padding-left: 20px; font-size:` + strconv.Itoa(fontSize) + `px">
+      ` + EscapeHtml(label) + `
+    </button>
+  </body>
+</foreignObject>
+</svg>`
+
+	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
+	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
+}
+

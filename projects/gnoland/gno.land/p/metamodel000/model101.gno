@@ -62,16 +62,6 @@ The table below compares discrete and continuous Petri nets with blockchain conc
 | Model Use       | Suited for modeling smart contract logic, protocol steps, message passing.         | Suited for modeling macroeconomic parameters, inflation curves, and staking dynamics. | Discrete: app layer, Continuous: tokenomics, liquidity models, staking behavior.                                           |
 | Tooling         | Used in pflow.xyz (discrete simulation, structural validation).                    | Used in Petri.jl (ODE simulation, continuous analysis).                    | Blockchains use discrete VM execution, but models of long-term behavior require continuous approximations.                 |
 
-### Become A Model Citizen
-
-Models can represent anything, from simple workflows to complex systems like economic models, supply chains, or even entire blockchain protocols.
-The library is designed to be extensible, allowing users to bind model objects to other gno objects, enabling rich interactions and dynamic behaviors.
-
-The goal is to provide a powerful yet intuitive framework for modeling dynamic systems, enabling users to explore
-the behavior of their models, validate logic, and export them for execution or further analysis.
-
-Submit your models to a public index to become a model citizen and share your work with the community!
-
 `
 
 func Tutorial101() *Model {

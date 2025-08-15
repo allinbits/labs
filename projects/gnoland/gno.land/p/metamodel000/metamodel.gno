@@ -194,7 +194,8 @@ func (model *Model) Execute(action string, onCommit func(newState []TokenType)) 
 	return newState, true
 }
 
-// TODO: try this out w/ testing
+// REVIEW: consider providing multiple algorithms for execution, e.g.:
+// wfnets, elementary, etc...
 func Execute(state []TokenType, model *Model, action string) ([]TokenType, bool) {
 	newState := make([]TokenType, len(state))
 	copy(newState, state)

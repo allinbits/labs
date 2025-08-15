@@ -30,7 +30,6 @@ func Register(cur realm, key string, m *mm.Model) {
 	registry.Register(key, m)
 }
 
-// REVIEW: could we remove this?
 func register(key string, m *mm.Model, kw ...string) {
 	registry.Register(key, m, kw...)
 }

@@ -82,7 +82,7 @@ func init() {
 	model.Binding = func(_ string) string {
 		return ticTacToeDescription + model.ToMarkdown() + ticTacToeNotes
 	}
-	keywords := []string{"game", "board", "symbolic", "rewriting", "expert system"}
+	keywords := []string{"game", "rewriting", "expert-system"}
 	register("TicTacToe", model, keywords...)
 }
 
@@ -160,9 +160,5 @@ func ticTacToe() *mm.Model {
 		{Source: "next", Target: "O22"},
 	}
 
-	return &mm.Model{
-		Places:      places,
-		Transitions: transitions,
-		Arrows:      arrows,
-	}
+	return mm.New(places, transitions, arrows)
 }

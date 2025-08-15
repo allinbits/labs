@@ -28,9 +28,5 @@ func singleTransition() *mm.Model {
 	transitions := map[string]mm.Transition{
 		"Change": {Label: "Change", Offset: 0, X: 250, Y: 100},
 	}
-	return &mm.Model{
-		Places:      map[string]mm.Place{},
-		Transitions: transitions,
-		Arrows:      []mm.Arrow{},
-	}
+	return mm.New(transitions)
 }

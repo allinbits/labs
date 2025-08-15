@@ -8,7 +8,7 @@ import (
 //
 // The Logoverse treats a metamodel as first-class: a model that defines
 // the structure, rules, and constraints of other models. Models are authored
-// in Gno, executed in the runtime, visualized as SVG, composed as subnets,
+// in Gno, executed in the runtime, visualized as Markdown or SVG, composed as subnets,
 // and exported for external analysis (e.g., in Julia/Petri.jl or as ODEs).
 // Decisions (e.g., pScore voting) can be modeled as weighted-choice flows
 // over model-produced evidence.
@@ -145,5 +145,5 @@ func init() {
         "visualization", "svg", "export", "julia", "ode", "analysis", "pscore",
     }
 
-    register("Logoverse — Metamodel of Models", m, keywords...)
+    register("Logoverse Metamodel-of-Models", m, keywords...)
 }

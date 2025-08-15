@@ -139,13 +139,19 @@ func (r *Registry) Iterate(callback RegistryCallback, matcher RegistryMatcher) {
 
 // --- Rendering & Content ---
 
-func (r *Registry) Render(path string) string {
+func (r *Registry) Render(path string, cb ...func(string) string) string {
+	q := parseQuery(path)
+	if strings.HasPrefix(path, "?search=") {
+        path = q["search"][0]
+	}
+
 	if strings.HasPrefix(path, "?") {
-		q := parseQuery(path)
 		if idx, ok := q["i"]; ok && len(idx) > 0 {
 			return r.renderItem(idx[0], q)
 		}
-	} else if path != "" {
+	}
+
+	if path != "" {
 		key := sanitizeAnchorKey(path)
 		if _, ok := r.tree.Get(key); ok {
 			return r.Content(key, path)
@@ -154,7 +160,8 @@ func (r *Registry) Render(path string) string {
 			return r.renderSearchResults(key, c.([]string))
 		}
 	}
-	return r.renderIndex(path)
+
+	return r.renderIndex(path, cb...)
 }
 
 func (r *Registry) renderSearchResults(key string, keys []string) string {
@@ -247,18 +254,43 @@ func (r *Registry) renderNavigation(i int, u url.Values) string {
 	return sb.String()
 }
 
-func (r *Registry) renderIndex(path string) string {
+var searchForm = `
+View all models on the [Metamodel List ->](/r/metamodel000?p=0)
+<gno-columns>
+<gno-form>
+    <gno-input name="search" placeholder="keyword" />
+</gno-form>
+|||
+
+**Search Models**:
+
+Enter a keyword from the word cloud
+
+</gno-columns>
+`
+
+func (r *Registry) renderIndex(path string, cb ...func( string) string) string {
 	q := parseQuery(path)
 	if page, ok := q["p"]; ok && len(page) > 0 {
 		return r.renderList(path)
 	}
-	return "## Models\n\n" +
-		"This is a public registry of metamodels.\n\n" +
-		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n" +
-		"### Word Cloud\n\n" +
-		"[![tag cloud visualized](" + r.TagCloudDataUrl() + ")](#keyword-index)\n\n" +
-		r.TagCloudMarkdown() + "\n\n" +
-		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n"
+	var sb strings.Builder
+	sb.WriteString("## Models\n\n")
+	sb.WriteString("This is a public registry of metamodels.\n\n")
+	sb.WriteString("- Models are defined as a set of objects, each with a **unique identity**.\n")
+	sb.WriteString("- Each object is defined by its behavior **in all contexts**.\n\n")
+	sb.WriteString("### Index\n\n")
+    sb.WriteString(searchForm + "\n\n")
+
+	for _, content := range cb {
+        if content != nil {
+            sb.WriteString(content(path) + "\n\n")
+        }
+    }
+	sb.WriteString("### Word Cloud\n\n")
+	sb.WriteString("[![tag cloud visualized](" + r.TagCloudDataUrl() + ")](#keyword-index)\n\n")
+	sb.WriteString(r.TagCloudMarkdown() + "\n\n")
+	return sb.String()
 }
 
 func (r *Registry) renderList(path string) string {

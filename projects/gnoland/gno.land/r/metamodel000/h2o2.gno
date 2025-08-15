@@ -18,7 +18,7 @@ func init() {
 	model.Binding = func(_ string) string {
 		return h2o2CatalystDescription + model.ToMarkdown()
 	}
-	keywords := []string{"hydrogen peroxide", "catalyst", "decomposition", "reaction", "h2o2", "h2o", "o2", "mnO2"}
+	keywords := []string{"hydrogen-peroxide", "catalyst", "h2o2", "h2o", "o2", "mnO2"}
 	register("Catalyzed H2O2 Decomposition", model, keywords...)
 }
 
@@ -51,9 +51,5 @@ func h2o2Catalyst() *mm.Model {
 		{Source: "Decompose", Target: "O2"},
 	}
 
-	return &mm.Model{
-		Places:      places,
-		Transitions: transitions,
-		Arrows:      arrows,
-	}
+	return mm.New(places, transitions, arrows)
 }

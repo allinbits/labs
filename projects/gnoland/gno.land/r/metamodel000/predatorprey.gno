@@ -28,10 +28,7 @@ func init() {
  lvModel.Binding = func(_ string) string {
   return lotkaVolterraDescription + lvModel.ToMarkdown()
  }
- keywords := []string{
-  "lotka-volterra", "predator", "prey", "rabbits", "wolves",
-  "population", "ecology", "petri-net",
- }
+ keywords := []string{ "predator-prey", "rabbits", "wolves", "population" }
  register("Lotka-Volterra", lvModel, keywords...)
 }
 
@@ -61,9 +58,5 @@ func lotkaVolterra() *mm.Model {
   {Source: "wolves", Target: "death"},
  }
 
- return &mm.Model{
-  Places:      places,
-  Transitions: transitions,
-  Arrows:      arrows,
- }
+ return mm.New(places, transitions, arrows)
 }

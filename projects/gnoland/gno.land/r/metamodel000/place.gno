@@ -27,11 +27,5 @@ func singlePlace() *mm.Model {
     places := map[string]mm.Place{
         "Element": {Offset: 0, Initial: mm.T(1), Capacity: mm.T(0), X: 100, Y: 100},
     }
-    transitions := map[string]mm.Transition{}
-    arrows := []mm.Arrow{}
-    return &mm.Model{
-        Places:      places,
-        Transitions: transitions,
-        Arrows:      arrows,
-    }
+    return mm.New(places)
 }

@@ -63,8 +63,10 @@ The table below compares discrete and continuous Petri nets with blockchain conc
 | Tooling         | Used in pflow.xyz (discrete simulation, structural validation).                    | Used in Petri.jl (ODE simulation, continuous analysis).                    | Blockchains use discrete VM execution, but models of long-term behavior require continuous approximations.                 |
 
 `
+// REVIEW: include information about colored nets
+// in that situation the petrinet would specify tokens = ["ident", "$btc", "$eth"]
 var model101Axioms = `
-## Formal Object Axioms
+## Fungible Object Axioms
 
 In the Logoverse, "$objects" are atomic units of a model. They serve as boundary places (ports) and carry identity only through behavior.
 

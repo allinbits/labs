@@ -165,6 +165,7 @@ type Model struct {
 	Places      map[string]Place      // Map of places.
 	Transitions map[string]Transition // Map of transitions.
 	Arrows      []Arrow               // List of arcs.
+	Objects     []string              // Additional $objects associated with the model.
 	Binding     any                   // Optional binding for the model.
 }
 
@@ -192,6 +193,58 @@ func (model *Model) Execute(action string, onCommit func(newState []TokenType)) 
 	}
 
 	return newState, true
+}
+
+func (model *Model) Arrow(opts map[string]any) Arrow {
+    if opts == nil {
+        panic("Options cannot be nil")
+    }
+
+    source, ok := opts["source"].(string)
+    if !ok || source == "" {
+        panic("Source must be a non-empty string")
+    }
+
+    target, ok := opts["target"].(string)
+    if !ok || target == "" {
+        panic("Target must be a non-empty string")
+    }
+
+    weight, ok := opts["weight"].(int64)
+    if !ok {
+        panic("Weight must be an int64")
+    }
+    if weight < 0 {
+        panic("Weight cannot be negative")
+    }
+
+    objectName, hasObject := opts["object"].(string)
+    size := 1
+    if len(model.Objects) > 0 {
+        size = len(model.Objects)
+    }
+
+    wt := make(TokenType, size)
+    if hasObject && objectName != "" {
+        for i := range wt {
+            wt[i] = 0 // Initialize all weights to 0
+        }
+        for i, obj := range model.Objects {
+            if obj == objectName {
+                wt[i] = weight // Set the weight for the specified object
+                break
+            }
+        }
+    } else {
+        wt[0] = weight // Set the weight for the first token type
+    }
+
+    return Arrow{
+        Source:  source,
+        Target:  target,
+        Weight:  wt,
+        Inhibit: opts["inhibit"].(bool),
+    }
 }
 
 // REVIEW: consider providing multiple algorithms for execution, e.g.:
@@ -512,7 +565,7 @@ func (model *Model) ToJson() string {
 	sb.WriteString("{\n")
 	sb.WriteString(`  "modelType": "PetriNet",` + "\n")
 	sb.WriteString(`  "version": "v1",` + "\n")
-	sb.WriteString(`  "tokens": ["black"],` + "\n")
+	sb.WriteString(`  "tokens": ["black"],` + "\n") // TODO: support multiple token types
 	sb.WriteString(`  "places": {` + "\n")
 	placeCount := len(model.Places)
 	i := 0

@@ -138,6 +138,20 @@ This is a collection of GRC000 metamodels that demonstrate various token-related
 Each model is designed to illustrate specific aspects of token management and can be used as a foundation for building more complex token systems.
 
 All of these models compose to form a comprehensive token model called **GRC000_Token** (pictured above).
+
+### What is a Metamodel?
+
+A _metamodel_ is a framework for modeling dynamic systems using places, transitions, and arrows, inspired by Petri nets.
+
+Models are defined by a set of _$objects_, each with a **unique identity** (e.g. $eth, $btc, $coffee_beans )
+
+Each _$object_ is defined by its behavior **in all contexts**.
+
+- [Metamodel Codex](/r/metamodel000:metamodel-codex) An introduction to modeling.
+  - [Review of models using blockchain terminology](/r/metamodel000:metamodel-codex#petri-net-vs-blockchain-analogy)
+  - [Object Axioms](/r/metamodel000:metamodel-codex#formal-object-axioms) for more details.
+- [Metamodel Simulation (WIP)](/r/metamodel000:metamodel-simulation) using continuous Petri nets.
+
 ## Models
 `
 	for name, record := range registry {

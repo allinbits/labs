@@ -20,7 +20,7 @@ func init() {
 	model.Binding = func(_ string) string {
 		return singleTransitionDescription + model.ToMarkdown()
 	}
-	keywords := []string{"place", "transition", "fundamental"}
+	keywords := []string{"place", "transition"}
 	register("Transition Definition", model, keywords...)
 }
 

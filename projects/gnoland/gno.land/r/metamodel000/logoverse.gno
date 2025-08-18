@@ -1,32 +1,21 @@
 package metamodel
 
 import (
-    mm "gno.land/p/metamodel000"
+	mm "gno.land/p/metamodel000"
 )
 
-// Logoverse — A compositional universe of models about models.
-//
-// The Logoverse treats a metamodel as first-class: a model that defines
-// the structure, rules, and constraints of other models. Models are authored
-// in Gno, executed in the runtime, visualized as Markdown or SVG, composed as subnets,
-// and exported for external analysis (e.g., in Julia/Petri.jl or as ODEs).
-// Decisions (e.g., pScore voting) can be modeled as weighted-choice flows
-// over model-produced evidence.
-//
-// This file defines a single Petri-net model that captures that lifecycle
-// and a rich description bound to the model for markdown rendering.
-
 var logoverseOverview = `
+The **Logoverse** is the compositional space where ideas, models, and objects can live, connect, and evolve.
+
+
 # Logoverse — Metamodel of Models
 
 > A **metamodel** is a model that defines the structure, rules, and constraints of other models — essentially, a *model of models*.
 > It provides the schema or blueprint for how valid models should be constructed.
-
-The **Logoverse** is the compositional space where such metamodels and their concrete models live, connect, and evolve. In this view:
-
 - **Models are authored in Gno** as discrete state–transition systems (Petri nets).
-  - They define places, transitions, and arcs with precise semantics.
-  - At runtime, variables are bound to the model and transitions fire according to rules.
+  - Objects are defined as places (variables) with unique identities (e.g., $eth, $btc, $coffee_beans).
+  - We can define $objects in terms of places, transitions, and arcs with precise semantics.
+  - At runtime, variables are bound to the objects and transitions fire according to rules.
 - **Models are visualized** as SVG diagrams auto-generated from source, ensuring the diagram always matches the code.
 - **Models compose**: small, trustworthy fragments ("primitives") are plugged together via boundary ports to form larger systems.
 - **Models export**: structures and traces can be exported for analysis or interop (e.g., Julia's AlgebraicJulia/Petri.jl, or mapped to ODEs).
@@ -54,8 +43,9 @@ This closes the loop from *specification → execution → evidence → decision
 var logoverseReferences = `
 ## References
 - [Open Petri Nets](https://arxiv.org/abs/1808.05415)
+- [Structured Cospans](https://arxiv.org/abs/1911.04630)
 - [Additive Invariants of Open Petri Nets](https://arxiv.org/pdf/2303.01643)
-  - [Video - presenting the opent petri-nets paper](https://www.youtube.com/watch?v=OOuK6fRY0KY)
+  - [Video - presenting open petri-nets](https://www.youtube.com/watch?v=OOuK6fRY0KY)
 - [AlgebraicJulia/Petri.jl](https://github.com/AlgebraicJulia/Petri.jl)
 - [Compositional Distributional Model of Meaning](https://www.cs.ox.ac.uk/files/2879/LambekFestPlain.pdf)
 `
@@ -65,85 +55,87 @@ var logoverseNotes = `
 Ports make it easy to wire models together while preserving invariants (cf. open Petri nets).
 `
 
-// logoverseModel builds a Petri net that encodes the lifecycle:
-// ideas → metamodel schema → concrete model → runtime execution →
-// visualization | composition | export → analysis → decision (pScore).
+// logoverseModel builds a circular Petri net encoding the lifecycle:
+// ideas → schemas → models → runtime → analysis → decisions → ideas (loop)
+// with visualization, composition, and exports radiating from the main cycle.
 func logoverseModel() *mm.Model {
-    places := map[string]mm.Place{
-        "$ideas":       {Offset: 0, Initial: mm.T(1), Capacity: mm.T(0), X: 40,  Y: 60},
-        "$schemas":     {Offset: 1, Initial: mm.T(0), Capacity: mm.T(0), X: 140, Y: 60},
-        "$models":      {Offset: 2, Initial: mm.T(0), Capacity: mm.T(0), X: 240, Y: 60},
-        "$runtime":     {Offset: 3, Initial: mm.T(0), Capacity: mm.T(0), X: 340, Y: 60},
-        "$viz":         {Offset: 4, Initial: mm.T(0), Capacity: mm.T(0), X: 440, Y: 30},
-        "$compose":     {Offset: 5, Initial: mm.T(0), Capacity: mm.T(0), X: 440, Y: 90},
-        "$exports":     {Offset: 6, Initial: mm.T(0), Capacity: mm.T(0), X: 540, Y: 60},
-        "$analysis":    {Offset: 7, Initial: mm.T(0), Capacity: mm.T(0), X: 640, Y: 60},
-        "$decisions":   {Offset: 8, Initial: mm.T(0), Capacity: mm.T(0), X: 740, Y: 60},
-    }
+	places := map[string]mm.Place{
+		"$ideas":     {X: 56, Y: 185},
+		"$gnolang":   {X: 248, Y: 259},
+		"$models":    {X: 471, Y: 259},
+		"$runtime":   {X: 713, Y: 185},
+		"$analysis":  {X: 470, Y: 118},
+		"$decisions": {X: 251, Y: 120},
+		"$viz":       {X: 176, Y: 497},
+		"$objects":   {X: 629, Y: 489},
+		"$exports":   {X: 363, Y: 498},
+		"$rss":       {X: 900, Y: 416},
+		"$ical":      {X: 900, Y: 509},
+	}
 
-    transitions := map[string]mm.Transition{
-        "Formalize":   {X: 90,  Y: 60},  // ideas → schemas
-        "Instantiate": {X: 190, Y: 60},  // schemas → models
-        "Execute":     {X: 290, Y: 60},  // models → runtime
-        "RenderSVG":   {X: 390, Y: 30},  // models → viz
-        "Compose":     {X: 390, Y: 90},  // models → compose (as subnet)
-        "ExportJulia": {X: 490, Y: 45},  // models → exports
-        "ExportODE":   {X: 490, Y: 75},  // models → exports
-        "Analyze":     {X: 590, Y: 60},  // exports|runtime → analysis
-        "pScoreVote":  {X: 690, Y: 60},  // analysis → decisions
-    }
+	transitions := map[string]mm.Transition{
+		"Formalize":   {X: 150, Y: 259},
+		"Instantiate": {X: 361, Y: 259},
+		"Execute":     {X: 618, Y: 253},
+		"Analyze":     {X: 601, Y: 119},
+		"pScoreVote":  {X: 356, Y: 119},
+		"Reignite":    {X: 150, Y: 121},
+		"RenderSVG":   {X: 172, Y: 361},
+		"Compose":     {X: 563, Y: 368},
+		"ExportJulia": {X: 296, Y: 366},
+		"ExportODE":   {X: 427, Y: 371},
+		"Recompose":   {X: 684, Y: 368},
+		"Feed":        {X: 781, Y: 419},
+		"Calendar":    {X: 786, Y: 506},
+	}
 
-    arrows := []mm.Arrow{
-        // ideas → Formalize → schemas
-        {Source: "$ideas", Target: "Formalize", Weight: mm.T(1)},
-        {Source: "Formalize", Target: "$schemas", Weight: mm.T(1)},
+	arrows := []mm.Arrow{
+		{Source: "$ideas", Target: "Formalize"},
+		{Source: "Formalize", Target: "$gnolang"},
+		{Source: "$gnolang", Target: "Instantiate"},
+		{Source: "Instantiate", Target: "$models"},
+		{Source: "$models", Target: "Execute"},
+		{Source: "Execute", Target: "$runtime"},
+		{Source: "$runtime", Target: "Analyze"},
+		{Source: "Analyze", Target: "$analysis"},
+		{Source: "$analysis", Target: "pScoreVote"},
+		{Source: "pScoreVote", Target: "$decisions"},
+		{Source: "$decisions", Target: "Reignite"},
+		{Source: "Reignite", Target: "$ideas"},
+		{Source: "$models", Target: "RenderSVG"},
+		{Source: "RenderSVG", Target: "$viz"},
+		{Source: "$models", Target: "Compose"},
+		{Source: "Compose", Target: "$objects"},
+		{Source: "$models", Target: "ExportJulia"},
+		{Source: "ExportJulia", Target: "$exports"},
+		{Source: "$models", Target: "ExportODE"},
+		{Source: "ExportODE", Target: "$exports"},
+		{Source: "$objects", Target: "Recompose"},
+		{Source: "Recompose", Target: "$models"},
+		{Source: "$objects", Target: "Feed"},
+		{Source: "Feed", Target: "$rss"},
+		{Source: "$objects", Target: "Calendar"},
+		{Source: "Calendar", Target: "$ical"},
+	}
 
-        // schemas → Instantiate → models
-        {Source: "$schemas", Target: "Instantiate", Weight: mm.T(1)},
-        {Source: "Instantiate", Target: "$models", Weight: mm.T(1)},
-
-        // models → Execute → runtime
-        {Source: "$models", Target: "Execute", Weight: mm.T(1)},
-        {Source: "Execute", Target: "$runtime", Weight: mm.T(1)},
-
-        // models → visualization / composition branches
-        {Source: "$models", Target: "RenderSVG", Weight: mm.T(1)},
-        {Source: "RenderSVG", Target: "$viz", Weight: mm.T(1)},
-        {Source: "$models", Target: "Compose", Weight: mm.T(1)},
-        {Source: "Compose", Target: "$compose", Weight: mm.T(1)},
-
-        // models → export (two modes)
-        {Source: "$models", Target: "ExportJulia", Weight: mm.T(1)},
-        {Source: "ExportJulia", Target: "$exports", Weight: mm.T(1)},
-        {Source: "$models", Target: "ExportODE", Weight: mm.T(1)},
-        {Source: "ExportODE", Target: "$exports", Weight: mm.T(1)},
-
-        // exports and/or runtime evidence → analysis
-        {Source: "$exports", Target: "Analyze", Weight: mm.T(1)},
-        {Source: "$runtime", Target: "Analyze", Weight: mm.T(1)},
-        {Source: "Analyze", Target: "$analysis", Weight: mm.T(1)},
-
-        // analysis evidence → pScore decision distribution
-        {Source: "$analysis", Target: "pScoreVote", Weight: mm.T(1)},
-        {Source: "pScoreVote", Target: "$decisions", Weight: mm.T(1)},
-    }
-
-    return &mm.Model{Places: places, Transitions: transitions, Arrows: arrows}
+	return &mm.Model{Places: places, Transitions: transitions, Arrows: arrows}
 }
 
 // glueMarkdown binds the narrative to the rendered model markdown.
 func glueMarkdown(m *mm.Model) string {
-    return logoverseOverview + "\n" + logoverseHowTo + "\n" + logoverseNotes + "\n" + m.ToMarkdown() + "\n" + logoverseReferences
+	return logoverseOverview + "\n" + logoverseHowTo + "\n" + logoverseNotes + "\n" +
+		"[![pflow](https://pflow.dev/img/zb2rhg8szbR6m3xXJuiGhTAZRG6BD1duTsmQoUtaJQSfWVnYo.svg)](https://pflow.dev/p/zb2rhg8szbR6m3xXJuiGhTAZRG6BD1duTsmQoUtaJQSfWVnYo/)" +
+		logoverseReferences
 }
 
 func init() {
-    m := logoverseModel()
-    m.Binding = func(_ string) string { return glueMarkdown(m) }
+	m := logoverseModel()
+	m.Binding = func(_ string) string { return glueMarkdown(m) }
 
-    keywords := []string{
-        "metamodel", "petri", "open nets", "ports", "composition",
-        "visualization", "svg", "export", "julia", "ode", "analysis", "pscore",
-    }
+	keywords := []string{
+		"metamodel", "petri", "open nets", "ports", "composition",
+		"visualization", "svg", "export", "julia", "ode", "analysis", "pscore",
+	}
 
-    register("Logoverse Metamodel-of-Models", m, keywords...)
+	register("Logoverse Metamodel-of-Models", m, keywords...)
 }

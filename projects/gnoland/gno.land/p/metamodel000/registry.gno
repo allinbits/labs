@@ -19,7 +19,6 @@ import (
 type RegistryCallback = func(key string, value any) bool
 type RegistryMatcher = func(value any) bool
 
-
 type Registry struct {
 	tree          *avl.Tree
 	allowPrefixes []string
@@ -142,7 +141,7 @@ func (r *Registry) Iterate(callback RegistryCallback, matcher RegistryMatcher) {
 func (r *Registry) Render(path string, cb ...func(string) string) string {
 	q := parseQuery(path)
 	if strings.HasPrefix(path, "?search=") {
-        path = q["search"][0]
+		path = q["search"][0]
 	}
 
 	if strings.HasPrefix(path, "?") {
@@ -269,19 +268,19 @@ Enter a keyword from the word cloud
 </gno-columns>
 `
 
-func (r *Registry) renderIndex(path string, cb ...func( string) string) string {
+func (r *Registry) renderIndex(path string, cb ...func(string) string) string {
 	q := parseQuery(path)
 	if page, ok := q["p"]; ok && len(page) > 0 {
 		return r.renderList(path)
 	}
 	var sb strings.Builder
 	for _, content := range cb {
-        if content != nil {
-            sb.WriteString(content(path) + "\n\n")
-        }
-    }
+		if content != nil {
+			sb.WriteString(content(path) + "\n\n")
+		}
+	}
 	sb.WriteString("### Index\n\n")
-    sb.WriteString(searchForm + "\n\n")
+	sb.WriteString(searchForm + "\n\n")
 
 	sb.WriteString("### Word Cloud\n\n")
 	sb.WriteString("[![tag cloud visualized](" + r.TagCloudDataUrl() + ")](#keyword-index)\n\n")
@@ -524,4 +523,3 @@ func SubmitButton(label, path string, fontSize, minWidth int) string {
 	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
 	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }
-

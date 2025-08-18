@@ -3,11 +3,11 @@ package metamodel
 var model101Intro = `
 The **metamodel** library provides a foundation for modeling dynamic systems using **places**, **transitions**, and **arrows**, grounded in the theory of **Petri nets**. It powers tools like [pflow.xyz](https://pflow.xyz), which lets users visually design, simulate, and export executable models.
 
+### What is a Metamodel?
+
 `
 
 var model101Description = `
-
-### Try the interactive demo at pflow.xyz
 [![pflow](https://pflow.dev/img/zb2rhgiVZBVmUHsTUyr63mjFMuVksT3zqFMBGtoxzJyYkJUNv.svg)](https://pflow.dev/p/zb2rhgiVZBVmUHsTUyr63mjFMuVksT3zqFMBGtoxzJyYkJUNv/)
 
 #### Core Concepts
@@ -63,26 +63,59 @@ The table below compares discrete and continuous Petri nets with blockchain conc
 | Tooling         | Used in pflow.xyz (discrete simulation, structural validation).                    | Used in Petri.jl (ODE simulation, continuous analysis).                    | Blockchains use discrete VM execution, but models of long-term behavior require continuous approximations.                 |
 
 `
+var model101Axioms = `
+## Formal Object Axioms
+
+In the Logoverse, "$objects" are atomic units of a model. They serve as boundary places (ports) and carry identity only through behavior.
+
+### Axiom 1 — Uniqueness
+Each "$object" has a unique identity in the model's set of objects.
+Two objects are equal if and only if all of their behaviors coincide.
+
+### Axiom 2 — Behavioral Identity
+An "$object" is defined entirely by the set of transitions it participates in, both inbound and outbound.
+This reflects the Yoneda principle: an object is its observable behavior in all contexts.
+
+### Axiom 3 — Openness
+A leading "$" marks a port, which is an open boundary place.
+Ports enable gluing models along shared "$objects".
+
+### Axiom 4 — Extensibility
+The set of objects is open under union.
+This enables modular composition without redefining existing objects.
+
+### Axiom 5 — Token Semantics
+An "$object" is not the token itself but the place that can hold tokens of some type.
+Example: "$eth" is the object; ETH tokens flow through it.
+
+### Axiom 6 — Contextual Meaning
+The meaning of an "$object" emerges from its participation in a model.
+For example, "$coffee_beans" in a supply-chain net is not the same as "$coffee_beans" in a DAO-voting net, unless their transitions align.
+
+Together, these axioms ground the Logoverse: objects are nodes of identity, defined by arrows, composable via ports, and extensible by union.
+`
 
 func Tutorial101() *Model {
-    m := model101()
-    m.Binding = func(path string) string {
-        switch path {
-        case "intro":
-            return model101Intro
-        case "description":
-            return model101Description
-        case "markdown":
-            return m.ToMarkdown()
-        case "svg":
-            return m.ToSvg()
-        case "json":
-            return m.ToJson()
-        default:
-        }
-        return model101Intro + m.ToMarkdown() + model101Description
-    }
-    return m
+	m := model101()
+	m.Binding = func(path string) string {
+		switch path {
+		case "intro":
+			return model101Intro
+		case "description":
+			return model101Description
+		case "markdown":
+			return m.ToMarkdown()
+		case "svg":
+			return m.ToSvg()
+		case "json":
+			return m.ToJson()
+		default:
+		}
+		return model101Intro +
+			model101Description +
+			model101Axioms
+	}
+	return m
 }
 
 func model101() *Model {

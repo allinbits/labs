@@ -130,42 +130,42 @@ func S(ts ...any) []TokenType {
 
 // Place represents a place in the Petri net.
 type Place struct {
-	Label    string      // Label of the place.
-	Offset   int         // Offset of the place in the Petri net.
-	Tokens   TokenType   // Current number of tokens for each type.
-	Initial  TokenType   // Initial number of tokens for each type.
-	Capacity TokenType   // Maximum capacity for each token type (0 = unlimited).
-	X        int         // X coordinate of the place.
-	Y        int         // Y coordinate of the place.
-	Binding  any // Optional binding for the place.
+	Label    string    // Label of the place.
+	Offset   int       // Offset of the place in the Petri net.
+	Tokens   TokenType // Current number of tokens for each type.
+	Initial  TokenType // Initial number of tokens for each type.
+	Capacity TokenType // Maximum capacity for each token type (0 = unlimited).
+	X        int       // X coordinate of the place.
+	Y        int       // Y coordinate of the place.
+	Binding  any       // Optional binding for the place.
 }
 
 // Arrow represents an arc in the Petri net.
 type Arrow struct {
-	Source  string      // Source place or transition.
-	Target  string      // Target place or transition.
-	Weight  TokenType   // Weight for each token type.
-	Inhibit bool        // Indicates if the arc inhibits the transition.
-	Binding any // Optional binding for the arc.
+	Source  string    // Source place or transition.
+	Target  string    // Target place or transition.
+	Weight  TokenType // Weight for each token type.
+	Inhibit bool      // Indicates if the arc inhibits the transition.
+	Binding any       // Optional binding for the arc.
 }
 
 // Transition represents a transition in the Petri net.
 type Transition struct {
-	Label   string      // Label of the transition.
-	Offset  int         // Offset of the transition in the Petri net.
-	X       int         // X coordinate of the transition.
-	Y       int         // Y coordinate of the transition.
-	Rate    float64     // Rate of the transition (for continuous models).
-	Binding any // Optional binding for the transition.
+	Label   string  // Label of the transition.
+	Offset  int     // Offset of the transition in the Petri net.
+	X       int     // X coordinate of the transition.
+	Y       int     // Y coordinate of the transition.
+	Rate    float64 // Rate of the transition (for continuous models).
+	Binding any     // Optional binding for the transition.
 }
 
 // Model represents a Petri-Net.
 type Model struct {
-	RenderOpts  map[string]any // Rendering options for the model.
-	Places      map[string]Place       // Map of places.
-	Transitions map[string]Transition  // Map of transitions.
-	Arrows      []Arrow                // List of arcs.
-	Binding     any            // Optional binding for the model.
+	RenderOpts  map[string]any        // Rendering options for the model.
+	Places      map[string]Place      // Map of places.
+	Transitions map[string]Transition // Map of transitions.
+	Arrows      []Arrow               // List of arcs.
+	Binding     any                   // Optional binding for the model.
 }
 
 func (model *Model) State() []TokenType {

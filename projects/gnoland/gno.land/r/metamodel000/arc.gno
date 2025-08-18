@@ -19,12 +19,12 @@ func init() {
 	model.Binding = func(_ string) string {
 		return basicCompositionDescription + model.ToMarkdown()
 	}
-	keywords := []string{"place", "transition", "fundamental", "arc"}
+	keywords := []string{"place", "transition", "arc"}
 	register("Arc Definition", model, keywords...)
 }
 
 func basicComposition() *mm.Model {
-    return mm.New(singlePlace(), singleTransition(), []mm.Arrow{
-        {Source: "Element", Target: "Change"},
-    })
+	return mm.New(singlePlace(), singleTransition(), []mm.Arrow{
+		{Source: "Element", Target: "Change"},
+	})
 }

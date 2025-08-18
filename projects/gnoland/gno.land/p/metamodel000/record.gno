@@ -1,7 +1,7 @@
 package metamodel
 
 import (
-    "strings"
+	"strings"
 )
 
 type Record struct {

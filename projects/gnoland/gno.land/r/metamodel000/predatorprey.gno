@@ -1,7 +1,7 @@
 package metamodel
 
 import (
- mm "gno.land/p/metamodel000"
+	mm "gno.land/p/metamodel000"
 )
 
 var lotkaVolterraDescription = `
@@ -24,39 +24,39 @@ Reference: [AlgebraicJulia/Petri.jl](https://github.com/AlgebraicJulia/Petri.jl/
 `
 
 func init() {
- lvModel := lotkaVolterra()
- lvModel.Binding = func(_ string) string {
-  return lotkaVolterraDescription + lvModel.ToMarkdown()
- }
- keywords := []string{ "predator-prey", "rabbits", "wolves", "population" }
- register("Lotka-Volterra", lvModel, keywords...)
+	lvModel := lotkaVolterra()
+	lvModel.Binding = func(_ string) string {
+		return lotkaVolterraDescription + lvModel.ToMarkdown()
+	}
+	keywords := []string{"predator-prey", "rabbits", "wolves", "population"}
+	register("Lotka-Volterra", lvModel, keywords...)
 }
 
 func lotkaVolterra() *mm.Model {
- places := map[string]mm.Place{
-  "rabbits": {Offset: 0, Initial: mm.T(100), Capacity: mm.T(0), X: 60,  Y: 80},
-  "wolves":  {Offset: 1, Initial: mm.T(10),  Capacity: mm.T(0), X: 60,  Y: 180},
- }
+	places := map[string]mm.Place{
+		"rabbits": {Offset: 0, Initial: mm.T(100), Capacity: mm.T(0), X: 60, Y: 80},
+		"wolves":  {Offset: 1, Initial: mm.T(10), Capacity: mm.T(0), X: 60, Y: 180},
+	}
 
- transitions := map[string]mm.Transition{
-  "birth":     {Label: "birth", Offset: 0, X: 220, Y: 80},
-  "predation": {Label: "predation", Offset: 1, X: 220, Y: 130},
-  "death":     {Label: "death", Offset: 2, X: 220, Y: 180},
- }
+	transitions := map[string]mm.Transition{
+		"birth":     {Label: "birth", Offset: 0, X: 220, Y: 80},
+		"predation": {Label: "predation", Offset: 1, X: 220, Y: 130},
+		"death":     {Label: "death", Offset: 2, X: 220, Y: 180},
+	}
 
- arrows := []mm.Arrow{
-  // birth: rabbits -> rabbits (net +1)
-  {Source: "rabbits", Target: "birth"},
-  {Source: "birth", Target: "rabbits", Weight: mm.T(2)},
+	arrows := []mm.Arrow{
+		// birth: rabbits -> rabbits (net +1)
+		{Source: "rabbits", Target: "birth"},
+		{Source: "birth", Target: "rabbits", Weight: mm.T(2)},
 
-  // predation: wolves + rabbits -> wolves (net -1 rabbit, +1 wolf)
-  {Source: "wolves", Target: "predation"},
-  {Source: "rabbits", Target: "predation"},
-  {Source: "predation", Target: "wolves", Weight: mm.T(2)},
+		// predation: wolves + rabbits -> wolves (net -1 rabbit, +1 wolf)
+		{Source: "wolves", Target: "predation"},
+		{Source: "rabbits", Target: "predation"},
+		{Source: "predation", Target: "wolves", Weight: mm.T(2)},
 
-  // death: wolves -> (sink)
-  {Source: "wolves", Target: "death"},
- }
+		// death: wolves -> (sink)
+		{Source: "wolves", Target: "death"},
+	}
 
- return mm.New(places, transitions, arrows)
+	return mm.New(places, transitions, arrows)
 }

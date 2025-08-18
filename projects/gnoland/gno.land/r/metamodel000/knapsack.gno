@@ -30,7 +30,7 @@ func init() {
 		return knapsackDescription + ksModel.ToMarkdown()
 	}
 	keywords := []string{
-        "optimization", "combinatorial", "constraints", "selection",
+		"optimization", "combinatorial", "constraints", "selection",
 	}
 	register("Knapsack", ksModel, keywords...)
 }

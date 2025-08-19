@@ -30,6 +30,12 @@ func HasModelApi(input any) bool {
 	return false // No Model API found
 }
 
+func AssertValidObjectName(name string) {
+    if !strings.HasPrefix(name, "$") {
+        panic("Invalid object name: " + name + ". Object names must start with '$'.")
+    }
+}
+
 func New(inputs ...any) *Model {
 	m := &Model{
 		Places:      map[string]Place{},
@@ -39,7 +45,20 @@ func New(inputs ...any) *Model {
 
 	for _, input := range inputs {
 		switch v := input.(type) {
+		case []string:
+            for _, obj := range v {
+                AssertValidObjectName(obj)
+                m.Objects = append(m.Objects, obj)
+            }
+        default:
+            continue
+        }
+    }
+
+	for _, input := range inputs {
+		switch v := input.(type) {
 		case *Model:
+		    // m.Objects = append(m.Objects, v.Objects...) // REVIEW: should we merge objects?
 			for label, place := range v.Places {
 				m.Places[label] = place
 			}
@@ -57,7 +76,7 @@ func New(inputs ...any) *Model {
 			}
 		case []Arrow:
 			m.Arrows = append(m.Arrows, v...)
-		case map[string]any:
+		case map[string]any: // REVIEW: we currently assume a finalized set of objects is passe (i.e. a superset of all objects)
 			m.RenderOpts = v
 		default:
 			continue
@@ -161,12 +180,12 @@ type Transition struct {
 
 // Model represents a Petri-Net.
 type Model struct {
-	RenderOpts  map[string]any        // Rendering options for the model.
+	Objects     []string              // Additional $objects associated with the model.
 	Places      map[string]Place      // Map of places.
 	Transitions map[string]Transition // Map of transitions.
 	Arrows      []Arrow               // List of arcs.
-	Objects     []string              // Additional $objects associated with the model.
 	Binding     any                   // Optional binding for the model.
+	RenderOpts  map[string]any        // Rendering options for the model.
 }
 
 func (model *Model) State() []TokenType {
@@ -195,58 +214,49 @@ func (model *Model) Execute(action string, onCommit func(newState []TokenType)) 
 	return newState, true
 }
 
-func (model *Model) Arrow(opts map[string]any) Arrow {
-    if opts == nil {
-        panic("Options cannot be nil")
-    }
+type Arc struct {
+    Source  string // Source place or transition.
+    Target  string // Target place or transition.
+    Weight  int64  // Weight for the token type.
+    Inhibit bool   // Indicates if the arc inhibits the transition.
+    Object  string // Optional object name for the arrow.
+}
 
-    source, ok := opts["source"].(string)
-    if !ok || source == "" {
+func (model *Model) Arrow(opts Arc) Arrow {
+    if opts.Source == "" {
         panic("Source must be a non-empty string")
     }
-
-    target, ok := opts["target"].(string)
-    if !ok || target == "" {
+    if opts.Target == "" {
         panic("Target must be a non-empty string")
     }
-
-    weight, ok := opts["weight"].(int64)
-    if !ok {
-        panic("Weight must be an int64")
-    }
-    if weight < 0 {
-        panic("Weight cannot be negative")
+    if opts.Weight < 0 {
+        panic("Weight must be a non-negative int64")
     }
 
-    objectName, hasObject := opts["object"].(string)
     size := 1
     if len(model.Objects) > 0 {
         size = len(model.Objects)
     }
 
     wt := make(TokenType, size)
-    if hasObject && objectName != "" {
-        for i := range wt {
-            wt[i] = 0 // Initialize all weights to 0
-        }
+    if opts.Object != "" && len(model.Objects) > 0 {
         for i, obj := range model.Objects {
-            if obj == objectName {
-                wt[i] = weight // Set the weight for the specified object
+            if obj == opts.Object {
+                wt[i] = opts.Weight
                 break
             }
         }
     } else {
-        wt[0] = weight // Set the weight for the first token type
+        wt[0] = opts.Weight
     }
 
     return Arrow{
-        Source:  source,
-        Target:  target,
+        Source:  opts.Source,
+        Target:  opts.Target,
         Weight:  wt,
-        Inhibit: opts["inhibit"].(bool),
+        Inhibit: opts.Inhibit,
     }
 }
-
 // REVIEW: consider providing multiple algorithms for execution, e.g.:
 // wfnets, elementary, etc...
 func Execute(state []TokenType, model *Model, action string) ([]TokenType, bool) {

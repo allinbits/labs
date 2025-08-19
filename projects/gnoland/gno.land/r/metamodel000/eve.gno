@@ -144,3 +144,47 @@ func eventComposition() *mm.Model {
 
 	return mm.New(places, transitions, arrows)
 }
+
+func init() {
+    eventComponentsModel := eventComponents()
+    eventComponentsModel.Binding = func(_ string) string {
+        return " This s a model showing how components are exposed as data feeds and svg visualizations.\n\n" +
+        "Arrows indicate the direction of data flow and relationships between components.\n\n" +
+        "Notice that components are composable and exportable as different data types: ical, svg, xml/rss\n\n" +
+        eventComponentsModel.ToMarkdown()
+    }
+    register("Component Data", eventComponentsModel, "event")
+}
+
+func eventComponents() *mm.Model {
+	places := map[string]mm.Place{
+		"$components": {Offset: 0, Initial: mm.T(1), X: 52, Y: 164},
+		"$svg":        {Offset: 1, X: 552, Y: 249},
+		"$realms":     {Offset: 2, X: 297, Y: 172},
+		"$rss":        {Offset: 3, X: 545, Y: 104},
+		"$ical":       {Offset: 4, X: 549, Y: 171},
+	}
+
+	transitions := map[string]mm.Transition{
+		"Calendar":   {X: 448, Y: 171},
+		"Compose":    {X: 182, Y: 234},
+		"Feed":       {X: 445, Y: 102},
+		"Recompose":  {X: 180, Y: 103},
+		"Render":  {X: 449, Y: 249},
+	}
+
+	arrows := []mm.Arrow{
+		{Source: "Render", Target: "$svg"},
+		{Source: "$components", Target: "Compose"},
+		{Source: "Compose", Target: "$realms"},
+		{Source: "$realms", Target: "Recompose"},
+		{Source: "Recompose", Target: "$components"},
+		{Source: "$realms", Target: "Feed"},
+		{Source: "Feed", Target: "$rss"},
+		{Source: "$realms", Target: "Calendar"},
+		{Source: "Calendar", Target: "$ical"},
+		{Source: "$realms", Target: "Render"},
+	}
+
+	return mm.New(places, transitions, arrows)
+}

@@ -64,19 +64,30 @@ The table below compares discrete and continuous Petri nets with blockchain conc
 
 `
 // REVIEW: include information about colored nets
-// in that situation the petrinet would specify tokens = ["ident", "$btc", "$eth"]
 var model101Axioms = `
 ## Fungible Object Axioms
 
-In the Logoverse, "$objects" are atomic units of a model. They serve as boundary places (ports) and carry identity only through behavior.
+In the Logoverse, objects are the atomic units of a model.
+They act as boundary places (ports) and preserve token identity across the system.
+
+* As ports: objects label places in a model. Arrows then describe how an object transforms into another, or how tokens are created or destroyed.
+
+* As arrows: objects determine the type of tokens that flow through them.
+
+These axioms define the fundamental properties of "$objects" in the Logoverse:
 
 ### Axiom 1 — Uniqueness
 Each "$object" has a unique identity in the model's set of objects.
 Two objects are equal if and only if all of their behaviors coincide.
 
+A given "$object" can be used in multiple places and transitions, but it must always refer to the same unique identity.
+
 ### Axiom 2 — Behavioral Identity
 An "$object" is defined entirely by the set of transitions it participates in, both inbound and outbound.
 This reflects the Yoneda principle: an object is its observable behavior in all contexts.
+
+Places using a non-"$object" labels are interstitial, meaning they do not define an object identity,
+but are used to hold tokens when in transit between "$objects".
 
 ### Axiom 3 — Openness
 A leading "$" marks a port, which is an open boundary place.
@@ -87,16 +98,17 @@ The set of objects is open under union.
 This enables modular composition without redefining existing objects.
 
 ### Axiom 5 — Token Semantics
-An "$object" is not the token itself but the place that can hold tokens of some type.
+An "$object" when used as a port is not the token itself but the place that can hold tokens of some type.
 Example: "$eth" is the object; ETH tokens flow through it.
+
+When used as a transition, an "$object" defines how tokens of that type are transferred between places.
 
 ### Axiom 6 — Contextual Meaning
 The meaning of an "$object" emerges from its participation in a model.
 For example, "$coffee_beans" in a supply-chain net is not the same as "$coffee_beans" in a DAO-voting net, unless their transitions align.
 
-Together, these axioms ground the Logoverse: objects are nodes of identity, defined by arrows, composable via ports, and extensible by union.
+Together, these axioms ground the Logoverse: objects are nodes of identity, defined by arrows, composable via ports, extensible by union, and can be used to label places or populate places as tokens.
 `
-
 func Tutorial101() *Model {
 	m := model101()
 	m.Binding = func(path string) string {

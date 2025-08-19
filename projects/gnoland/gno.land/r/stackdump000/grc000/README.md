@@ -193,3 +193,82 @@ Because the net is append-only, all renderings are reproducible over time.
 - [Open Petri Nets](https://arxiv.org/abs/1808.05415) - a foundational paper on Petri nets.
 - [Petri Nets](https://ncatlab.org/nlab/show/Petri+net) - all-purpose reference.
 - [Yoneda Lemma](https://ncatlab.org/nlab/show/Yoneda+lemma) - foundational concept in category theory, relevant to compositionality.
+
+# Token Standards: Interface vs. Behavior-First
+
+## TL;DR
+- **ERC-20-style** = *nominal interface*: a handful of function names + event shapes. You prove conformance by matching the signature, not the whole behavior.
+- **OPetri / typed-Petri approach** = *behavioral specification*: you spell out **every allowed state transition**, and interfaces are just *views* over that model.
+
+---
+
+## Two paradigms, side-by-side
+
+| Dimension | Interface-first (ERC-20) | Behavior-first (OPetri / typed Petri) |
+|---|---|---|
+| Spec unit | Function signatures (`transfer`, `approve`, …) | Places, transitions, guards, arcs (typed) |
+| Conformance | “Implements the ABI” | “Implements these transitions and invariants” |
+| Guarantees | Minimal (must not revert in obvious cases) | Rich: invariants, conservation laws, liveness, safety |
+| Extensibility | Add new funcs / extensions (fragmentation risk) | Compose subnets; refinement preserves proofs |
+| Composability | Name/ABI matching; adapters required | Structural: glue along shared `$objects` (ports) |
+| Analysis | Hard: need bespoke proofs per impl | Native: reachability, invariants, ODE analysis |
+| Concurrency | Not modeled; relies on VM/nonce | First-class: enabling conditions, mutual exclusion |
+| Upgrades | “New interface” or proxy patterns | Add/replace subnets; reuse proofs via refinement |
+| Testing | Unit/integration by example | Model checking, simulation, parameter sweeps |
+| Failure modes | Same ABI, wildly different semantics | Same ports ⇒ bounded semantic variation |
+
+---
+
+## What you gain with behavior-first
+- **Total semantics**: No “mystery paths.” Every state change is one of your transitions.
+- **Machine-checkable properties**:
+   - *Conservation*: token mass is preserved except at mint/burn.
+   - *Safety*: guards prevent underflow/overdraft.
+   - *Liveness*: absence of deadlocks; intended flows always possible.
+- **True composability**: DEXes, escrows, staking = subnets that **plug into** `$token` and `$wallet`.
+- **Refinement without fragmentation**: Extensions (`permit`, `batch`) = new subnets; existing proofs still valid.
+
+---
+
+## What you lose (or must manage)
+- **Higher upfront modeling cost**: You design a net, not just an ABI.
+- **Learning curve**: Readers must understand places, transitions, guards.
+- **Interop optics**: World “speaks ERC-20.” You’ll expose an ERC-20-compatible view.
+
+---
+
+## Token standards, concretely
+
+**Model (canonical):**
+- Places: `$wallet`, `$recipient`, `$supply`, `$allowance[(owner,spend)]`
+- Transitions: `mint`, `burn`, `transfer`, `approve`, `transferFrom`, …
+- Guards: balances/allowances ≥ weight; role checks; time locks optional.
+- Invariants:
+   - `Σ tokens($wallet_i) + tokens($supply) = constant + minted − burned`
+   - No negative markings; respect capacity bounds.
+
+**Interface (derived view):**
+- `balanceOf(a)` ⇒ marking at `$wallet[a]`
+- `totalSupply()` ⇒ marking at `$supply`
+- `transfer(to, amt)` ⇒ fire `transfer` if enabled
+- `Approval`, `Transfer` events ⇒ emitted on transitions
+
+---
+
+## Migration / adoption pattern
+1. **Author the net** (OPetri/typed Petri).
+2. **Auto-derive ABI** (queries + callable transitions).
+3. **Ship both**: net + thin ABI adapter.
+4. **Prove**: conservation, safety, allowance monotonicity.
+5. **Compose**: plug into DEX/vesting/staking subnets.
+
+---
+
+## When to choose which
+- **Interface-first**: fastest baseline compatibility.
+- **Behavior-first**: for nontrivial policy, assurance, composability.
+
+---
+
+## One-liner
+> We standardize **behavior, not just function names**. The token’s canonical definition is its **open Petri net**; ERC-20-style functions are **generated views** for legacy tooling.

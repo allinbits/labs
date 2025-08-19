@@ -15,7 +15,7 @@ func init() {
 	h2oModel.Binding = func(_ string) string {
 		return h2oDescription + h2oModel.ToMarkdown()
 	}
-	keywords := []string{"hydrogen", "oxygen", "water", "combustion", "reaction", "h2", "o2", "h2o"}
+	keywords := []string{"hydrogen", "oxygen", "water", "combustion", "h2", "o2", "h2o"}
 	register("H2O Combustion", h2oModel, keywords...)
 }
 
@@ -40,9 +40,5 @@ func h2o() *mm.Model {
 		{Source: "Combustion", Target: "H2O"}, // 2 H2O molecules
 	}
 
-	return &mm.Model{
-		Places:      places,
-		Transitions: transitions,
-		Arrows:      arrows,
-	}
+	return mm.New(places, transitions, arrows)
 }

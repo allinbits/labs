@@ -104,9 +104,5 @@ func philosophersModel() *mm.Model {
 		{Source: "3think", Target: "chopstick2"},
 		{Source: "3think", Target: "chopstick4"},
 	}
-	return &mm.Model{
-		Places:      places,
-		Transitions: transitions,
-		Arrows:      arrows,
-	}
+	return mm.New(places, transitions, arrows)
 }

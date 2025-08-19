@@ -49,7 +49,7 @@ func init() {
 	exampleModel.Binding = func(_ string) string {
 		return transferDescription + exampleModel.ToMarkdown()
 	}
-	keywords := []string{"token", "wallet", "address", "payment"}
+	keywords := []string{"token", "wallet", "address"}
 	register("transfer payment", exampleModel, keywords...)
 }
 

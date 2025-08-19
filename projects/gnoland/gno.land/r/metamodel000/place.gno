@@ -1,7 +1,7 @@
 package metamodel
 
 import (
-    mm "gno.land/p/metamodel000"
+	mm "gno.land/p/metamodel000"
 )
 
 var singlePlaceDescription = `
@@ -15,23 +15,17 @@ current state of that place. In this model, the place is initialized with one to
 `
 
 func init() {
-    model := singlePlace()
-    model.Binding = func(_ string) string {
-        return singlePlaceDescription + model.ToMarkdown()
-    }
-    keywords := []string{"place", "fundamental"}
-    register("Place Definition", model, keywords...)
+	model := singlePlace()
+	model.Binding = func(_ string) string {
+		return singlePlaceDescription + model.ToMarkdown()
+	}
+	keywords := []string{"place", "fundamental"}
+	register("Place Definition", model, keywords...)
 }
 
 func singlePlace() *mm.Model {
-    places := map[string]mm.Place{
-        "Element": {Offset: 0, Initial: mm.T(1), Capacity: mm.T(0), X: 100, Y: 100},
-    }
-    transitions := map[string]mm.Transition{}
-    arrows := []mm.Arrow{}
-    return &mm.Model{
-        Places:      places,
-        Transitions: transitions,
-        Arrows:      arrows,
-    }
+	places := map[string]mm.Place{
+		"Element": {Offset: 0, Initial: mm.T(1), Capacity: mm.T(0), X: 100, Y: 100},
+	}
+	return mm.New(places)
 }

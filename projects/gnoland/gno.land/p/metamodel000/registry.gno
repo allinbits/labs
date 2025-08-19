@@ -19,7 +19,6 @@ import (
 type RegistryCallback = func(key string, value any) bool
 type RegistryMatcher = func(value any) bool
 
-
 type Registry struct {
 	tree          *avl.Tree
 	allowPrefixes []string
@@ -139,13 +138,19 @@ func (r *Registry) Iterate(callback RegistryCallback, matcher RegistryMatcher) {
 
 // --- Rendering & Content ---
 
-func (r *Registry) Render(path string) string {
+func (r *Registry) Render(path string, cb ...func(string) string) string {
+	q := parseQuery(path)
+	if strings.HasPrefix(path, "?search=") {
+		path = q["search"][0]
+	}
+
 	if strings.HasPrefix(path, "?") {
-		q := parseQuery(path)
 		if idx, ok := q["i"]; ok && len(idx) > 0 {
 			return r.renderItem(idx[0], q)
 		}
-	} else if path != "" {
+	}
+
+	if path != "" {
 		key := sanitizeAnchorKey(path)
 		if _, ok := r.tree.Get(key); ok {
 			return r.Content(key, path)
@@ -154,7 +159,8 @@ func (r *Registry) Render(path string) string {
 			return r.renderSearchResults(key, c.([]string))
 		}
 	}
-	return r.renderIndex(path)
+
+	return r.renderIndex(path, cb...)
 }
 
 func (r *Registry) renderSearchResults(key string, keys []string) string {
@@ -247,18 +253,39 @@ func (r *Registry) renderNavigation(i int, u url.Values) string {
 	return sb.String()
 }
 
-func (r *Registry) renderIndex(path string) string {
+var searchForm = `
+View all models on the [Metamodel List ->](/r/metamodel000?p=0)
+<gno-columns>
+<gno-form>
+    <gno-input name="search" placeholder="keyword" />
+</gno-form>
+|||
+
+**Search Models**:
+
+Enter a keyword from the word cloud
+
+</gno-columns>
+`
+
+func (r *Registry) renderIndex(path string, cb ...func(string) string) string {
 	q := parseQuery(path)
 	if page, ok := q["p"]; ok && len(page) > 0 {
 		return r.renderList(path)
 	}
-	return "## Models\n\n" +
-		"This is a public registry of metamodels.\n\n" +
-		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n" +
-		"### Word Cloud\n\n" +
-		"[![tag cloud visualized](" + r.TagCloudDataUrl() + ")](#keyword-index)\n\n" +
-		r.TagCloudMarkdown() + "\n\n" +
-		"[Metamodel Index ->](/r/metamodel000?p=0)\n\n"
+	var sb strings.Builder
+	for _, content := range cb {
+		if content != nil {
+			sb.WriteString(content(path) + "\n\n")
+		}
+	}
+	sb.WriteString("### Index\n\n")
+	sb.WriteString(searchForm + "\n\n")
+
+	sb.WriteString("### Word Cloud\n\n")
+	sb.WriteString("[![tag cloud visualized](" + r.TagCloudDataUrl() + ")](#keyword-index)\n\n")
+	sb.WriteString(r.TagCloudMarkdown() + "\n\n")
+	return sb.String()
 }
 
 func (r *Registry) renderList(path string) string {
@@ -458,4 +485,41 @@ func sanitizeAnchorKey(key string) string {
 		}
 	}
 	return sb.String()
+}
+
+func EscapeHtml(s string) string {
+	replacements := map[string]string{
+		"&":  "&amp;",
+		"<":  "&lt;",
+		">":  "&gt;",
+		"\"": "&quot;",
+		"'":  "&#39;",
+	}
+	for old, new := range replacements {
+		s = strings.ReplaceAll(s, old, new)
+	}
+	return s
+}
+
+func SubmitButton(label, path string, fontSize, minWidth int) string {
+	charWidth := int(0.6 * float64(fontSize))
+	padding := 40
+	h := 2 * fontSize
+	w := len(label)*charWidth + padding
+	if w < minWidth {
+		w = minWidth
+	}
+
+	svgButton := `<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
+<foreignObject x="16" y="-5" width="` + strconv.Itoa(w) + `" height="` + strconv.Itoa(h) + `">
+  <body xmlns="http://www.w3.org/1999/xhtml">
+    <button style="padding-left: 20px; font-size:` + strconv.Itoa(fontSize) + `px">
+      ` + EscapeHtml(label) + `
+    </button>
+  </body>
+</foreignObject>
+</svg>`
+
+	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(svgButton)
+	return "[![" + label + "](" + dataUrl + ")](" + path + ")"
 }

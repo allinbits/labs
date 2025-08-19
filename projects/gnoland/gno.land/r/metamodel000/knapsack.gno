@@ -30,7 +30,7 @@ func init() {
 		return knapsackDescription + ksModel.ToMarkdown()
 	}
 	keywords := []string{
-		"knapsack", "petri-net", "optimization", "combinatorial", "capacity", "value", "weight",
+		"optimization", "combinatorial", "constraints", "selection",
 	}
 	register("Knapsack", ksModel, keywords...)
 }
@@ -79,9 +79,5 @@ func knapsack() *mm.Model {
 		{Source: "txn3", Target: "value", Weight: mm.T(18)},
 	}
 
-	return &mm.Model{
-		Places:      places,
-		Transitions: transitions,
-		Arrows:      arrows,
-	}
+	return mm.New(places, transitions, arrows)
 }

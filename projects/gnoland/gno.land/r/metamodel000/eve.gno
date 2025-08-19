@@ -95,16 +95,16 @@ func init() {
 
 func eventComposition() *mm.Model {
 	places := map[string]mm.Place{
-		"EventStatus":         {Offset: 0, Initial: mm.T(1), X: 435, Y: 147},
-		"EventAttendanceMode": {Offset: 1, Initial: mm.T(1), X: 432, Y: 200},
-		"Speakers":            {Offset: 2, X: 200, Y: 320},
-		"Locations":           {Offset: 3, X: 200, Y: 440},
-		"RenderOpts":          {Offset: 4, Initial: mm.T(1), X: 782, Y: 216},
-		"Event":               {Offset: 5, X: 788, Y: 137},
-		"Sessions":            {Offset: 6, X: 440, Y: 320},
-		"Flyer":               {Offset: 7, X: 972, Y: 178},
-		"EventDetails":        {Offset: 8, Initial: mm.T(1), X: 436, Y: 93},
-		"ContentBlock":        {Offset: 9, Initial: mm.T(1), X: 974, Y: 260},
+		"EventStatus":         {Initial: mm.T(1), X: 435, Y: 147},
+		"EventAttendanceMode": {Initial: mm.T(1), X: 432, Y: 200},
+		"Speakers":            {X: 200, Y: 320},
+		"Locations":           {X: 200, Y: 440},
+		"RenderOpts":          {Initial: mm.T(1), X: 782, Y: 216},
+		"Event":               {X: 788, Y: 137},
+		"Sessions":            {X: 440, Y: 320},
+		"Flyer":               {X: 972, Y: 178},
+		"EventDetails":        {Initial: mm.T(1), X: 436, Y: 93},
+		"ContentBlock":        {Initial: mm.T(1), X: 974, Y: 260},
 	}
 
 	transitions := map[string]mm.Transition{
@@ -142,9 +142,49 @@ func eventComposition() *mm.Model {
 		{Source: "ContentBlock", Target: "Render()"},
 	}
 
-	return &mm.Model{
-		Places:      places,
-		Transitions: transitions,
-		Arrows:      arrows,
+	return mm.New(places, transitions, arrows)
+}
+
+func init() {
+    eventComponentsModel := eventComponents()
+    eventComponentsModel.Binding = func(_ string) string {
+        return " This s a model showing how components are exposed as data feeds and svg visualizations.\n\n" +
+        "Arrows indicate the direction of data flow and relationships between components.\n\n" +
+        "Notice that components are composable and exportable as different data types: ical, svg, xml/rss\n\n" +
+        eventComponentsModel.ToMarkdown()
+    }
+    register("Component Data", eventComponentsModel, "event")
+}
+
+func eventComponents() *mm.Model {
+	places := map[string]mm.Place{
+		"$components": {Offset: 0, Initial: mm.T(1), X: 52, Y: 164},
+		"$svg":        {Offset: 1, X: 552, Y: 249},
+		"$realms":     {Offset: 2, X: 297, Y: 172},
+		"$rss":        {Offset: 3, X: 545, Y: 104},
+		"$ical":       {Offset: 4, X: 549, Y: 171},
 	}
+
+	transitions := map[string]mm.Transition{
+		"Calendar":   {X: 448, Y: 171},
+		"Compose":    {X: 182, Y: 234},
+		"Feed":       {X: 445, Y: 102},
+		"Recompose":  {X: 180, Y: 103},
+		"Render":  {X: 449, Y: 249},
+	}
+
+	arrows := []mm.Arrow{
+		{Source: "Render", Target: "$svg"},
+		{Source: "$components", Target: "Compose"},
+		{Source: "Compose", Target: "$realms"},
+		{Source: "$realms", Target: "Recompose"},
+		{Source: "Recompose", Target: "$components"},
+		{Source: "$realms", Target: "Feed"},
+		{Source: "Feed", Target: "$rss"},
+		{Source: "$realms", Target: "Calendar"},
+		{Source: "Calendar", Target: "$ical"},
+		{Source: "$realms", Target: "Render"},
+	}
+
+	return mm.New(places, transitions, arrows)
 }

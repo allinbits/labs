@@ -21,12 +21,12 @@ func init() {
 	model.Binding = func(_ string) string {
 		return inhibitorArcDescription + model.ToMarkdown()
 	}
-	keywords := []string{"place", "transition", "fundamental", "arc", "inhibitor", "read-arc"}
+	keywords := []string{"place", "transition", "arc", "inhibitor", "read-arc"}
 	register("Inhibitor Arc Definition", model, keywords...)
 }
 
 func inhibitorArc() *mm.Model {
-    return mm.New(singlePlace(), singleTransition(), []mm.Arrow{
-        {Source: "Element", Target: "Change", Inhibit: true},
-    })
+	return mm.New(singlePlace(), singleTransition(), []mm.Arrow{
+		{Source: "Element", Target: "Change", Inhibit: true},
+	})
 }

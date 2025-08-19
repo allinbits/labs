@@ -30,6 +30,12 @@ func HasModelApi(input any) bool {
 	return false // No Model API found
 }
 
+func AssertValidObjectName(name string) {
+    if !strings.HasPrefix(name, "$") {
+        panic("Invalid object name: " + name + ". Object names must start with '$'.")
+    }
+}
+
 func New(inputs ...any) *Model {
 	m := &Model{
 		Places:      map[string]Place{},
@@ -39,7 +45,20 @@ func New(inputs ...any) *Model {
 
 	for _, input := range inputs {
 		switch v := input.(type) {
+		case []string:
+            for _, obj := range v {
+                AssertValidObjectName(obj)
+                m.Objects = append(m.Objects, obj)
+            }
+        default:
+            continue
+        }
+    }
+
+	for _, input := range inputs {
+		switch v := input.(type) {
 		case *Model:
+		    // m.Objects = append(m.Objects, v.Objects...) // REVIEW: should we merge objects?
 			for label, place := range v.Places {
 				m.Places[label] = place
 			}
@@ -57,7 +76,7 @@ func New(inputs ...any) *Model {
 			}
 		case []Arrow:
 			m.Arrows = append(m.Arrows, v...)
-		case map[string]any:
+		case map[string]any: // REVIEW: we currently assume a finalized set of objects is passe (i.e. a superset of all objects)
 			m.RenderOpts = v
 		default:
 			continue
@@ -130,42 +149,43 @@ func S(ts ...any) []TokenType {
 
 // Place represents a place in the Petri net.
 type Place struct {
-	Label    string      // Label of the place.
-	Offset   int         // Offset of the place in the Petri net.
-	Tokens   TokenType   // Current number of tokens for each type.
-	Initial  TokenType   // Initial number of tokens for each type.
-	Capacity TokenType   // Maximum capacity for each token type (0 = unlimited).
-	X        int         // X coordinate of the place.
-	Y        int         // Y coordinate of the place.
-	Binding  any // Optional binding for the place.
+	Label    string    // Label of the place.
+	Offset   int       // Offset of the place in the Petri net.
+	Tokens   TokenType // Current number of tokens for each type.
+	Initial  TokenType // Initial number of tokens for each type.
+	Capacity TokenType // Maximum capacity for each token type (0 = unlimited).
+	X        int       // X coordinate of the place.
+	Y        int       // Y coordinate of the place.
+	Binding  any       // Optional binding for the place.
 }
 
 // Arrow represents an arc in the Petri net.
 type Arrow struct {
-	Source  string      // Source place or transition.
-	Target  string      // Target place or transition.
-	Weight  TokenType   // Weight for each token type.
-	Inhibit bool        // Indicates if the arc inhibits the transition.
-	Binding any // Optional binding for the arc.
+	Source  string    // Source place or transition.
+	Target  string    // Target place or transition.
+	Weight  TokenType // Weight for each token type.
+	Inhibit bool      // Indicates if the arc inhibits the transition.
+	Binding any       // Optional binding for the arc.
 }
 
 // Transition represents a transition in the Petri net.
 type Transition struct {
-	Label   string      // Label of the transition.
-	Offset  int         // Offset of the transition in the Petri net.
-	X       int         // X coordinate of the transition.
-	Y       int         // Y coordinate of the transition.
-	Rate    float64     // Rate of the transition (for continuous models).
-	Binding any // Optional binding for the transition.
+	Label   string  // Label of the transition.
+	Offset  int     // Offset of the transition in the Petri net.
+	X       int     // X coordinate of the transition.
+	Y       int     // Y coordinate of the transition.
+	Rate    float64 // Rate of the transition (for continuous models).
+	Binding any     // Optional binding for the transition.
 }
 
 // Model represents a Petri-Net.
 type Model struct {
-	RenderOpts  map[string]any // Rendering options for the model.
-	Places      map[string]Place       // Map of places.
-	Transitions map[string]Transition  // Map of transitions.
-	Arrows      []Arrow                // List of arcs.
-	Binding     any            // Optional binding for the model.
+	Objects     []string              // Additional $objects associated with the model.
+	Places      map[string]Place      // Map of places.
+	Transitions map[string]Transition // Map of transitions.
+	Arrows      []Arrow               // List of arcs.
+	Binding     any                   // Optional binding for the model.
+	RenderOpts  map[string]any        // Rendering options for the model.
 }
 
 func (model *Model) State() []TokenType {
@@ -194,7 +214,51 @@ func (model *Model) Execute(action string, onCommit func(newState []TokenType)) 
 	return newState, true
 }
 
-// TODO: try this out w/ testing
+type Arc struct {
+    Source  string // Source place or transition.
+    Target  string // Target place or transition.
+    Weight  int64  // Weight for the token type.
+    Inhibit bool   // Indicates if the arc inhibits the transition.
+    Object  string // Optional object name for the arrow.
+}
+
+func (model *Model) Arrow(opts Arc) Arrow {
+    if opts.Source == "" {
+        panic("Source must be a non-empty string")
+    }
+    if opts.Target == "" {
+        panic("Target must be a non-empty string")
+    }
+    if opts.Weight < 0 {
+        panic("Weight must be a non-negative int64")
+    }
+
+    size := 1
+    if len(model.Objects) > 0 {
+        size = len(model.Objects)
+    }
+
+    wt := make(TokenType, size)
+    if opts.Object != "" && len(model.Objects) > 0 {
+        for i, obj := range model.Objects {
+            if obj == opts.Object {
+                wt[i] = opts.Weight
+                break
+            }
+        }
+    } else {
+        wt[0] = opts.Weight
+    }
+
+    return Arrow{
+        Source:  opts.Source,
+        Target:  opts.Target,
+        Weight:  wt,
+        Inhibit: opts.Inhibit,
+    }
+}
+// REVIEW: consider providing multiple algorithms for execution, e.g.:
+// wfnets, elementary, etc...
 func Execute(state []TokenType, model *Model, action string) ([]TokenType, bool) {
 	newState := make([]TokenType, len(state))
 	copy(newState, state)
@@ -511,7 +575,7 @@ func (model *Model) ToJson() string {
 	sb.WriteString("{\n")
 	sb.WriteString(`  "modelType": "PetriNet",` + "\n")
 	sb.WriteString(`  "version": "v1",` + "\n")
-	sb.WriteString(`  "tokens": ["black"],` + "\n")
+	sb.WriteString(`  "tokens": ["black"],` + "\n") // TODO: support multiple token types
 	sb.WriteString(`  "places": {` + "\n")
 	placeCount := len(model.Places)
 	i := 0

@@ -3,11 +3,11 @@ package metamodel
 var model101Intro = `
 The **metamodel** library provides a foundation for modeling dynamic systems using **places**, **transitions**, and **arrows**, grounded in the theory of **Petri nets**. It powers tools like [pflow.xyz](https://pflow.xyz), which lets users visually design, simulate, and export executable models.
 
+### What is a Metamodel?
+
 `
 
 var model101Description = `
-
-### Try the interactive demo at pflow.xyz
 [![pflow](https://pflow.dev/img/zb2rhgiVZBVmUHsTUyr63mjFMuVksT3zqFMBGtoxzJyYkJUNv.svg)](https://pflow.dev/p/zb2rhgiVZBVmUHsTUyr63mjFMuVksT3zqFMBGtoxzJyYkJUNv/)
 
 #### Core Concepts
@@ -62,37 +62,74 @@ The table below compares discrete and continuous Petri nets with blockchain conc
 | Model Use       | Suited for modeling smart contract logic, protocol steps, message passing.         | Suited for modeling macroeconomic parameters, inflation curves, and staking dynamics. | Discrete: app layer, Continuous: tokenomics, liquidity models, staking behavior.                                           |
 | Tooling         | Used in pflow.xyz (discrete simulation, structural validation).                    | Used in Petri.jl (ODE simulation, continuous analysis).                    | Blockchains use discrete VM execution, but models of long-term behavior require continuous approximations.                 |
 
-### Become A Model Citizen
-
-Models can represent anything, from simple workflows to complex systems like economic models, supply chains, or even entire blockchain protocols.
-The library is designed to be extensible, allowing users to bind model objects to other gno objects, enabling rich interactions and dynamic behaviors.
-
-The goal is to provide a powerful yet intuitive framework for modeling dynamic systems, enabling users to explore
-the behavior of their models, validate logic, and export them for execution or further analysis.
-
-Submit your models to a public index to become a model citizen and share your work with the community!
-
 `
+// REVIEW: include information about colored nets
+var model101Axioms = `
+## Fungible Object Axioms
 
+In the Logoverse, objects are the atomic units of a model.
+They act as boundary places (ports) and preserve token identity across the system.
+
+* As ports: objects label places in a model. Arrows then describe how an object transforms into another, or how tokens are created or destroyed.
+
+* As arrows: objects determine the type of tokens that flow through them.
+
+These axioms define the fundamental properties of "$objects" in the Logoverse:
+
+### Axiom 1 — Uniqueness
+Each "$object" has a unique identity in the model's set of objects.
+Two objects are equal if and only if all of their behaviors coincide.
+
+A given "$object" can be used in multiple places and transitions, but it must always refer to the same unique identity.
+
+### Axiom 2 — Behavioral Identity
+An "$object" is defined entirely by the set of transitions it participates in, both inbound and outbound.
+This reflects the Yoneda principle: an object is its observable behavior in all contexts.
+
+Places using a non-"$object" labels are interstitial, meaning they do not define an object identity,
+but are used to hold tokens when in transit between "$objects".
+
+### Axiom 3 — Openness
+A leading "$" marks a port, which is an open boundary place.
+Ports enable gluing models along shared "$objects".
+
+### Axiom 4 — Extensibility
+The set of objects is open under union.
+This enables modular composition without redefining existing objects.
+
+### Axiom 5 — Token Semantics
+An "$object" when used as a port is not the token itself but the place that can hold tokens of some type.
+Example: "$eth" is the object; ETH tokens flow through it.
+
+When used as a transition, an "$object" defines how tokens of that type are transferred between places.
+
+### Axiom 6 — Contextual Meaning
+The meaning of an "$object" emerges from its participation in a model.
+For example, "$coffee_beans" in a supply-chain net is not the same as "$coffee_beans" in a DAO-voting net, unless their transitions align.
+
+Together, these axioms ground the Logoverse: objects are nodes of identity, defined by arrows, composable via ports, extensible by union, and can be used to label places or populate places as tokens.
+`
 func Tutorial101() *Model {
-    m := model101()
-    m.Binding = func(path string) string {
-        switch path {
-        case "intro":
-            return model101Intro
-        case "description":
-            return model101Description
-        case "markdown":
-            return m.ToMarkdown()
-        case "svg":
-            return m.ToSvg()
-        case "json":
-            return m.ToJson()
-        default:
-        }
-        return model101Intro + m.ToMarkdown() + model101Description
-    }
-    return m
+	m := model101()
+	m.Binding = func(path string) string {
+		switch path {
+		case "intro":
+			return model101Intro
+		case "description":
+			return model101Description
+		case "markdown":
+			return m.ToMarkdown()
+		case "svg":
+			return m.ToSvg()
+		case "json":
+			return m.ToJson()
+		default:
+		}
+		return model101Intro +
+			model101Description +
+			model101Axioms
+	}
+	return m
 }
 
 func model101() *Model {

@@ -31,9 +31,9 @@ func HasModelApi(input any) bool {
 }
 
 func AssertValidObjectName(name string) {
-    if !strings.HasPrefix(name, "$") {
-        panic("Invalid object name: " + name + ". Object names must start with '$'.")
-    }
+	if !strings.HasPrefix(name, "$") {
+		panic("Invalid object name: " + name + ". Object names must start with '$'.")
+	}
 }
 
 func New(inputs ...any) *Model {
@@ -46,19 +46,19 @@ func New(inputs ...any) *Model {
 	for _, input := range inputs {
 		switch v := input.(type) {
 		case []string:
-            for _, obj := range v {
-                AssertValidObjectName(obj)
-                m.Objects = append(m.Objects, obj)
-            }
-        default:
-            continue
-        }
-    }
+			for _, obj := range v {
+				AssertValidObjectName(obj)
+				m.Objects = append(m.Objects, obj)
+			}
+		default:
+			continue
+		}
+	}
 
 	for _, input := range inputs {
 		switch v := input.(type) {
 		case *Model:
-		    // m.Objects = append(m.Objects, v.Objects...) // REVIEW: should we merge objects?
+			// m.Objects = append(m.Objects, v.Objects...) // REVIEW: should we merge objects?
 			for label, place := range v.Places {
 				m.Places[label] = place
 			}
@@ -215,48 +215,49 @@ func (model *Model) Execute(action string, onCommit func(newState []TokenType)) 
 }
 
 type Arc struct {
-    Source  string // Source place or transition.
-    Target  string // Target place or transition.
-    Weight  int64  // Weight for the token type.
-    Inhibit bool   // Indicates if the arc inhibits the transition.
-    Object  string // Optional object name for the arrow.
+	Source  string // Source place or transition.
+	Target  string // Target place or transition.
+	Weight  int64  // Weight for the token type.
+	Inhibit bool   // Indicates if the arc inhibits the transition.
+	Object  string // Optional object name for the arrow.
 }
 
 func (model *Model) Arrow(opts Arc) Arrow {
-    if opts.Source == "" {
-        panic("Source must be a non-empty string")
-    }
-    if opts.Target == "" {
-        panic("Target must be a non-empty string")
-    }
-    if opts.Weight < 0 {
-        panic("Weight must be a non-negative int64")
-    }
+	if opts.Source == "" {
+		panic("Source must be a non-empty string")
+	}
+	if opts.Target == "" {
+		panic("Target must be a non-empty string")
+	}
+	if opts.Weight < 0 {
+		panic("Weight must be a non-negative int64")
+	}
 
-    size := 1
-    if len(model.Objects) > 0 {
-        size = len(model.Objects)
-    }
+	size := 1
+	if len(model.Objects) > 0 {
+		size = len(model.Objects)
+	}
 
-    wt := make(TokenType, size)
-    if opts.Object != "" && len(model.Objects) > 0 {
-        for i, obj := range model.Objects {
-            if obj == opts.Object {
-                wt[i] = opts.Weight
-                break
-            }
-        }
-    } else {
-        wt[0] = opts.Weight
-    }
+	wt := make(TokenType, size)
+	if opts.Object != "" && len(model.Objects) > 0 {
+		for i, obj := range model.Objects {
+			if obj == opts.Object {
+				wt[i] = opts.Weight
+				break
+			}
+		}
+	} else {
+		wt[0] = opts.Weight
+	}
 
-    return Arrow{
-        Source:  opts.Source,
-        Target:  opts.Target,
-        Weight:  wt,
-        Inhibit: opts.Inhibit,
-    }
+	return Arrow{
+		Source:  opts.Source,
+		Target:  opts.Target,
+		Weight:  wt,
+		Inhibit: opts.Inhibit,
+	}
 }
+
 // REVIEW: consider providing multiple algorithms for execution, e.g.:
 // wfnets, elementary, etc...
 func Execute(state []TokenType, model *Model, action string) ([]TokenType, bool) {
@@ -621,6 +622,146 @@ func (model *Model) ToJson() string {
 	sb.WriteString("  ]\n")
 	sb.WriteString("}")
 	return sb.String()
+}
+
+func ImportDiagram(diagram string) *Model {
+	lines := strings.Split(diagram, "\n")
+	places := map[string]Place{}
+	transitions := map[string]Transition{}
+	arrows := []Arrow{}
+	inputs := map[string]int{}
+	outputs := map[string]int{}
+	deps := map[string][]string{} // node -> outgoing edges
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var src, tgt string
+		var inhibit bool
+		if strings.Contains(line, "-|>") {
+			parts := strings.Split(line, "-|>")
+			if len(parts) != 2 {
+				continue
+			}
+			src = strings.TrimSpace(parts[0])
+			tgt = strings.TrimSpace(parts[1])
+			inhibit = true
+		} else if strings.Contains(line, "-->") {
+			parts := strings.Split(line, "-->")
+			if len(parts) != 2 {
+				continue
+			}
+			src = strings.TrimSpace(parts[0])
+			tgt = strings.TrimSpace(parts[1])
+			inhibit = false
+		} else {
+			continue
+		}
+
+		if !strings.HasPrefix(src, "$") {
+			transitions[src] = Transition{Label: src}
+		} else {
+			places[src] = Place{Label: src, Capacity: T(1)}
+		}
+		if !strings.HasPrefix(tgt, "$") {
+			transitions[tgt] = Transition{Label: tgt}
+		} else {
+			places[tgt] = Place{Label: tgt, Capacity: T(1)}
+		}
+
+		arrows = append(arrows, Arrow{Source: src, Target: tgt, Inhibit: inhibit})
+
+		outputs[src]++
+		inputs[tgt]++
+		deps[src] = append(deps[src], tgt)
+	}
+
+	initial := []string{}
+	for label := range places {
+		if inputs[label] == 0 {
+			initial = append(initial, label)
+		}
+	}
+
+	for label, place := range places {
+		if inputs[label] == 0 {
+			place.Initial = T(1)
+		} else {
+			place.Initial = T(0)
+		}
+		places[label] = place
+	}
+
+	layout := map[string][2]int{}
+	visited := map[string]bool{}
+	queue := []struct {
+		node string
+		x    int
+	}{}
+	xStart, yPlace, yTrans, xStep := 60, 100, 180, 120
+
+	for _, label := range initial {
+		queue = append(queue, struct {
+			node string
+			x    int
+		}{label, xStart})
+	}
+
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+		if visited[curr.node] {
+			continue
+		}
+		visited[curr.node] = true
+
+		y := yPlace
+		if !strings.HasPrefix(curr.node, "$") {
+			y = yTrans
+		}
+		layout[curr.node] = [2]int{curr.x, y}
+
+		for _, next := range deps[curr.node] {
+			if !visited[next] {
+				queue = append(queue, struct {
+					node string
+					x    int
+				}{next, curr.x + xStep})
+			}
+		}
+	}
+
+	yStep := 80
+
+	xCountPlaces := map[int]int{}
+	for label, place := range places {
+		if pos, ok := layout[label]; ok {
+			x := pos[0]
+			count := xCountPlaces[x]
+			p := place
+			p.X = x
+			p.Y = pos[1] + count*yStep
+			places[label] = p
+			xCountPlaces[x] = count + 1
+		}
+	}
+
+	xCountTrans := map[int]int{}
+	for label, transition := range transitions {
+		if pos, ok := layout[label]; ok {
+			x := pos[0]
+			count := xCountTrans[x]
+			t := transition
+			t.X = x
+			t.Y = pos[1] + count*yStep
+			transitions[label] = t
+			xCountTrans[x] = count + 1
+		}
+	}
+
+	return New(places, transitions, arrows)
 }
 
 type WebHost struct {

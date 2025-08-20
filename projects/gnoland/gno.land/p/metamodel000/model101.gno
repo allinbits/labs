@@ -63,6 +63,7 @@ The table below compares discrete and continuous Petri nets with blockchain conc
 | Tooling         | Used in pflow.xyz (discrete simulation, structural validation).                    | Used in Petri.jl (ODE simulation, continuous analysis).                    | Blockchains use discrete VM execution, but models of long-term behavior require continuous approximations.                 |
 
 `
+
 // REVIEW: include information about colored nets
 var model101Axioms = `
 ## Fungible Object Axioms
@@ -109,6 +110,7 @@ For example, "$coffee_beans" in a supply-chain net is not the same as "$coffee_b
 
 Together, these axioms ground the Logoverse: objects are nodes of identity, defined by arrows, composable via ports, extensible by union, and can be used to label places or populate places as tokens.
 `
+
 func Tutorial101() *Model {
 	m := model101()
 	m.Binding = func(path string) string {

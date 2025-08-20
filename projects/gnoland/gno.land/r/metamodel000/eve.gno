@@ -146,14 +146,14 @@ func eventComposition() *mm.Model {
 }
 
 func init() {
-    eventComponentsModel := eventComponents()
-    eventComponentsModel.Binding = func(_ string) string {
-        return " This s a model showing how components are exposed as data feeds and svg visualizations.\n\n" +
-        "Arrows indicate the direction of data flow and relationships between components.\n\n" +
-        "Notice that components are composable and exportable as different data types: ical, svg, xml/rss\n\n" +
-        eventComponentsModel.ToMarkdown()
-    }
-    register("Component Data", eventComponentsModel, "event")
+	eventComponentsModel := eventComponents()
+	eventComponentsModel.Binding = func(_ string) string {
+		return " This s a model showing how components are exposed as data feeds and svg visualizations.\n\n" +
+			"Arrows indicate the direction of data flow and relationships between components.\n\n" +
+			"Notice that components are composable and exportable as different data types: ical, svg, xml/rss\n\n" +
+			eventComponentsModel.ToMarkdown()
+	}
+	register("Component Data", eventComponentsModel, "event")
 }
 
 func eventComponents() *mm.Model {
@@ -166,11 +166,11 @@ func eventComponents() *mm.Model {
 	}
 
 	transitions := map[string]mm.Transition{
-		"Calendar":   {X: 448, Y: 171},
-		"Compose":    {X: 182, Y: 234},
-		"Feed":       {X: 445, Y: 102},
-		"Recompose":  {X: 180, Y: 103},
-		"Render":  {X: 449, Y: 249},
+		"Calendar":  {X: 448, Y: 171},
+		"Compose":   {X: 182, Y: 234},
+		"Feed":      {X: 445, Y: 102},
+		"Recompose": {X: 180, Y: 103},
+		"Render":    {X: 449, Y: 249},
 	}
 
 	arrows := []mm.Arrow{

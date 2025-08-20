@@ -1,6 +1,7 @@
 package grc000
 
 import (
+	"sort"
 	"strings"
 
 	mm "gno.land/p/metamodel000"
@@ -12,6 +13,10 @@ type Record struct {
 	Model       *mm.Model
 }
 
+const (
+	Token = "$token"
+)
+
 var (
 	basePath = "/r/stackdump000/grc000"
 
@@ -22,18 +27,8 @@ var (
 		"minter_initial":    1,
 		"mint_amount":       5,
 		"burn_amount":       2,
+		"objects":           []string{Token},
 	}
-
-    objectModel = mm.Model{
-        Objects: []string{
-            "$token",
-        },
-        Binding: func(_ string) string {
-            return "This is a model that defines a set of objects with unique identities. " +
-                "Objects can be used in various contexts and are defined by their behavior in all contexts."
-        },
-    }
-
 
 	registry = map[string]Record{
 		"wallet": {
@@ -44,40 +39,22 @@ var (
 		"transfer": {
 			Name:        "GRC000_Transfer",
 			Description: "A model for transferring tokens between wallets.",
-			Model:       mm.New(objectModel.Objects, GRC000_Wallet(modelOpts), GRC000_Transfer(modelOpts)),
+			Model:       mm.New(GRC000_Wallet(modelOpts), GRC000_Transfer(modelOpts), map[string]any{"version": "v0"}),
 		},
 		"mintburn": {
 			Name:        "GRC000_MintBurn",
-			Description: "A model for minting and burning tokens in a wallet.",
-			Model:       mm.New(objectModel.Objects, GRC000_Wallet(modelOpts), GRC000_MintBurn(modelOpts)),
+			Description: "A model for minting into and burning from a wallet (with burned-accounting sink).",
+			Model:       mm.New(GRC000_Wallet(modelOpts), GRC000_MintBurn(modelOpts), map[string]any{"version": "v0"}),
 		},
 		"token": {
 			Name:        "GRC000_Token",
-			Description: "A comprehensive model that combines wallet, transfer, and mint/burn functionalities.",
+			Description: "A comprehensive model that composes wallet, transfer, and mint/burn.",
 			Model:       GRC000_Token(modelOpts),
 		},
 	}
-
-	description = map[string]string{
-		"wallet":   "A simple wallet model that holds tokens.",
-		"transfer": "A model for transferring tokens between wallets.",
-		"mintburn": "A model for minting and burning tokens in a wallet.",
-		"token":    "A comprehensive model that combines wallet, transfer, and mint/burn functionalities.",
-	}
 )
 
-func init() {
-	for _, record := range registry {
-		record.Model.Binding = func(path string) string {
-			var sb strings.Builder
-			sb.WriteString("# " + record.Name + "\n")
-			sb.WriteString(record.Description + "\n\n")
-			sb.WriteString("## Model\n")
-			sb.WriteString(record.Model.ToMarkdown() + "\n")
-			return sb.String()
-		}
-	}
-}
+// ------- utils -------
 
 func getIntOpt(opts map[string]any, key string, def int) int {
 	if v, ok := opts[key]; ok {
@@ -88,20 +65,40 @@ func getIntOpt(opts map[string]any, key string, def int) int {
 	return def
 }
 
+func getStringSliceOpt(opts map[string]any, key string, def []string) []string {
+	if v, ok := opts[key]; ok {
+		if sl, ok := v.([]string); ok && len(sl) > 0 {
+			return sl
+		}
+	}
+	return def
+}
+
+func objectsFrom(opts map[string]any) []string {
+	return getStringSliceOpt(opts, "objects", []string{Token})
+}
+
+// ------- models -------
+
 func GRC000_Wallet(opts map[string]any) *mm.Model {
 	initial := mm.T(getIntOpt(opts, "balance", 1))
-	return mm.New(
-	objectModel.Objects,
-	map[string]mm.Place{
-		"$wallet": {Initial: initial, Capacity: mm.T(0), X: 160, Y: 180},
-	})
+	m := mm.New(
+		objectsFrom(opts),
+		map[string]mm.Place{
+			"$wallet": {Initial: initial, Capacity: mm.T(0), X: 160, Y: 180},
+		},
+		map[string]any{"version": "v0"},
+	)
+	return m
 }
 
 func GRC000_Transfer(opts map[string]any) *mm.Model {
 	recipientInitial := mm.T(getIntOpt(opts, "recipient_balance", 0))
 	transferWeight := int64(getIntOpt(opts, "transfer_amount", 1))
-	return mm.New(
-	    objectModel.Objects,
+	objectModel := mm.New(objectsFrom(opts))
+
+	m := mm.New(
+		objectModel.Objects,
 		map[string]mm.Place{
 			"$recipient": {Initial: recipientInitial, X: 360, Y: 180},
 		},
@@ -109,36 +106,47 @@ func GRC000_Transfer(opts map[string]any) *mm.Model {
 			"transfer": {X: 260, Y: 180},
 		},
 		[]mm.Arrow{
-		    objectModel.Arrow(mm.Arc{ Source: "$wallet", Target: "transfer", Weight: transferWeight, Object: "$token" }),
-			objectModel.Arrow(mm.Arc{ Source: "transfer", Target: "$recipient", Weight: transferWeight, Object: "$token"}),
+			objectModel.Arrow(mm.Arc{Source: "$wallet", Target: "transfer", Weight: transferWeight, Object: Token}),
+			objectModel.Arrow(mm.Arc{Source: "transfer", Target: "$recipient", Weight: transferWeight, Object: Token}),
 		},
+		map[string]any{"version": "v0"},
 	)
+	return m
 }
 
 func GRC000_MintBurn(opts map[string]any) *mm.Model {
 	minterInitial := mm.T(getIntOpt(opts, "minter_initial", 1))
 	mintWeight := int64(getIntOpt(opts, "mint_amount", 1))
 	burnWeight := int64(getIntOpt(opts, "burn_amount", 1))
-	return mm.New(
-        objectModel.Objects,
+	objectModel := mm.New(objectsFrom(opts))
+
+	m := mm.New(
+		objectModel.Objects,
 		map[string]mm.Place{
 			"$minter": {Initial: minterInitial, X: 40, Y: 80},
+			"$burned": {Initial: mm.T(0), X: 280, Y: 280}, // accounting sink
 		},
 		map[string]mm.Transition{
 			"mint": {X: 160, Y: 80},
 			"burn": {X: 160, Y: 280},
 		},
 		[]mm.Arrow{
-		    objectModel.Arrow(mm.Arc{ Source: "$minter", Target: "mint", Weight: mintWeight, Object: "$token" }),
-            objectModel.Arrow(mm.Arc{ Source: "mint", Target: "$wallet", Weight: mintWeight, Object: "$token" }),
-            objectModel.Arrow(mm.Arc{ Source: "$wallet", Target: "burn", Weight: burnWeight, Object: "$token" }),
+			// mint: $minter -> mint -> $wallet
+			objectModel.Arrow(mm.Arc{Source: "$minter", Target: "mint", Weight: mintWeight, Object: Token}),
+			objectModel.Arrow(mm.Arc{Source: "mint", Target: "$wallet", Weight: mintWeight, Object: Token}),
+
+			// burn: $wallet -> burn -> $burned (accounting)
+			objectModel.Arrow(mm.Arc{Source: "$wallet", Target: "burn", Weight: burnWeight, Object: Token}),
+			objectModel.Arrow(mm.Arc{Source: "burn", Target: "$burned", Weight: burnWeight, Object: Token}),
 		},
+		map[string]any{"version": "v0"},
 	)
+	return m
 }
 
 func GRC000_Token(opts map[string]any) *mm.Model {
 	return mm.New(
-	    objectModel.Objects,
+		objectsFrom(opts),
 		GRC000_Wallet(opts),
 		GRC000_Transfer(opts),
 		GRC000_MintBurn(opts),
@@ -146,10 +154,27 @@ func GRC000_Token(opts map[string]any) *mm.Model {
 	)
 }
 
+// ------- rendering -------
+
+func init() {
+	for k, r := range registry {
+		rec := r
+		rec.Model.Binding = func(_ string) string {
+			var sb strings.Builder
+			sb.WriteString("# " + rec.Name + "\n")
+			sb.WriteString(rec.Description + "\n\n")
+			sb.WriteString("## Model\n")
+			sb.WriteString(rec.Model.ToMarkdown() + "\n")
+			return sb.String()
+		}
+		registry[k] = rec
+	}
+}
+
 func indexPage(_ string) string {
 	content := `# GRC000 Metamodel
 ![grc000_Token combines all models](` + GRC000_Token(modelOpts).ThumbnailDataUrl() + `)
-This is a collection of GRC000 metamodels that demonstrate various token-related functionalities such as wallets, transfers, and minting/burning tokens.
+This is a collection of GRC000 metamodels that demonstrate token-related functionalities such as wallets, transfers, and minting/burning tokens.
 
 Each model is designed to illustrate specific aspects of token management and can be used as a foundation for building more complex token systems.
 
@@ -159,7 +184,7 @@ All of these models compose to form a comprehensive token model called **GRC000_
 
 A _metamodel_ is a framework for modeling dynamic systems using places, transitions, and arrows, inspired by Petri nets.
 
-Models are defined by a set of _$objects_, each with a **unique identity** (e.g. $eth, $btc, $coffee_beans )
+Models are defined by a set of _$objects_, each with a **unique identity** (e.g. $eth, $btc, $coffee_beans)
 
 Each _$object_ is defined by its behavior **in all contexts**.
 
@@ -170,23 +195,29 @@ Each _$object_ is defined by its behavior **in all contexts**.
 
 ## Models
 `
-	for name, record := range registry {
-		content += "- [" + record.Name + "](" + basePath + ":" + name + "): " + record.Description + "\n"
+	keys := make([]string, 0, len(registry))
+	for k := range registry {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		rec := registry[k]
+		content += "- [" + rec.Name + "](" + basePath + ":" + k + "): " + rec.Description + "\n"
 	}
 	content += `## How can this be used?
-- This metamodel can be extended to include more complex token behaviors, such as staking, governance, and multi-token systems.
-- It can serve as a foundation for building decentralized applications (dApps) that require token management functionalities.
-- The models can be used to simulate and analyze token flows off-chain, providing insights into the behavior of token economies.
+- Extend with staking, governance, multi-token systems.
+- Use as a foundation for dApps that need token management.
+- Simulate and analyze token flows off-chain for insight.
 `
 	return content
 }
 
 func Render(path string) string {
-	if record, ok := registry[path]; ok {
-		if content, ok := record.Model.Binding.(func(string) string); ok {
+	if rec, ok := registry[path]; ok {
+		if content, ok := rec.Model.Binding.(func(string) string); ok {
 			return content(path)
 		}
-		return record.Model.ToMarkdown()
+		return rec.Model.ToMarkdown()
 	}
 	return indexPage(path)
 }

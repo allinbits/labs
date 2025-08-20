@@ -702,11 +702,23 @@ func ImportDiagram(diagram string) *Model {
 	}{}
 	xStart, yPlace, yTrans, xStep := 60, 100, 180, 120
 
-	for _, label := range initial {
-		queue = append(queue, struct {
-			node string
-			x    int
-		}{label, xStart})
+	if len(initial) == 0 {
+		// No places, so distribute transitions horizontally
+		x := xStart
+		for label := range transitions {
+			queue = append(queue, struct {
+				node string
+				x    int
+			}{label, x})
+			x += xStep
+		}
+	} else {
+		for _, label := range initial {
+			queue = append(queue, struct {
+				node string
+				x    int
+			}{label, xStart})
+		}
 	}
 
 	for len(queue) > 0 {

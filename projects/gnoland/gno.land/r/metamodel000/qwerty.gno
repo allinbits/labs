@@ -61,3 +61,41 @@ func qwertyModel() *mm.Model {
 		Arrows:      []mm.Arrow{}, // No arcs defined in the model
 	}
 }
+
+func catPetriNetModel() *mm.Model {
+	places := map[string]mm.Place{
+		"C__": {Offset: 0, Capacity: mm.T(1), X: 201, Y: 391},
+		"CA_": {Offset: 1, Capacity: mm.T(1), X: 280, Y: 392},
+		"CAT": {Offset: 2, Capacity: mm.T(1), X: 356, Y: 391},
+	}
+	transitions := map[string]mm.Transition{
+		"A": {X: 125, Y: 160},
+		"C": {X: 250, Y: 220},
+		"T": {X: 300, Y: 100},
+	}
+	arrows := []mm.Arrow{
+		{Source: "C", Target: "C__"},
+		{Source: "A", Target: "CA_"},
+		{Source: "A", Target: "C__", Inhibit: true},
+		{Source: "T", Target: "CA_", Inhibit: true},
+		{Source: "T", Target: "CAT"},
+	}
+	return &mm.Model{
+		Places:      places,
+		Transitions: transitions,
+		Arrows:      arrows,
+	}
+}
+
+func init() {
+	cat := catPetriNetModel()
+	catNotes := `
+This is a Petri net model for the word "CAT".
+It demonstrates places, transitions, and inhibitory arcs.
+`
+	catExternalLink := `[![pflow](https://pflow.dev/img/zb2rhm9D2mBBrciPY1UUgZYt4V8pmRy2vHAjwAQraUk52Smrt.svg)](https://pflow.dev/p/zb2rhm9D2mBBrciPY1UUgZYt4V8pmRy2vHAjwAQraUk52Smrt/)`
+	cat.Binding = func(_ string) string {
+		return catNotes + catExternalLink + cat.ToMarkdown()
+	}
+	register("Spelling Cat", cat, "spelling-cat")
+}

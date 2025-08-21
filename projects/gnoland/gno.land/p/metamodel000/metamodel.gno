@@ -440,90 +440,42 @@ func (model *Model) LegendDataUrl() string {
 }
 
 func (model *Model) LegendSvg(scale ...float64) string {
-	scaleFactor := 1.0
-	if len(scale) > 0 && scale[0] > 0 {
-		scaleFactor = scale[0]
-	}
 	var sb strings.Builder
-	width, height := 700, 400 // FIXME: calculate based on content size
-	sb.WriteString(ufmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%v" height="%v" >\n`, width, height))
+	rowHeight := 37 // REVIEW: can we calculate this dynamically based on content?
+	numRows := len(model.Places) + len(model.Transitions) + len(model.Arrows)
+	height := numRows * rowHeight // 60px for header and padding
+	if numRows < 10 {             // add space for low row count
+		height = 2*rowHeight + height
+	}
+	width := 700
 
-	sb.WriteString(`<style>
-        .legend { font-family: Arial, sans-serif; font-size: 14px; fill: #000000; }
-        .token { width: 20px; height: 20px; }
-        .place-label { font-size: 12px; font-weight: bold; fill: #333333; }
-        .transition-label { font-size: 12px; font-style: italic; fill: #666666; }
-        .arrow-label { font-size: 12px; fill: #444444; }
-        .line-odd { fill: #f9f9f9; }
-        .line-even { fill: #e9e9e9; }
-    </style>`)
-
-	sb.WriteString(`<g class="legend" transform="scale(` + ufmt.Sprintf("%f", scaleFactor) + `)">`)
-	y := 40
-	lineIndex := 0
+	sb.WriteString(ufmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%v" height="%v">`, width, height))
+	sb.WriteString(`
+    <style>
+        table { font-family: Arial, sans-serif; font-size: 16px; border-collapse: collapse; width: 100%;}
+        th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
+        th { background: #f0f0f0; }
+        tr:nth-child(even) { background: #fafafa; }
+        td:nth-child(2) { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    </style>
+	`)
+	sb.WriteString(`<foreignObject x="10" y="10" width="680" height="` + ufmt.Sprintf("%d", height-20) + `">`)
+	sb.WriteString(`<div xmlns="http://www.w3.org/1999/xhtml">`)
+	sb.WriteString(`<table><thead><tr><th>Type</th><th>Label</th><th>Initial</th><th>Capacity</th><th>Weight</th></tr></thead><tbody>`)
 	for label, place := range model.Places {
-		lineClass := "line-odd"
-		sb.WriteString(ufmt.Sprintf(`<rect x="0" y="%d" width="900" height="30" class="%s" />`, y-15, lineClass))
-		color := "#f0f0f0" // Default color for places
-		sb.WriteString(ufmt.Sprintf(`<circle cx="20" cy="%d" r="10" class="token" fill="%s" />`, y, color))
-		sb.WriteString(ufmt.Sprintf(`<text x="40" y="%d" class="place-label">%s</text>`, y+5, label))
-		if len(place.Initial) > 0 && place.Initial[0] > 0 {
-			sb.WriteString(ufmt.Sprintf(`<text x="120" y="%d" class="place-label">%s</text>`, y+5, place.Initial.String()))
-		} else {
-			sb.WriteString(ufmt.Sprintf(`<text x="120" y="%d" class="place-label">-</text>`, y+5))
-		}
-		y += 30
-		lineIndex++
+		sb.WriteString(`<tr><td>Place</td><td>` + label + `</td><td>` + place.Initial.String() + `</td><td>` + place.Capacity.String() + `</td><td>-</td></tr>`)
 	}
-
-	txShortLabels := make(map[string]string)
-
-	for label, transition := range model.Transitions {
-		lineClass := "line-even"
-		sb.WriteString(ufmt.Sprintf(`<rect x="0" y="%d" width="900" height="30" class="%s" />`, y-5, lineClass))
-		color := "#999999" // Default color for transitions
-		sb.WriteString(ufmt.Sprintf(`<rect x="13" y="%d" width="20" height="20" class="token" fill="%s" />`, y, color))
-		sb.WriteString(ufmt.Sprintf(`<text x="42" y="%d" class="transition-label">%s</text>`, y+15, label+": "+transition.Label))
-		y += 30
-		lineIndex++
-		txShortLabels[transition.Label] = label
+	for label := range model.Transitions {
+		sb.WriteString(`<tr><td>Transition</td><td>` + label + `</td><td>-</td><td>-</td><td>-</td></tr>`)
 	}
-
-	y += 20
-
 	for _, arrow := range model.Arrows {
-		lineClass := "line-odd"
-		if lineIndex%2 == 0 {
-			lineClass = "line-even"
-		}
-		sb.WriteString(ufmt.Sprintf(`<rect x="0" y="%d" width="900" height="20" class="%s" />`, y-10, lineClass))
-		sourceLabel := arrow.Source
-		targetLabel := arrow.Target
-		if place, ok := model.Places[arrow.Source]; ok && place.Label != "" {
-			sourceLabel = place.Label
-		} else if transition, ok := model.Transitions[arrow.Source]; ok && transition.Label != "" {
-			sourceLabel = arrow.Source
-		}
-		if place, ok := model.Places[arrow.Target]; ok && place.Label != "" {
-			targetLabel = place.Label
-		} else if transition, ok := model.Transitions[arrow.Target]; ok && transition.Label != "" {
-			targetLabel = arrow.Target
-		}
-		arrowType := "→"
+		arrowType := "Arc"
 		if arrow.Inhibit {
-			arrowType = "⦸"
+			arrowType = "Inhibit"
 		}
-		sb.WriteString(ufmt.Sprintf(`<text x="10" y="%d" class="arrow-label">%s %s %s</text>`, y+3, sourceLabel, arrowType, targetLabel))
-		weightStr := fmtWeight(arrow.Weight)
-		if weightStr != "" {
-			sb.WriteString(ufmt.Sprintf(`<text x="200" y="%d" class="arrow-label">%s</text>`, y+3, weightStr))
-		} else {
-			sb.WriteString(ufmt.Sprintf(`<text x="200" y="%d" class="arrow-label">-</text>`, y+3))
-		}
-		y += 20
-		lineIndex++
+		sb.WriteString(`<tr><td>` + arrowType + `</td><td>` + arrow.Source + ` → ` + arrow.Target + `</td><td>-</td><td>-</td><td>` + fmtWeight(arrow.Weight) + `</td></tr>`)
 	}
-	sb.WriteString(`</g>`)
+	sb.WriteString(`</tbody></table></div></foreignObject>`)
 	sb.WriteString("</svg>")
 	return sb.String()
 }

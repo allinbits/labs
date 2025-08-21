@@ -32,7 +32,7 @@ var (
 
 	registry = []Record{
 		{
-		    Id: "wallet",
+			Id:          "wallet",
 			Name:        "GRC000_Wallet",
 			Description: "A simple wallet model that holds tokens.",
 			Model:       GRC000_Wallet(modelOpts),

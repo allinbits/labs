@@ -6,15 +6,36 @@
 ---
 
 ### Document Navigation
-1. [Overview](#1-overview)
-2. [Primitives](#2-primitives)
-3. [Terms](#3-terms)
-4. [Petri-Net Ports & Composition](#4-petri-net-ports--composition)
-5. [Composition Principles & Append-Only Evolution](#5-composition-principles--append-only-evolution)
-6. [GRC000 as a Little Language](#6-grc000-as-a-little-language)
+
+1. **[Overview](#1-overview)**
+2. **[Primitives](#2-primitives)**
+    1. [Wallet](#21-wallet-account-holds-tokens)
+    2. [Transfer](#22-transfer-tokens-move-between-accounts)
+    3. [Mint/Burn](#23-mintburn-tokens-created-or-destroyed)
+    4. [Token](#24-token-combines-wallet-transfer-mintburn)
+3. **[Terms](#3-terms)**
+4. **[Petri-Net Ports & Composition](#4-petri-net-ports--composition)**
+    1. [Port Definitions](#41-port-definitions)
+    2. [Port Usage](#42-port-usage)
+5. **[Composition Principles & Append-Only Evolution](#5-composition-principles--append-only-evolution)**
+    1. [Principles](#51-principles)
+    2. [Why Append-Only?](#52-why-append-only)
+    3. [Deployment Lifecycle](#53-deployment-lifecycle)
+6. **[GRC000 as a Little Language](#6-grc000-as-a-little-language)**
+    1. [Primitives as Vocabulary](#61-primitives-as-vocabulary)
+    2. [Combinators as Phrases](#62-combinators-as-phrases)
+    3. [Model Composition as Nested Syntax](#63-model-composition-as-nested-syntax)
+    4. [Rendering as Translation](#64-rendering-as-translation)
+7. **[Token Standards: Interface vs. Behavior-First](#7-token-standards-interface-vs-behavior-first)**
+    1. [Two paradigms, side-by-side](#71-two-paradigms-side-by-side)
+    2. [What you gain with behavior-first](#72-what-you-gain-with-behavior-first)
+    3. [What you lose (or must manage)](#73-what-you-lose-or-must-manage)
+    4. [Token standards, concretely](#74-token-standards-concretely)
+    5. [Migration / adoption pattern](#75-migration--adoption-pattern)
+    6. [When to choose which](#76-when-to-choose-which)
+8. **[References](#8-references)**
 
 ---
-
 ## 1. Overview
 
 **GRC-000** specifies a **safe, deterministic, minimal** interface for fungible tokens on `gno.land`, designed for **Petri-net composition**.  
@@ -188,21 +209,16 @@ Because the net is append-only, all renderings are reproducible over time.
 
 ---
 
-### References
+## 7. Token Standards: Interface vs. Behavior-First
 
-- [Open Petri Nets](https://arxiv.org/abs/1808.05415) - a foundational paper on Petri nets.
-- [Petri Nets](https://ncatlab.org/nlab/show/Petri+net) - all-purpose reference.
-- [Yoneda Lemma](https://ncatlab.org/nlab/show/Yoneda+lemma) - foundational concept in category theory, relevant to compositionality.
+> We standardize **behavior, not just function names**. The token’s canonical definition is its **open Petri net**; ERC-20-style functions are **generated views** for legacy tooling.
 
-# Token Standards: Interface vs. Behavior-First
-
-## TL;DR
 - **ERC-20-style** = *nominal interface*: a handful of function names + event shapes. You prove conformance by matching the signature, not the whole behavior.
 - **OPetri / typed-Petri approach** = *behavioral specification*: you spell out **every allowed state transition**, and interfaces are just *views* over that model.
 
 ---
 
-## Two paradigms, side-by-side
+### 7.1 Two paradigms, side-by-side
 
 | Dimension | Interface-first (ERC-20) | Behavior-first (OPetri / typed Petri) |
 |---|---|---|
@@ -219,7 +235,7 @@ Because the net is append-only, all renderings are reproducible over time.
 
 ---
 
-## What you gain with behavior-first
+### 7.2 What you gain with behavior-first
 - **Total semantics**: No “mystery paths.” Every state change is one of your transitions.
 - **Machine-checkable properties**:
    - *Conservation*: token mass is preserved except at mint/burn.
@@ -230,14 +246,14 @@ Because the net is append-only, all renderings are reproducible over time.
 
 ---
 
-## What you lose (or must manage)
+### 7.3 What you lose (or must manage)
 - **Higher upfront modeling cost**: You design a net, not just an ABI.
 - **Learning curve**: Readers must understand places, transitions, guards.
 - **Interop optics**: World “speaks ERC-20.” You’ll expose an ERC-20-compatible view.
 
 ---
 
-## Token standards, concretely
+### 7.4 Token standards, concretely
 
 **Model (canonical):**
 - Places: `$wallet`, `$recipient`, `$supply`, `$allowance[(owner,spend)]`
@@ -255,7 +271,7 @@ Because the net is append-only, all renderings are reproducible over time.
 
 ---
 
-## Migration / adoption pattern
+### 7.5 Migration / adoption pattern
 1. **Author the net** (OPetri/typed Petri).
 2. **Auto-derive ABI** (queries + callable transitions).
 3. **Ship both**: net + thin ABI adapter.
@@ -264,11 +280,14 @@ Because the net is append-only, all renderings are reproducible over time.
 
 ---
 
-## When to choose which
+### 7.6 When to choose which
 - **Interface-first**: fastest baseline compatibility.
 - **Behavior-first**: for nontrivial policy, assurance, composability.
 
----
+## 8. References
 
-## One-liner
-> We standardize **behavior, not just function names**. The token’s canonical definition is its **open Petri net**; ERC-20-style functions are **generated views** for legacy tooling.
+- [Open Petri Nets](https://arxiv.org/abs/1808.05415) - a foundational paper on Petri nets.
+- [Petri Nets](https://ncatlab.org/nlab/show/Petri+net) - all-purpose reference.
+- [Yoneda Lemma](https://ncatlab.org/nlab/show/Yoneda+lemma) - foundational concept in category theory, relevant to compositionality.
+- [ERC-20](https://eips.ethereum.org/EIPS/eip-20) - the classic token standard.
+- [Cross-chain Deals and Adversarial Commerce](https://arxiv.org/abs/1905.09743)

@@ -109,6 +109,7 @@ The meaning of an "$object" emerges from its participation in a model.
 For example, "$coffee_beans" in a supply-chain net is not the same as "$coffee_beans" in a DAO-voting net, unless their transitions align.
 
 Together, these axioms ground the Logoverse: objects are nodes of identity, defined by arrows, composable via ports, extensible by union, and can be used to label places or populate places as tokens.
+
 `
 
 func Tutorial101() *Model {

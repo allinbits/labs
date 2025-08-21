@@ -1,13 +1,13 @@
 package grc000
 
 import (
-	"sort"
 	"strings"
 
 	mm "gno.land/p/metamodel000"
 )
 
 type Record struct {
+	Id          string
 	Name        string
 	Description string
 	Model       *mm.Model
@@ -30,28 +30,33 @@ var (
 		"objects":           []string{Token},
 	}
 
-	registry = map[string]Record{
-		"wallet": {
+	registry = []Record{
+		{Id: "wallet",
 			Name:        "GRC000_Wallet",
 			Description: "A simple wallet model that holds tokens.",
 			Model:       GRC000_Wallet(modelOpts),
 		},
-		"transfer": {
+		{
+			Id:          "transfer",
 			Name:        "GRC000_Transfer",
 			Description: "A model for transferring tokens between wallets.",
 			Model:       mm.New(GRC000_Wallet(modelOpts), GRC000_Transfer(modelOpts), map[string]any{"version": "v0"}),
 		},
-		"mintburn": {
+		{
+			Id:          "mintburn",
 			Name:        "GRC000_MintBurn",
 			Description: "A model for minting into and burning from a wallet (with burned-accounting sink).",
 			Model:       mm.New(GRC000_Wallet(modelOpts), GRC000_MintBurn(modelOpts), map[string]any{"version": "v0"}),
 		},
-		"token": {
+		{
+			Id:          "token",
 			Name:        "GRC000_Token",
 			Description: "A comprehensive model that composes wallet, transfer, and mint/burn.",
 			Model:       GRC000_Token(modelOpts),
 		},
 	}
+
+	registryMap = make(map[string]Record)
 )
 
 // ------- utils -------
@@ -157,6 +162,9 @@ func GRC000_Token(opts map[string]any) *mm.Model {
 // ------- rendering -------
 
 func init() {
+	for _, rec := range registry {
+		registryMap[rec.Id] = rec
+	}
 	for k, r := range registry {
 		rec := r
 		rec.Model.Binding = func(_ string) string {
@@ -195,14 +203,8 @@ Each _$object_ is defined by its behavior **in all contexts**.
 
 ## Models
 `
-	keys := make([]string, 0, len(registry))
-	for k := range registry {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		rec := registry[k]
-		content += "- [" + rec.Name + "](" + basePath + ":" + k + "): " + rec.Description + "\n"
+	for _, rec := range registryMap {
+		content += "- [" + rec.Name + "](" + basePath + ":" + rec.Id + "): " + rec.Description + "\n"
 	}
 	content += `## How can this be used?
 - Extend with staking, governance, multi-token systems.
@@ -213,7 +215,7 @@ Each _$object_ is defined by its behavior **in all contexts**.
 }
 
 func Render(path string) string {
-	if rec, ok := registry[path]; ok {
+	if rec, ok := registryMap[path]; ok {
 		if content, ok := rec.Model.Binding.(func(string) string); ok {
 			return content(path)
 		}

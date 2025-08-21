@@ -12,10 +12,34 @@ and preparation steps as a distributed system.
 Each transition represents a key process — from making dough and filling,
 to baking — offering a structured, composable recipe you can simulate, visualize, and even extend.
 `
+var applePieDiagram = `
+$Flour      --> MakeDough
+$Butter     --> MakeDough
+$Water      --> MakeDough
+MakeDough   --> $Dough
+
+$Apples     --> MakeFilling
+$Sugar      --> MakeFilling
+$Cinnamon   --> MakeFilling
+MakeFilling --> $Filling
+
+$Dough      --> AssemblePie
+$Filling    --> AssemblePie
+AssemblePie --> $UnbakedPie
+
+$UnbakedPie --> BakePie
+$Oven       --> BakePie
+BakePie     --> $BakedPie
+`
 
 func init() {
+	useDiagram := false // use diagram with auto-formatted design
+
 	applePieModel := applePie()
-	applePieModel.Binding = func(_ string) string {
+	applePieModel.Binding = func(path string) string {
+		if useDiagram {
+			return mm.ImportDiagram(applePieDiagram).ToMarkdown()
+		}
 		return applePieDescription + applePieModel.ToMarkdown()
 	}
 	keywords := []string{"recipe", "baking", "cooking", "food"}

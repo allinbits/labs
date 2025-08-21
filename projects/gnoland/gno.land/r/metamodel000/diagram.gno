@@ -74,9 +74,9 @@ var sequenceDiagram = mm.ImportDiagram(actionsOnly)
 var petriNet = mm.ImportDiagram(diagram)
 
 func init() {
-    model := mm.New(petriNet)
-    model.Binding = func(_ string) string {
-        return docReviewDescription + stateMachine.ToMarkdown() + sequenceDiagram.ToMarkdown() + petriNet.ToMarkdown()
-    }
+	model := mm.New(petriNet)
+	model.Binding = func(_ string) string {
+		return docReviewDescription + stateMachine.ToMarkdown() + sequenceDiagram.ToMarkdown() + petriNet.ToMarkdown()
+	}
 	register("ImportDiagram", model, "ascii-diagram", "coffee-shop", "only-places", "only-transitions", "forgetful-functor")
 }

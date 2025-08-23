@@ -10,7 +10,7 @@ import (
 	"path"
 	"sync"
 	"time"
-	
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
@@ -28,11 +28,11 @@ type TrackState struct {
 
 // StateManager handles reading and writing track state to S3
 type StateManager struct {
-	client  S3API
+	client  Client
 	bucket  string
 	prefix  string
 	trackID string
-	
+
 	mu    sync.RWMutex
 	state TrackState
 }
@@ -41,9 +41,9 @@ type StateManager struct {
 func (sm *StateManager) Load(ctx context.Context) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	key := sm.getStateKey()
-	
+
 	// Try to get existing state from S3
 	result, err := sm.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(sm.bucket),
@@ -61,20 +61,20 @@ func (sm *StateManager) Load(ctx context.Context) error {
 		return fmt.Errorf("failed to get state from S3: %w", err)
 	}
 	defer result.Body.Close()
-	
+
 	// Read and unmarshal state
 	data, err := io.ReadAll(result.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read state: %w", err)
 	}
-	
+
 	if err := json.Unmarshal(data, &sm.state); err != nil {
 		return fmt.Errorf("failed to unmarshal state: %w", err)
 	}
-	
+
 	// Ensure trackID matches
 	sm.state.TrackID = sm.trackID
-	
+
 	return nil
 }
 
@@ -82,22 +82,22 @@ func (sm *StateManager) Load(ctx context.Context) error {
 func (sm *StateManager) Save(ctx context.Context) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	return sm.save(ctx)
 }
 
 // save performs the actual save (must be called with lock held)
 func (sm *StateManager) save(ctx context.Context) error {
 	sm.state.LastUpdate = time.Now().Unix()
-	
+
 	// Marshal state
 	data, err := json.MarshalIndent(sm.state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
-	
+
 	key := sm.getStateKey()
-	
+
 	// Write to S3
 	_, err = sm.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(sm.bucket),
@@ -108,7 +108,7 @@ func (sm *StateManager) save(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to write state to S3: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -123,15 +123,15 @@ func (sm *StateManager) GetState() TrackState {
 func (sm *StateManager) UpdatePosition(ctx context.Context, height, txIndex int64) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	sm.state.LastProcessedHeight = height
 	sm.state.LastProcessedTx = txIndex
-	
+
 	// Auto-save periodically (every 100 events)
 	if sm.state.EventsRecorded > 0 && sm.state.EventsRecorded%100 == 0 {
 		return sm.save(ctx)
 	}
-	
+
 	return nil
 }
 
@@ -139,22 +139,22 @@ func (sm *StateManager) UpdatePosition(ctx context.Context, height, txIndex int6
 func (sm *StateManager) SetEpochIfNeeded(ctx context.Context, epoch int64) (bool, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	if sm.state.Epoch == epoch {
 		return false, nil // No change
 	}
-	
+
 	// Epoch changed - reset position
 	sm.state.Epoch = epoch
 	sm.state.LastProcessedHeight = 0
 	sm.state.LastProcessedTx = 0
 	sm.state.EventsRecorded = 0
-	
+
 	// Save immediately on epoch change
 	if err := sm.save(ctx); err != nil {
 		return true, err
 	}
-	
+
 	return true, nil
 }
 
@@ -168,10 +168,10 @@ func (sm *StateManager) IncrementEventsRecorded() {
 // getStateKey returns the S3 key for the state file
 func (sm *StateManager) getStateKey() string {
 	key := fmt.Sprintf("%s/state.json", sm.trackID)
-	
+
 	if sm.prefix != "" {
 		key = path.Join(sm.prefix, key)
 	}
-	
+
 	return key
 }

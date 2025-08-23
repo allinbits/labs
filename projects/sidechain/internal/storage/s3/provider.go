@@ -12,7 +12,7 @@ import (
 
 // Provider implements storage.Provider using S3-compatible object storage
 type Provider struct {
-	client        S3API
+	client        Client
 	bucket        string
 	prefix        string
 	region        string
@@ -24,7 +24,7 @@ type Provider struct {
 type Option func(*Provider)
 
 // WithClient sets a custom S3 client (useful for testing)
-func WithClient(client S3API) Option {
+func WithClient(client Client) Option {
 	return func(p *Provider) {
 		p.client = client
 	}

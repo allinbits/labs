@@ -1,0 +1,39 @@
+# Sidechain Global Configuration
+
+# GraphQL indexer endpoint
+graphql_url = "https://indexer.labsnet.gno.xyz/graphql"
+
+# How to handle duplicate track IDs
+# Options: "error" (fail fast), "override" (last wins), "skip" (first wins)
+duplicate_strategy = "error"
+
+# Storage backend configuration
+[storage]
+type = "disk"  # Options: "disk", "s3"
+
+# Disk storage configuration (when type = "disk")
+[storage.disk]
+path = "./events"
+
+# S3 storage configuration (when type = "s3")
+# [storage]
+# type = "s3"
+#
+# [storage.s3]
+# bucket = "sidechain-events"  # Can be overridden by AWS_S3_BUCKET env var
+# region = "us-east-1"         # Can be overridden by AWS_REGION env var
+# endpoint = ""                # Optional, for MinIO/S3-compatible (or AWS_S3_ENDPOINT env var)
+# prefix = "labsnet/"          # Optional path prefix
+# buffer_timeout = "30s"       # Optional, how often to flush to S3
+#
+# AWS credentials are NEVER stored in config. Use one of:
+# 1. Environment variables: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+# 2. IAM instance role (recommended for EC2/ECS/Lambda)
+# 3. AWS credentials file (~/.aws/credentials)
+# 4. IAM service account (for EKS)
+
+# Observability configuration (optional - uncomment to enable)
+# [observability]
+# metrics_enabled = true
+# metrics_endpoint = "localhost:4318"
+# service_name = "sidechain-recorder"

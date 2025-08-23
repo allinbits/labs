@@ -1,0 +1,17 @@
+# Track configuration for DAO proposal events
+
+# Unique track identifier  
+track = "dao-proposals"
+
+# Human-readable description
+description = "DAO proposal lifecycle events"
+
+# Gno packages to monitor for events
+packages = ["gno.land/r/demo/dao"]
+
+# Event types to capture (only specific events)
+event_filter = ["ProposalCreated", "ProposalVoted", "ProposalExecuted", "ProposalCancelled"]
+
+# How often to query for new events (seconds)
+# DAO events are less frequent, so we can check less often
+interval_seconds = 30

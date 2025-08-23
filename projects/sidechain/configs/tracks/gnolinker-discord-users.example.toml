@@ -1,0 +1,16 @@
+# Track configuration for Discord user linking events
+
+# Unique track identifier
+track = "gnolinker-discord-users"
+
+# Human-readable description
+description = "Discord user linking events from gnolinker"
+
+# Gno packages to monitor for events
+packages = ["gno.land/r/linker000/discord/user/v0"]
+
+# Event types to capture (empty = all events)
+event_filter = []
+
+# How often to query for new events (seconds)
+interval_seconds = 10

@@ -1,26 +1,18 @@
-package dddrealms
+package logoverse
 
 import (
-    "net/url"
+	"net/url"
 )
 
-func Render(path string) string {
-    return RenderMarkdown(path)
+func RenderLogoverseSvg(_ string) string {
+	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(logoverseImage)
 }
 
-func RenderMarkdown(path string) string {
-    return "![3d voxels](" + RenderSvg(path) + ")\n"
-}
-
-func RenderSvg(path string) string {
-    return "data:image/svg+xml;utf8," + url.PathEscape(Drealm)
-}
-
-var Drealm = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
-  <title>Minecraft Voxels (CSS 3D in SVG)</title>
+var logoverseImage = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="260" viewBox="0 0 300 260" role="img">
+  <title>Logoverse as a stack of blocks</title>
   <desc>
     A small stack of voxels rendered in 3D using CSS transforms within a
-    foreignObject. Spins slowly to showcase depth. No external assets.
+    foreignObject.
   </desc>
 
   <!-- Soft background -->
@@ -49,10 +41,9 @@ var Drealm = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" v
           }
           .viewport { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
           .stage { position:relative; width: calc(8 * var(--u)); height: calc(6 * var(--u)); perspective: 1200px; }
-          .scene { position:absolute; inset:0; margin:auto; width: calc(4 * var(--u)); height: calc(4 * var(--u)); transform-style: preserve-3d; transform: rotateX(30deg) rotateY(35deg) translateZ(0); animation: spin 16s linear infinite; }
-          @keyframes spin { from { transform: rotateX(30deg) rotateY(0deg); } to { transform: rotateX(30deg) rotateY(360deg); } }
+          .scene { position:absolute; inset:0; margin:auto; width: calc(4 * var(--u)); height: calc(4 * var(--u)); transform-style: preserve-3d; transform: rotateX(0deg) rotateY(-50deg) rotateZ(40deg) translateY(-52px); animation: spin 16s linear infinite; }
 
-          .voxel { position:absolute; top:50%; left:50%; width: var(--u); height: var(--u); transform-style: preserve-3d; 
+          .voxel { position:absolute; top:50%; left:50%; width: var(--u); height: var(--u); transform-style: preserve-3d;
                    transform: translate3d(calc((var(--x) - var(--cx)) * var(--u)),
                                             calc((var(--cy) - var(--y)) * var(--u)),
                                             calc((var(--z) - var(--cz)) * var(--u)));
@@ -140,3 +131,4 @@ var Drealm = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" v
   </switch>
 </svg>
 `
+

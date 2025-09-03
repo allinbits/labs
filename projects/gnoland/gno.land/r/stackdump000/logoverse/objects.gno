@@ -66,19 +66,6 @@ func buildObjectsSVG(names []string) string {
 		blocks = append(blocks, block{i: i, j: 0, k: 0, mat: mats[i%len(mats)], label: name})
 	}
 
-	// Sort back-to-front for isometric painter's algorithm
-	// sort.Slice(blocks, func(a, b int) bool {
-	// 	A, B := blocks[a], blocks[b]
-	// 	wa, wb := A.i+A.j+A.k, B.i+B.j+B.k
-	// 	if wa != wb {
-	// 		return wa < wb
-	// 	}
-	// 	if A.j != B.j {
-	// 		return A.j < B.j
-	// 	}
-	// 	return A.i < B.i
-	// })
-
 	// Rendering parameters
 	W := 80.0  // top diamond width
 	H := 40.0  // top diamond height

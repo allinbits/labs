@@ -12,14 +12,6 @@ var registry = Registry{
 		Word:    "logoverse",
 		Binding: logoverseDef,
 	},
-	"$logograph": Term{
-		Word:    "logograph",
-		Binding: logographDef,
-	},
-	"$logoglyph": Term{
-		Word:    "logoglyph",
-		Binding: logoglyphDef,
-	},
 }
 
 
@@ -31,16 +23,3 @@ func logoverseDef(path string) string {
 		term("$logograph") + ": A symbol or representation of a concept (model) within the logoverse, capturing its essence, behavior, and meaning.\n\n" +
 		term("$logoglyph") + ": A visual representation of a logograph, often in the form of an image or icon, that conveys the concept's identity and significance within the logoverse.\n\n"
 }
-
-func logographDef(path string) string {
-	return "## $logograph\n\n" +
-		"A `$logograph` is a **symbolic representation of a model or concept** in the logoverse. " +
-		"It captures the **meaning**, **behavior**, and **structure** of that concept, and may be visualized or executed.\n"
-}
-
-func logoglyphDef(path string) string {
-	return "## $logoglyph\n\n" +
-		"A `$logoglyph` is a **visual emblem** of a `$logograph`, rendered as an image, icon, or glyph. " +
-		"It communicates identity, purpose, and essence in symbolic form.\n"
-}
-

@@ -5,9 +5,6 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
-// logograph.gno
-// Pure-SVG “sign on a signpost” renderer for $logograph.
-
 type sign struct {
 	label string // final label (after stripping inline color prefix)
 	color string // base hex for this sign (derived or inline)

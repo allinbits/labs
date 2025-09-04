@@ -2,13 +2,8 @@ package logoverse
 
 import (
 	"strings"
-	"net/url"
 	"gno.land/p/demo/ufmt"
 )
-
-// objects.gno
-// A pure-SVG page that renders a voxel-looking row of "$objects" as isometric blocks.
-// Works identically on gno.land (no <foreignObject>, no JS).
 
 type block struct {
 	i, j, k int    // grid coordinates (i right, j back, k up)
@@ -27,14 +22,9 @@ func init() {
 
 // objectsDef returns markdown with an embedded data: SVG
 func objectsDef(path string) string {
-	names := parseListFromPath(path) // default set if not provided
+	names := []string{"$stone", "$dirt", "$grass", "$sand", "$water", "$lava", "$wood", "$ice", "$gold"}
 	svg := buildObjectsSVG(names)
 	return "## $objects\n\n![$objects](" + dataURL(svg) + ")\n\n" + renderLegend(names)
-}
-
-// REVIEW: consider query on registry
-func parseListFromPath(path string) []string {
-	return []string{"$stone", "$dirt", "$grass", "$sand", "$water", "$lava", "$wood", "$ice", "$gold"}
 }
 
 func renderLegend(names []string) string {
@@ -51,9 +41,6 @@ func renderLegend(names []string) string {
 	return b.String()
 }
 
-func dataURL(svg string) string {
-	return "data:image/svg+xml;utf8," + url.PathEscape(svg)
-}
 
 // buildObjectsSVG emits a row of isometric voxel blocks (pure <polygon> SVG).
 func buildObjectsSVG(names []string) string {

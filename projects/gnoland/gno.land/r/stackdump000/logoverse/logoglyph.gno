@@ -12,15 +12,10 @@ func init() {
 }
 
 func logoglyphDef(path string) string {
-	names := parseListFromPathLogoglyph(path)
+	names := []string{"$Minecraft", "$shovel", "$pickaxe", "$glyph"}
 	svg := buildLogoglyphSVG(names)
-	return "## $logoglyph\n\n![$logoglyph](" + dataURL(svg) + ")\n"
+	return "## $logoglyph\n\n![$logoglyph](" + dataURL(svg) + ")\n" + renderLegend(names)
 }
-
-func parseListFromPathLogoglyph(_ string) []string {
-	return []string{"$Minecraft"}
-}
-
 
 func buildLogoglyphSVG(names []string) string {
 	var label, base string
@@ -42,7 +37,6 @@ func buildLogoglyphSVG(names []string) string {
 	var sb strings.Builder
 	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
 	sb.WriteString(ufmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%g" height="%g" viewBox="0 0 %g %g">`, W, H, W, H))
-	sb.WriteString(`<title>$logoglyph — large pickaxe and shovel crossed</title>`)
 
 	// Background circle
 	sb.WriteString(ufmt.Sprintf(

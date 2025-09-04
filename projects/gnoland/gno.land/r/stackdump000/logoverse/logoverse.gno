@@ -4,17 +4,23 @@ import (
 	"net/url"
 )
 
+func logoverseDef(path string) string {
+	return "## $logoverse\n\n![$logoverse](" + RenderLogoverseSvg(path) + ")\n" +
+		"### Terms \n\n" +
+		term("$objects") + ": The fundamental building blocks of the logoverse, representing both fungible and non-fungible items that can be owned, transferred, and interacted with.\n\n" +
+		term("$logoverse") + ": A universe of interconnected concepts and ideas, represented as a collection of $objects.\n\n" +
+		term("$logograph") + ": A symbol or representation of a concept (model) within the logoverse, capturing its essence, behavior, and meaning.\n\n" +
+		term("$logoglyph") + ": A visual representation of a logograph, often in the form of an image or icon, that conveys the concept's identity and significance within the logoverse.\n\n" +
+		term("$thesisloop") + ": A cyclical process of building, instrumenting, releasing, measuring, deciding, and refining hypotheses through Dapps.\n\n" +
+		term("$lifecycle") + ": A compact model testing loop involving hypothesizing, predicting, probing, comparing, updating, and retiring or refining models.\n\n" +
+		term("$ticker") + ": A unique identifier or symbol representing a specific $object within the logoverse, used for tracking ownership and transactions.\n\n" +
+}
+
 func RenderLogoverseSvg(_ string) string {
 	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(logoverseImage)
 }
 
 var logoverseImage = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="260" viewBox="0 0 300 260" role="img">
-  <title>Logoverse as a stack of blocks</title>
-  <desc>
-    A small stack of voxels rendered in 3D using CSS transforms within a
-    foreignObject.
-  </desc>
-
   <!-- Soft background -->
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">

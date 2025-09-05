@@ -4,6 +4,7 @@ import (
 	"net/url"
 )
 
+// TODO: put objects into term struts (maybe registry too)
 func logoverseDef(path string) string {
 	return "## $logoverse\n\n![$logoverse](" + RenderLogoverseSvg(path) + ")\n" +
 		"### Terms \n\n" +
@@ -13,7 +14,7 @@ func logoverseDef(path string) string {
 		term("$logoglyph") + ": A visual representation of a logograph, often in the form of an image or icon, that conveys the concept's identity and significance within the logoverse.\n\n" +
 		term("$thesisloop") + ": A cyclical process of building, instrumenting, releasing, measuring, deciding, and refining hypotheses through Dapps.\n\n" +
 		term("$lifecycle") + ": A compact model testing loop involving hypothesizing, predicting, probing, comparing, updating, and retiring or refining models.\n\n" +
-		term("$ticker") + ": A unique identifier or symbol representing a specific $object within the logoverse, used for tracking ownership and transactions.\n\n" +
+		term("$ticker") + ": A unique identifier or symbol representing a specific $object within the logoverse, used for tracking ownership and transactions.\n\n"
 }
 
 func RenderLogoverseSvg(_ string) string {
@@ -129,7 +130,6 @@ var logoverseImage = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height
                 <div class="face front side"></div><div class="face back side"></div><div class="face right side"></div><div class="face left side"></div><div class="face top"></div><div class="face bottom"></div>
               </div>
             </div>
-            <!--<div class="label">SVG &lt;foreignObject&gt; voxels — CSS 3D, no JS</div> -->
           </div>
         </div>
       </div>

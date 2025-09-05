@@ -16,6 +16,11 @@ Labs Net is our dedicated testnet environment:
 - **Deploy** and interact with Gno packages
 - **Innovate** without mainnet constraints
 
+Office Hours
+------------
+
+#TODO: add index of events upcoming and historical
+
 # Project Menu
 
 ### gno.land/p

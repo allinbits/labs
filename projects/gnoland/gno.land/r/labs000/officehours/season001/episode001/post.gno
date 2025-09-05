@@ -3,46 +3,19 @@ package s1e1
 import (
     "time"
 	"gno.land/p/eve000/event"
+	ohr "gno.land/r/labs000/officehours"
 	eve "gno.land/p/eve000/event/component"
 )
 
 var (
     publicationDate = time.Now()
-	defaultOpts    = map[string]any{
-		"dev": map[string]any{},
-		"labsnet1": map[string]any{},
-	}
 )
 
-func optsWithKeyValue(key string, value any, inputOpts ...map[string]any) map[string]any {
-    opts := defaultOpts
-    if len(inputOpts) > 0 {
-        opts = inputOpts[0]
-    }
-    for k, v := range defaultOpts {
-        opts[k] = v
-        opts[k].(map[string]any)[key] = value
-    }
-    return opts
-}
-
-func withoutTitle(opts ...map[string]any) map[string]any {
-    return optsWithKeyValue("SessionsTitle", "", opts...)
-}
-
-func withSpeaker(opts ...map[string]any) map[string]any {
-    return optsWithKeyValue("Speaker", struct{}{}, opts...)
-}
-
-func contentBlock(content string) eve.Content {
-	return eve.Content{Published: true, Markdown: content}
-}
-
-var nav = contentBlock(`
+var nav = ohr.ContentBlock(`
 - page | [index](?) | [speakers](?p=speakers)
 `)
 
-var session = contentBlock(`
+var session = ohr.ContentBlock(`
 - What is the Logoverse?
 - Why Petri-nets?
 - How do Petri-nets work?
@@ -68,24 +41,32 @@ func episode(opts map[string]any) *event.Event {
 			},
 		},
 	}
+	if d, ok := opts["startDate"]; ok {
+        evt.StartDate = d.(time.Time)
+        evt.Sessions[0].StartTime = d.(time.Time)
+    }
+	if d, ok := opts["endDate"]; ok {
+        evt.EndDate = d.(time.Time)
+        evt.Sessions[0].EndTime = d.(time.Time)
+    }
+    if status, ok := opts["status"]; ok {
+        evt.Status = eve.Status(status.(string))
+    }
 	evt.SetRenderOpts(opts)
 	return evt
 }
 
+
 func Render(path string) string {
-	q := eve.ParseQuery(path)
-	var content = []eve.Content{nav}
-	var evt *event.Event
-	page := q.Get("p")
-	switch page {
-	case "speakers":
-		evt = episode(withSpeaker())
-	default:
-		evt = episode(withoutTitle())
-	}
-	return evt.RenderPage(path, content...)
+    return ohr.RenderEpisode(path, episode, []eve.Content{nav})
 }
 
-func Event() *eve.Flyer {
-    return episode(withSpeaker()).Flyer()
+func RenderCalendar(path string) string {
+	evt := episode(ohr.WithSpeaker(ohr.GetOpts(path)))
+	return evt.Render(path, eve.IcsCalendarFile)
+}
+
+func Event(path string) *eve.Flyer {
+    evt := episode(ohr.WithSpeaker(ohr.GetOpts(path)))
+    return evt.Flyer()
 }

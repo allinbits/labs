@@ -53,14 +53,13 @@ func episode(opts map[string]any) *event.Event {
 	evt := &event.Event{
 		Name:           "Intro To Petri-nets",
 		Description:    "Introducing the Logoverse",
-		Status:         eve.EventScheduled, // show the date
 		StartDate:      publicationDate,
 		EndDate:        publicationDate,
 	}
 	evt.Sessions = []*eve.Session{
 		{
 		    Title:       "What is the Logoverse?",
-			Description: session.Render(),
+			Body:      []eve.Content{session},
 			Speaker: &eve.Speaker{
 				Name:        "Matt York",
 				Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",

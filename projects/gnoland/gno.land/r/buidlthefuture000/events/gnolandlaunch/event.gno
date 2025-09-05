@@ -14,12 +14,14 @@ func init() {
 			"CalendarHost":    "webcal://127.0.0.1:8080",
 			"CalendarFile":    "http://127.0.0.1:8080",
 			"CalendarDataUrl": struct{}{},
+			"SessionsTitle": "Agenda",
 		},
 		"labsnet1": map[string]interface{}{
 			"SvgFooter":       struct{}{},
 			"CalendarHost":    "webcal://gnocal.aiblabs.net",
 			"CalendarFile":    "http://gnocal.aiblabs.net",
 			"CalendarDataUrl": struct{}{},
+			"SessionsTitle": "Agenda",
 		},
 	}
 	app.RegisterEvent(gnolandlaunch, renderOpts)

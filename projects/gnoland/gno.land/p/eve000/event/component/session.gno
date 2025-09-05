@@ -10,6 +10,7 @@ import (
 type Session struct {
 	Title       string
 	Description string
+	Body        []Content
 	Speaker     *Speaker
 	StartTime   time.Time
 	EndTime     time.Time
@@ -74,6 +75,13 @@ func (s *Session) ToMarkdown(_ ...Content) string {
 	}
 
 	markdown += "\n\n" + s.Description + "\n\n"
+	if len(s.Body) > 0 {
+        for _, content := range s.Body {
+            if content.Published {
+                markdown += content.Render() + "\n\n"
+            }
+        }
+    }
 	if duration > 0 {
         markdown += "Duration: " + FormatDuration(duration) + "\n"
    }

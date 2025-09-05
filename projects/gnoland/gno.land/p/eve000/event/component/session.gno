@@ -62,8 +62,10 @@ func (s *Session) ToAnchor() string {
 func (s *Session) ToMarkdown(_ ...Content) string {
 	duration := s.EndTime.Sub(s.StartTime)
 	markdown := "### " + s.Title + "\n\n"
-	markdown += " " + s.StartTime.Format(time.Kitchen)
-	markdown += "-> " + s.EndTime.Format(time.Kitchen)
+	if duration > 0 {
+        markdown += " " + s.StartTime.Format(time.Kitchen)
+        markdown += "-> " + s.EndTime.Format(time.Kitchen)
+    }
 	if _, ok := s.RenderOpts()["Speaker"]; ok && s.Speaker != nil && s.Speaker.Name != "" {
 		markdown += " | [Speaker - " + s.Speaker.Name + "](" + s.Speaker.ToAnchor() + ")"
 	}
@@ -72,7 +74,9 @@ func (s *Session) ToMarkdown(_ ...Content) string {
 	}
 
 	markdown += "\n\n" + s.Description + "\n\n"
-	markdown += "Duration: " + FormatDuration(duration) + "\n"
+	if duration > 0 {
+        markdown += "Duration: " + FormatDuration(duration) + "\n"
+   }
 	return markdown
 }
 

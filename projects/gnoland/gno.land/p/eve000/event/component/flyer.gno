@@ -65,7 +65,13 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 		}
 	}
 
-	markdown += "## Agenda \n\n"
+	sessionTitle := "Sessions"
+
+	if _, ok := a.RenderOpts()["SessionsTitle"]; ok {
+        sessionTitle = a.RenderOpts()["SessionsTitle"].(string)
+    }
+
+	markdown += "## " + sessionTitle + "\n\n"
 
 	// Group sessions by date
 	sessionsByDate := make(map[string][]*Session)

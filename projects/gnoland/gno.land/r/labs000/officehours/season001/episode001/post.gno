@@ -74,15 +74,13 @@ func episode(opts map[string]any) *event.Event {
 
 func Render(path string) string {
 	q := eve.ParseQuery(path)
-	var content []eve.Content
+	var content = []eve.Content{nav}
 	var evt *event.Event
 	page := q.Get("p")
 	switch page {
 	case "speakers":
-		content = []eve.Content{nav}
 		evt = episode(withSpeaker())
 	default:
-		content = []eve.Content{nav}
 		evt = episode(withoutTitle())
 	}
 	return evt.RenderPage(path, content...)

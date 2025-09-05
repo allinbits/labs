@@ -41,21 +41,9 @@ func episode(opts map[string]any) *event.Event {
 			},
 		},
 	}
-	if d, ok := opts["startDate"]; ok {
-        evt.StartDate = d.(time.Time)
-        evt.Sessions[0].StartTime = d.(time.Time)
-    }
-	if d, ok := opts["endDate"]; ok {
-        evt.EndDate = d.(time.Time)
-        evt.Sessions[0].EndTime = d.(time.Time)
-    }
-    if status, ok := opts["status"]; ok {
-        evt.Status = eve.Status(status.(string))
-    }
-	evt.SetRenderOpts(opts)
+	ohr.ApplyOptionsFromPath(evt, opts)
 	return evt
 }
-
 
 func Render(path string) string {
     return ohr.RenderEpisode(path, episode, []eve.Content{nav})
@@ -64,9 +52,4 @@ func Render(path string) string {
 func RenderCalendar(path string) string {
 	evt := episode(ohr.WithSpeaker(ohr.GetOpts(path)))
 	return evt.Render(path, eve.IcsCalendarFile)
-}
-
-func Event(path string) *eve.Flyer {
-    evt := episode(ohr.WithSpeaker(ohr.GetOpts(path)))
-    return evt.Flyer()
 }

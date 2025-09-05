@@ -53,12 +53,38 @@ func DefaultOpts() map[string]any {
 	}
 }
 
+func ApplyOptionsFromPath(evt *event.Event, opts map[string]any) {
+	evt.SetRenderOpts(opts)
+
+    if d, ok := opts["startDate"]; ok {
+        evt.StartDate = d.(time.Time)
+        for i := range evt.Sessions {
+            evt.Sessions[i].StartTime = d.(time.Time)
+        }
+    }
+
+    // REVIEW: is session start/ end being populate
+    if d, ok := opts["endDate"]; ok {
+        evt.EndDate = d.(time.Time)
+        for i := range evt.Sessions {
+            evt.Sessions[i].EndTime = d.(time.Time)
+        }
+    }
+
+    if status, ok := opts["status"]; ok {
+        evt.Status = eve.Status(status.(string))
+    }
+}
+
 func RenderEpisode(path string, episode func(map[string]any) *event.Event, content []eve.Content) string {
 	q := eve.ParseQuery(path)
 	var evt *event.Event
 	page := q.Get("p")
 	opts := GetOpts(path)
 	switch page {
+	case "json":
+        evt := episode(WithSpeaker(GetOpts(path)))
+        return "```json\n" + evt.Flyer().ToJson() + "\n```"
 	case "calendar":
         evt := episode(WithSpeaker(GetOpts(path)))
         ics := evt.Render(path, eve.IcsCalendarFile)

@@ -72,6 +72,11 @@ const (
 	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
 )
 
+// prepend schem.org
+func Status(name string ) EventStatus {
+    return EventStatus("https://schema.org/" + name)
+}
+
 // Content Methods
 
 func (c *Content) SetPublished(published bool) {

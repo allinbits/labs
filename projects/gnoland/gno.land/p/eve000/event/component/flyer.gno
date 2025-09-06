@@ -68,8 +68,8 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 	sessionTitle := "Sessions"
 
 	if _, ok := a.RenderOpts()["SessionsTitle"]; ok {
-        sessionTitle = a.RenderOpts()["SessionsTitle"].(string)
-    }
+		sessionTitle = a.RenderOpts()["SessionsTitle"].(string)
+	}
 
 	markdown += "## " + sessionTitle + "\n\n"
 

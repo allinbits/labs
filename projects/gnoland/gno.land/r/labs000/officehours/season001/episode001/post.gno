@@ -38,7 +38,7 @@ func Episode(opts map[string]any) *event.Event {
 		StartDate:   publicationDate,
 		EndDate:     publicationDate,
 	}
-	WhatIsTheLogoverse(evt, opts)
+	evt.Sessions = append(evt.Sessions, WhatIsTheLogoverse())
 	return evt
 }
 
@@ -58,14 +58,12 @@ var logoverseSession = ohr.ContentBlock(`
 - Examples of Petri-nets
 `)
 
-func WhatIsTheLogoverse(evt *event.Event, _ map[string]any) *eve.Session {
-	session := &eve.Session{
+func WhatIsTheLogoverse() *eve.Session {
+	return &eve.Session{
 		Title:   "What is the Logoverse?",
 		Body:    []eve.Content{logoverseSession},
 		Speaker: MattYork(),
 	}
-	evt.Sessions = append(evt.Sessions, session)
-	return session
 }
 
 func Render(path string) string {

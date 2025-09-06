@@ -1,91 +1,73 @@
 package s1e1
 
 import (
-    "time"
+	"time"
+
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
+	ohr "gno.land/r/labs000/officehours"
 )
 
 var (
-    publicationDate = time.Now()
-	defaultOpts    = map[string]any{
-		"dev": map[string]any{},
-		"labsnet1": map[string]any{},
-	}
+	S001E001        = "s001e001"
+	publicationDate = time.Now()
 )
 
-func optsWithKeyValue(key string, value any, inputOpts ...map[string]any) map[string]any {
-    opts := defaultOpts
-    if len(inputOpts) > 0 {
-        opts = inputOpts[0]
-    }
-    for k, v := range defaultOpts {
-        opts[k] = v
-        opts[k].(map[string]any)[key] = value
-    }
-    return opts
+func init() {
+	ohr.Register(Record())
 }
 
-func withoutTitle(opts ...map[string]any) map[string]any {
-    return optsWithKeyValue("SessionsTitle", "", opts...)
-}
-
-func withSpeaker(opts ...map[string]any) map[string]any {
-    return optsWithKeyValue("Speaker", struct{}{}, opts...)
-}
-
-func contentBlock(content string) eve.Content {
-	return eve.Content{Published: true, Markdown: content}
-}
-
-var nav = contentBlock(`
-- page | [index](?) | [speakers](?p=speakers)
+var nav = ohr.ContentBlock(`
+- v0 | [index](?) | [speakers](?p=speakers)
 `)
 
-var session = contentBlock(`
+func Record() map[string]ohr.Record {
+	return map[string]ohr.Record{
+		S001E001: {
+			Episode,
+			[]eve.Content{nav},
+			[]ohr.EvtWriter{ohr.ApplyOptionsFromPath},
+		},
+	}
+}
+
+func Episode(opts map[string]any) *event.Event {
+	evt := &event.Event{
+		Name:        "Intro To Petri-nets",
+		Description: "Introducing the Logoverse",
+		StartDate:   publicationDate,
+		EndDate:     publicationDate,
+	}
+	WhatIsTheLogoverse(evt, opts)
+	return evt
+}
+
+func MattYork() *eve.Speaker {
+	return &eve.Speaker{
+		Name:        "Matt York",
+		Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
+		Affiliation: "[allinbits.com](https://allinbits.com)",
+		Biography:   "[gh/stackdump](https://github.com/stackdump)",
+	}
+}
+
+var logoverseSession = ohr.ContentBlock(`
 - What is the Logoverse?
 - Why Petri-nets?
 - How do Petri-nets work?
 - Examples of Petri-nets
 `)
 
-func episode(opts map[string]any) *event.Event {
-	evt := &event.Event{
-		Name:           "Intro To Petri-nets",
-		Description:    "Introducing the Logoverse",
-		StartDate:      publicationDate,
-		EndDate:        publicationDate,
+func WhatIsTheLogoverse(evt *event.Event, _ map[string]any) *eve.Session {
+	session := &eve.Session{
+		Title:   "What is the Logoverse?",
+		Body:    []eve.Content{logoverseSession},
+		Speaker: MattYork(),
 	}
-	evt.Sessions = []*eve.Session{
-		{
-		    Title:       "What is the Logoverse?",
-			Body:      []eve.Content{session},
-			Speaker: &eve.Speaker{
-				Name:        "Matt York",
-				Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
-				Affiliation: "[allinbits.com](https://allinbits.com)",
-				Biography:   "[gh/stackdump](https://github.com/stackdump)",
-			},
-		},
-	}
-	evt.SetRenderOpts(opts)
-	return evt
+	evt.Sessions = append(evt.Sessions, session)
+	return session
 }
 
 func Render(path string) string {
-	q := eve.ParseQuery(path)
-	var content = []eve.Content{nav}
-	var evt *event.Event
-	page := q.Get("p")
-	switch page {
-	case "speakers":
-		evt = episode(withSpeaker())
-	default:
-		evt = episode(withoutTitle())
-	}
-	return evt.RenderPage(path, content...)
-}
-
-func Event() *eve.Flyer {
-    return episode(withSpeaker()).Flyer()
+	return ohr.RenderEpisode(path, Record()[S001E001])
 }

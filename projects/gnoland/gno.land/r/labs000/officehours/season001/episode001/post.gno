@@ -1,55 +1,73 @@
 package s1e1
 
 import (
-    "time"
+	"time"
+
 	"gno.land/p/eve000/event"
-	ohr "gno.land/r/labs000/officehours"
 	eve "gno.land/p/eve000/event/component"
+	ohr "gno.land/r/labs000/officehours"
 )
 
 var (
-    publicationDate = time.Now()
+	S001E001        = "s001e001"
+	publicationDate = time.Now()
 )
 
+func init() {
+	ohr.Register(Record())
+}
+
 var nav = ohr.ContentBlock(`
-- page | [index](?) | [speakers](?p=speakers)
+- v0 | [index](?) | [speakers](?p=speakers)
 `)
 
-var session = ohr.ContentBlock(`
+func Record() map[string]ohr.Record {
+	return map[string]ohr.Record{
+		S001E001: {
+			Episode,
+			[]eve.Content{nav},
+			[]ohr.EvtWriter{ohr.ApplyOptionsFromPath},
+		},
+	}
+}
+
+func Episode(opts map[string]any) *event.Event {
+	evt := &event.Event{
+		Name:        "Intro To Petri-nets",
+		Description: "Introducing the Logoverse",
+		StartDate:   publicationDate,
+		EndDate:     publicationDate,
+	}
+	WhatIsTheLogoverse(evt, opts)
+	return evt
+}
+
+func MattYork() *eve.Speaker {
+	return &eve.Speaker{
+		Name:        "Matt York",
+		Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
+		Affiliation: "[allinbits.com](https://allinbits.com)",
+		Biography:   "[gh/stackdump](https://github.com/stackdump)",
+	}
+}
+
+var logoverseSession = ohr.ContentBlock(`
 - What is the Logoverse?
 - Why Petri-nets?
 - How do Petri-nets work?
 - Examples of Petri-nets
 `)
 
-func episode(opts map[string]any) *event.Event {
-	evt := &event.Event{
-		Name:           "Intro To Petri-nets",
-		Description:    "Introducing the Logoverse",
-		StartDate:      publicationDate,
-		EndDate:        publicationDate,
+func WhatIsTheLogoverse(evt *event.Event, _ map[string]any) *eve.Session {
+	session := &eve.Session{
+		Title:   "What is the Logoverse?",
+		Body:    []eve.Content{logoverseSession},
+		Speaker: MattYork(),
 	}
-	evt.Sessions = []*eve.Session{
-		{
-		    Title:       "What is the Logoverse?",
-			Body:      []eve.Content{session},
-			Speaker: &eve.Speaker{
-				Name:        "Matt York",
-				Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
-				Affiliation: "[allinbits.com](https://allinbits.com)",
-				Biography:   "[gh/stackdump](https://github.com/stackdump)",
-			},
-		},
-	}
-	ohr.ApplyOptionsFromPath(evt, opts)
-	return evt
+	evt.Sessions = append(evt.Sessions, session)
+	return session
 }
 
 func Render(path string) string {
-    return ohr.RenderEpisode(path, episode, []eve.Content{nav})
-}
-
-func RenderCalendar(path string) string {
-	evt := episode(ohr.WithSpeaker(ohr.GetOpts(path)))
-	return evt.Render(path, eve.IcsCalendarFile)
+	return ohr.RenderEpisode(path, Record()[S001E001])
 }

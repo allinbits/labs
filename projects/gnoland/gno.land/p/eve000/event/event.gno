@@ -236,3 +236,14 @@ func (evt *Event) RenderPage(path string, body ...eve.Content) string {
 	}
 	return eve.RenderPage(path, evt.Flyer(), body...)
 }
+
+func (evt *Event) RenderContent(path string, blocks []*eve.Content) string {
+    var body []eve.Content
+    for _, b := range blocks {
+        if b != nil {
+            body = append(body, *b)
+        }
+    }
+
+    return eve.RenderPage(path, evt.Flyer(), body...)
+}

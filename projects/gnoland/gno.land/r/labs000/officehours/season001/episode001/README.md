@@ -1,7 +1,7 @@
 # `s1e1` --- Office Hours Episode 1
 
 This package defines **Season 1, Episode 1** of the **Office Hours**
-series in the [Logoverse](https://gno.land).\
+series in the [Logoverse](https://gno.land).
 It demonstrates how episodes, sessions, speakers, and content blocks can
 be composed into a **semantic event registry**.
 
@@ -9,16 +9,16 @@ be composed into a **semantic event registry**.
 
 ## Overview
 
-The Logoverse is built on the idea that **code and data are duals**:\
+The Logoverse is built on the idea that **code and data are duals**:
 - A function is also a record.
 - A registry is also a knowledge graph.
 - An episode is also a conversation.
 
-This package is a **concrete example**:\
-- `Record()` returns a composable map entry.\
-- `Episode()` builds an `event.Event` with sessions.\
-- `MattYork()` anchors an identity to a gno address.\
-- `WhatIsTheLogoverse()` shows how sessions are bundled with content.\
+This package is a **concrete example**:
+- `Record()` returns a composable map entry.
+- `Episode()` builds an `event.Event` with sessions.
+- `MattYork()` anchors an identity to a gno address.
+- `WhatIsTheLogoverse()` shows how sessions are bundled with content.
 - `Render(path string)` delegates to `ohr.RenderEpisode` for Markdown
   rendering.
 
@@ -40,14 +40,14 @@ import (
 )
 ```
 
--   **Episode ID**: `s001e001`\
+-   **Episode ID**: `s001e001`
 -   **Publication date**: captured at registration (currently
-    `time.Now()`)\
--   **Speaker**: [Matt York](https://allinbits.com) (`g1e8vw6...`)\
+    `time.Now()`)
+-   **Speaker**: [Matt York](https://github.com/stackdump) (`g1e8vw6...`)
 -   **Session topics**:
-    -   What is the Logoverse?\
-    -   Why Petri-nets?\
-    -   How do Petri-nets work?\
+    -   What is the Logoverse?
+    -   Why Petri-nets?
+    -   How do Petri-nets work?
     -   Examples of Petri-nets
 
 ------------------------------------------------------------------------

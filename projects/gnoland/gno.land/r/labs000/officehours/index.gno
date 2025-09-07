@@ -11,17 +11,24 @@ type Registry map[string]any
 
 func (r Registry) Register(episodes map[string]Record) {
 	for name, rec := range episodes {
+		if _, exists := r[name]; exists {
+			panic("Episode already registered: " + name)
+		}
 		r[name] = rec
 	}
 }
 
-func (r Registry) Extend(name string, setters ...EvtWriter) {
+// Extend allows adding additional EvtWriters to an existing episode record.
+// this is useful for adding custom behavior without modifying the original registration.
+func (r Registry) Extend(name string, writers ...EvtWriter) {
 	if rec, ok := r[name]; ok {
 		r[name] = Record{
 			Episode:    rec.(Record).Episode,
 			Content:    rec.(Record).Content,
-			EvtWriters: append(rec.(Record).EvtWriters, setters...),
+			EvtWriters: append(rec.(Record).EvtWriters, writers...),
 		}
+	} else {
+		panic("Episode not found: " + name)
 	}
 }
 
@@ -33,6 +40,7 @@ func Register(episodes map[string]Record) {
 	registry.Register(episodes)
 }
 
+var e0 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode000?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
 var e1 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode001?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
 
 // TODO: make this use the registry + add an additional storage for links to recordings
@@ -44,7 +52,8 @@ func Render(path string) string {
 
 | Recording        | Episode |
 |----------------|-|
-| [s001e001](https://example.com/path-to-video.mkv) | [Wtf is the Logoverse?](` + e1 + `)
+| [s001e000](https://example.com/path-to-video.mkv) | [HowTo: add episodes](` + e0 + `)
+| [s001e001](                               ) | [Wtf is the Logoverse?](` + e1 + `)
 | [s001e002](                               ) | [$Tickers](/r/labs000/officehours/season001/episode002)
 | [s001e003](                               ) | [Petri-Nets](/r/labs000/officehours/season001/episode003)
 | [s001e004](                               ) | [GRC-000](/r/labs000/officehours/season001/episode004)
@@ -69,7 +78,7 @@ func DefaultOpts() map[string]any {
 
 type EvtWriter = func(evt *event.Event, opts map[string]any)
 
-func ApplyOptionsFromPath(evt *event.Event, opts map[string]any) {
+func ApplyScheduleOptionsFromPath(evt *event.Event, opts map[string]any) {
 	evt.SetRenderOpts(opts)
 
 	if d, ok := opts["startDate"]; ok {
@@ -91,17 +100,19 @@ func ApplyOptionsFromPath(evt *event.Event, opts map[string]any) {
 	}
 }
 
-var _ EvtWriter = ApplyOptionsFromPath
+var _ EvtWriter = ApplyScheduleOptionsFromPath
 
 type Record struct {
 	Episode    func(map[string]any) *event.Event
-	Content    []eve.Content
-	EvtWriters []EvtWriter
+	Content    []*eve.Content
+	EvtWriters []EvtWriter // Yoneda move: objects are known by how they’re probed (the writers).
+	Meta       []string
 }
 
 func (rec Record) RenderCalendar(path string) string {
-	evt := rec.Episode(WithSpeaker(GetOpts(path)))
-	evt.SetRenderOpts(GetOpts(path))
+    opts := GetScheduleOpts(path)
+	evt := rec.Episode(WithSpeaker(opts))
+	evt.SetRenderOpts(opts)
 	return evt.Render(path, eve.IcsCalendarFile)
 }
 
@@ -109,7 +120,7 @@ func RenderEpisode(path string, rec Record) string {
 	q := eve.ParseQuery(path)
 	var evt *event.Event
 	page := q.Get("p")
-	opts := GetOpts(path)
+	opts := GetScheduleOpts(path)
 
 	applySetters := func(evt *event.Event) *event.Event {
 		for _, opSetter := range rec.EvtWriters {
@@ -120,10 +131,10 @@ func RenderEpisode(path string, rec Record) string {
 
 	switch page {
 	case "json":
-		evt := applySetters(rec.Episode(WithSpeaker(GetOpts(path))))
+		evt := applySetters(rec.Episode(WithSpeaker(opts)))
 		return "```json\n" + (evt.Flyer()).ToJson() + "\n```"
 	case "calendar":
-		evt := applySetters(rec.Episode(WithSpeaker(GetOpts(path))))
+		evt := applySetters(rec.Episode(WithSpeaker(opts)))
 		ics := evt.Render(path, eve.IcsCalendarFile)
 		return "```" + ics + "```"
 	case "speakers":
@@ -131,12 +142,12 @@ func RenderEpisode(path string, rec Record) string {
 	default:
 		evt = applySetters(rec.Episode(WithoutTitle(opts)))
 	}
-	return evt.RenderPage(path, rec.Content...)
+	return evt.RenderContent(path, rec.Content)
 }
 
-// GetOpts extracts known options from the URL query parameters.
+// GetScheduleOpts extracts scheduling options from the URL path query parameters.
 // Example: episode001?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z
-func GetOpts(path string) map[string]any {
+func GetScheduleOpts(path string) map[string]any {
 	q := eve.ParseQuery(path)
 	// FIXME: using two levels here .. nested under dev and then at root
 	opts := DefaultOpts() // REVIEW consider using other composables here
@@ -176,6 +187,22 @@ func WithSpeaker(opts ...map[string]any) map[string]any {
 	return OptsWithKeyValue("Speaker", struct{}{}, opts...)
 }
 
-func ContentBlock(content string) eve.Content {
-	return eve.Content{Published: true, Markdown: content}
+func ContentBlock(content string) *eve.Content {
+	return &eve.Content{Published: true, Markdown: content}
+}
+
+func Nav(md ...string) []*eve.Content {
+    var blocks []*eve.Content
+    for _, m := range md {
+        blocks = append(blocks, ContentBlock(m))
+    }
+    return blocks
+}
+
+func Writer(writers ...EvtWriter) []EvtWriter {
+    return writers
+}
+
+func Keywords(tags ...string) []string {
+    return tags
 }

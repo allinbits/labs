@@ -12,17 +12,24 @@ const S001E001        = "s001e001"
 var publicationDate = time.Now()
 
 func init() {
-	ohr.Register(Record())
+	ohr.Register(Episode.Record())
 }
 
 var nav = ohr.ContentBlock(`
 - v0 | [index](?) | [speakers](?p=speakers)
 `)
 
-func Record() map[string]ohr.Record {
+func Render(path string) string {
+	return ohr.RenderEpisode(path, Episode.Record()[S001E001])
+}
+
+type episode struct{}
+var Episode = episode{}
+
+func (episode)Record() map[string]ohr.Record {
 	return map[string]ohr.Record{
 		S001E001: {
-			Episode,
+			Episode.Event,
 			[]*eve.Content{nav},
 			[]ohr.EvtWriter{ohr.ApplyScheduleOptionsFromPath},
 			[]string{"logoverse"},
@@ -30,24 +37,20 @@ func Record() map[string]ohr.Record {
 	}
 }
 
-func Render(path string) string {
-	return ohr.RenderEpisode(path, Record()[S001E001])
-}
-
-func Episode(opts map[string]any) *event.Event {
+func (episode)Event(opts map[string]any) *event.Event {
 	evt := &event.Event{
 		Name:        "Intro To Petri-nets",
 		Description: "Introducing the Logoverse",
 		StartDate:   publicationDate,
 		EndDate:     publicationDate,
 	}
-	evt.Sessions = append(evt.Sessions, WhatIsTheLogoverse())
+	evt.Sessions = append(evt.Sessions, Episode.WhatIsTheLogoverse())
 	return evt
 }
 
 /* Speaker: Matt York */
 
-func MattYork() *eve.Speaker {
+func (episode)MattYork() *eve.Speaker {
 	return &eve.Speaker{
 		Name:        "Matt York",
 		Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
@@ -58,6 +61,14 @@ func MattYork() *eve.Speaker {
 
 /* Session: What is the Logoverse? */
 
+func (episode)WhatIsTheLogoverse() *eve.Session {
+	return &eve.Session{
+		Title:   "What is the Logoverse?",
+		Body:    []eve.Content{*logoverseSession},
+		Speaker: Episode.MattYork(),
+	}
+}
+
 var logoverseSession = ohr.ContentBlock(`
 - What is the Logoverse?
 - Why Petri-nets?
@@ -65,10 +76,3 @@ var logoverseSession = ohr.ContentBlock(`
 - Examples of Petri-nets
 `)
 
-func WhatIsTheLogoverse() *eve.Session {
-	return &eve.Session{
-		Title:   "What is the Logoverse?",
-		Body:    []eve.Content{*logoverseSession},
-		Speaker: MattYork(),
-	}
-}

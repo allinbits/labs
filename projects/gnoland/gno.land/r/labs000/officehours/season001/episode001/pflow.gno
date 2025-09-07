@@ -44,5 +44,5 @@ func (PflowGlyph) Render() string {
 }
 
 func (PflowGlyph) Author() *eve.Speaker {
-	return MattYork()
+	return Episode.MattYork()
 }

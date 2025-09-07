@@ -1,12 +1,17 @@
 package event
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"std"
 	"strconv"
+	"strings"
+	"encoding/base32"
 	"time"
 
 	"gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
+
 )
 
 type Api interface {
@@ -244,6 +249,98 @@ func (evt *Event) RenderContent(path string, blocks []*eve.Content) string {
             body = append(body, *b)
         }
     }
-
     return eve.RenderPage(path, evt.Flyer(), body...)
+}
+
+func (evt *Event) Cid() string {
+	var elements []string
+
+	elements = append(elements, hashString(evt.Name))
+	elements = append(elements, hashString(evt.Description))
+	elements = append(elements, hashString(evt.Status))
+	elements = append(elements, hashString(evt.AttendanceMode))
+	elements = append(elements, hashString(evt.StartDate))
+	elements = append(elements, hashString(evt.EndDate))
+	if evt.Location != nil {
+		elements = append(elements, hashStrings(
+            evt.Location.Name,
+            evt.Location.Address,
+            evt.Location.Coordinates,
+            evt.Location.Description,
+		))
+	}
+
+	return shaToCid(buildMerkleRoot(elements))
+}
+
+func buildMerkleRoot(elements []string) string {
+    if len(elements) == 0 {
+        return ""
+    }
+    if len(elements) == 1 {
+        return elements[0]
+    }
+
+    var nextLevel []string
+    for i := 0; i < len(elements); i += 2 {
+        if i+1 < len(elements) {
+            combined := elements[i] + elements[i+1]
+            nextLevel = append(nextLevel, hashString(combined))
+        } else {
+            nextLevel = append(nextLevel, elements[i])
+        }
+    }
+    return buildMerkleRoot(nextLevel)
+}
+
+func hashStrings(elements ...string) string {
+    combined := ""
+    for _, e := range elements {
+        combined += e
+    }
+    return hashString(combined)
+}
+
+func hashString(s interface{}) string {
+    if s == nil {
+        return ""
+    }
+    if str, ok := s.(string); ok {
+        s = str
+    } else if t, ok := s.(time.Time); ok {
+        s = t.Format(time.RFC3339)
+    } else if es, ok := s.(eve.EventStatus); ok {
+        s = string(es)
+    } else if eam, ok := s.(eve.EventAttendanceMode); ok {
+        s = string(eam)
+    } else {
+        panic("type not supported for hashing: ")
+    }
+
+	hash := sha256.Sum256([]byte(s.(string)))
+	return hex.EncodeToString(hash[:])
+}
+
+// shaToCid converts a hex-encoded SHA-256 digest into a CIDv1 (base32, multibase "b").
+// Layout: <0x01 version><0x55 codec=raw><0x12 mh=sha2-256><0x20 len=32><digest>
+func shaToCid(sha string) string {
+	sha = strings.TrimSpace(sha)
+
+	// Decode hex digest (must be 32 bytes for sha2-256)
+	digest, err := hex.DecodeString(sha)
+	if err != nil || len(digest) != 32 {
+		panic("invalid sha256 digest")
+	}
+
+	// Assemble CIDv1 bytes
+	// 0x01 = version 1
+	// 0x55 = multicodec "raw"
+	// 0x12 = multihash code for sha2-256, 0x20 = digest length (32)
+	buf := make([]byte, 0, 1+1+2+32)
+	buf = append(buf, 0x01, 0x55, 0x12, 0x20)
+	buf = append(buf, digest...)
+
+	// Base32 (RFC 4648), no padding, lowercase, with multibase 'b' prefix
+	enc := base32.StdEncoding.WithPadding(base32.NoPadding)
+	return "b" + strings.ToLower(enc.EncodeToString(buf))
 }

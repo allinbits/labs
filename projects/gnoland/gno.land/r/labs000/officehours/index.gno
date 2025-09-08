@@ -3,41 +3,9 @@ package officehours
 import (
 	"time"
 	"strings"
-	"gno.land/p/demo/ufmt"
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 )
-
-type Registry struct {
-    Records map[string]Record
-}
-
-func (r Registry) Register(episodes map[string]Record) {
-    if r.Records == nil {
-        r.Records = map[string]Record{}
-    }
-	for name, rec := range episodes {
-		if _, exists := r.Records[name]; exists {
-			panic("Episode already registered: " + name)
-		}
-		r.Records[name] = rec
-	}
-}
-
-// Extend allows adding additional EvtWriters to an existing episode record.
-// this is useful for adding custom behavior without modifying the original registration.
-func (r Registry) Extend(name string, writers ...EvtWriter) {
-	if rec, ok := r.Records[name]; ok {
-		r.Records[name] = Record{
-			Episode:    rec.Episode,
-			Content:    rec.Content,
-			EvtWriters: append(rec.EvtWriters, writers...),
-			Meta:       rec.Meta,
-		}
-	} else {
-		panic("Episode not found: " + name)
-	}
-}
 
 var (
 	registry = Registry{}
@@ -86,7 +54,7 @@ func DefaultOpts() map[string]any {
 type EvtWriter = func(evt *event.Event, opts map[string]any)
 
 func ApplyScheduleOptionsFromPath(evt *event.Event, opts map[string]any) {
-	evt.SetRenderOpts(opts)
+	evt.SetRenderOpts(opts) // TODO: should opts + renderOpts be separate?
 
 	if d, ok := opts["startDate"]; ok {
 		evt.StartDate = d.(time.Time)
@@ -108,87 +76,6 @@ func ApplyScheduleOptionsFromPath(evt *event.Event, opts map[string]any) {
 }
 
 var _ EvtWriter = ApplyScheduleOptionsFromPath
-
-type Record struct {
-	Episode    func(map[string]any) *event.Event
-	Content    []*eve.Content
-	EvtWriters []EvtWriter // Yoneda move: objects are known by how they’re probed (the writers).
-	Meta       []string
-}
-
-
-func (rec Record) RenderCalendar(path string) string {
-    opts := GetScheduleOpts(path)
-	evt := rec.Episode(WithSpeaker(opts))
-	evt.SetRenderOpts(opts) // REVIEW: need to re-asses how opts used w/ nested data
-	return evt.Render(path, eve.IcsCalendarFile)
-}
-
-func RenderEpisode(path string, rec Record) string {
-	q := eve.ParseQuery(path)
-	var evt *event.Event
-	page := q.Get("p")
-	opts := GetScheduleOpts(path)
-
-	applySetters := func(e *event.Event) *event.Event {
-		for _, opSetter := range rec.EvtWriters {
-			opSetter(e, opts)
-		}
-		return e
-	}
-
-	switch page {
-	case "json":
-		evt = applySetters(rec.Episode(WithSpeaker(opts)))
-		return "```json\n" + evt.Flyer().ToJson() + "\n```"
-
-	case "calendar":
-		evt = applySetters(rec.Episode(WithSpeaker(opts)))
-		ics := evt.Render(path, eve.IcsCalendarFile)
-		return "```" + ics + "```"
-
-	case "speakers":
-		evt = applySetters(rec.Episode(WithSpeaker(opts)))
-
-	default:
-		evt = applySetters(rec.Episode(WithoutTitle(opts)))
-	}
-
-	return evt.RenderContent(path, rec.Content) + "\n" + Permalink(path, evt)
-}
-
-func Permalink(path string, evt *event.Event) string {
-	q := eve.ParseQuery(path)
-	cid := evt.Cid()
-
-	// Build link with stable 8-char CID prefix and selected passthrough params.
-	params := []string{
-		"cid=" + cid[:8],
-	}
-	if v := q.Get("status"); v != "" {
-		params = append(params, "status="+v)
-	}
-	if v := q.Get("startDate"); v != "" {
-		params = append(params, "startDate="+v)
-	}
-	if v := q.Get("endDate"); v != "" {
-		params = append(params, "endDate="+v)
-	}
-
-	link := ufmt.Sprintf("[permalink](?%s)", strings.Join(params, "&"))
-
-	// If a cid= is provided, verify it matches the event's CID prefix.
-	if provided := q.Get("cid"); provided != "" {
-		prefixLen := 8
-		if len(provided) < prefixLen {
-			prefixLen = len(provided)
-		}
-		if len(cid) < prefixLen || cid[:prefixLen] != provided[:prefixLen] {
-			return "\n> [!NOTE]\n> event details changed check for updates: " + link
-		}
-	}
-	return "---\n" + link
-}
 
 // GetScheduleOpts extracts scheduling options from the URL path query parameters.
 // Example: episode001?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z

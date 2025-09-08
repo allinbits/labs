@@ -13,17 +13,13 @@ func init() {
 }
 
 func Render(path string) string {
-	return ohr.RenderEpisode(path, Episode.Record()[S001E000])
+	return Episode.Record()[S001E000].Render(path)
 }
 
 type episode struct {}
-/*
-POV: You’re building a tiny, stateless DSL where each episode is a pure, namespaced object
-all extensibility happens via composable writers — not mutable state.
-*/
 var Episode = episode{}
 
-func (episode)Record() map[string]ohr.Record {
+func (episode) Record() map[string]ohr.Record {
 	return map[string]ohr.Record{
 		S001E000: ohr.Record{
 			Episode:    Episode.Event,
@@ -38,17 +34,21 @@ func (episode)Record() map[string]ohr.Record {
 	}
 }
 
-func (episode)Event(opts map[string]any) *event.Event {
+func (episode) Event(opts map[string]any) *event.Event {
 	return &event.Event{
 		Name:        "Hello, Logoverse",
-		Description: "Your first Episode!",
+		Description: "Hello Logoverse!",
 		Sessions: []*eve.Session{
 			{
-				Title:       "App.go",
-				Description: "Minimum viable app.go",
-				Body:        []eve.Content{ eve.Content{Published: true, Markdown: "Hello Logoverse!" }},
+				Title:       "episode.gno",
+				Description: "Minimum viable episode.go",
+				Body:        []eve.Content{*povDescription},
 			},
 		},
 	}
 }
 
+var povDescription = ohr.ContentBlock(`
+POV: You’re building a tiny, stateless DSL where each episode is a pure, namespaced object
+all extensibility happens via composable writers — not mutable state.
+`)

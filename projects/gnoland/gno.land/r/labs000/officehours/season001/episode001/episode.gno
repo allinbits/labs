@@ -1,56 +1,45 @@
 package s1e1
 
 import (
-	"time"
-
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 	ohr "gno.land/r/labs000/officehours"
 )
 
-const S001E001        = "s001e001"
-var publicationDate = time.Now()
+const S001E001 = "s001e001"
 
 func init() {
 	ohr.Register(Episode.Record())
 }
 
-var nav = ohr.ContentBlock(`
-- v0 | [index](?) | [speakers](?p=speakers)
-`)
-
 func Render(path string) string {
-	return ohr.RenderEpisode(path, Episode.Record()[S001E001])
+	return Episode.Record()[S001E001].Render(path)
 }
 
 type episode struct{}
 var Episode = episode{}
 
-func (episode)Record() map[string]ohr.Record {
+func (episode) Record() map[string]ohr.Record {
 	return map[string]ohr.Record{
 		S001E001: {
 			Episode.Event,
-			[]*eve.Content{nav},
-			[]ohr.EvtWriter{ohr.ApplyScheduleOptionsFromPath},
-			[]string{"logoverse"},
+			ohr.Nav("- v0 | [index](?) | [speakers](?p=speakers)"),
+			ohr.Writer(ohr.ApplyScheduleOptionsFromPath),
+			ohr.Keywords("logoverse"),
 		},
 	}
 }
 
-func (episode)Event(opts map[string]any) *event.Event {
+func (episode) Event(opts map[string]any) *event.Event {
 	evt := &event.Event{
 		Name:        "Intro To Petri-nets",
 		Description: "Introducing the Logoverse",
-		StartDate:   publicationDate,
-		EndDate:     publicationDate,
 	}
 	evt.Sessions = append(evt.Sessions, Episode.WhatIsTheLogoverse())
 	return evt
 }
 
-/* Speaker: Matt York */
-
-func (episode)MattYork() *eve.Speaker {
+func (episode) MattYork() *eve.Speaker {
 	return &eve.Speaker{
 		Name:        "Matt York",
 		Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
@@ -59,9 +48,7 @@ func (episode)MattYork() *eve.Speaker {
 	}
 }
 
-/* Session: What is the Logoverse? */
-
-func (episode)WhatIsTheLogoverse() *eve.Session {
+func (episode) WhatIsTheLogoverse() *eve.Session {
 	return &eve.Session{
 		Title:   "What is the Logoverse?",
 		Body:    []eve.Content{*logoverseSession},

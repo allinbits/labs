@@ -3,6 +3,7 @@ package officehours
 import (
     "strings"
 
+    logo "gno.land/r/stackdump000/logoverse"
     "gno.land/p/eve000/event"
     eve "gno.land/p/eve000/event/component"
     ufmt "gno.land/p/demo/ufmt"
@@ -30,15 +31,15 @@ func (rec Record) Compose(opts map[string]any) *event.Event {
     return evt
 }
 
-// TODO: refactor or rename
-func (rec Record) Permalink(path string, opts map[string]interface{}) string {
+func (rec Record) BottomNav(path string, opts map[string]interface{}) string {
+	cidLen := 8
 	q := eve.ParseQuery(path)
 	evt := rec.Compose(opts)
 	cid := evt.Cid()
 
-	// Build link with stable 8-char CID prefix and selected passthrough params.
+	// Build link with stable 16-char CID suffix and selected passthrough params.
 	params := []string{
-		"cid=" + cid[:8],
+		"cid=" + cid[len(cid)-cidLen:],
 	}
 	if v := q.Get("status"); v != "" {
 		params = append(params, "status="+v)
@@ -50,25 +51,27 @@ func (rec Record) Permalink(path string, opts map[string]interface{}) string {
 		params = append(params, "endDate="+v)
 	}
 
-	link := ufmt.Sprintf("[permalink](?%s)", strings.Join(params, "&"))
+	permalink := ufmt.Sprintf("?%s", strings.Join(params, "&"))
+	link := ufmt.Sprintf("[permalink](?%s)", permalink)
 
-	// If a cid= is provided, verify it matches the event's CID prefix.
+	// If a cid= is provided, verify it matches the event's CID suffix.
 	if provided := q.Get("cid"); provided != "" {
-		prefixLen := 8
-		if len(provided) < prefixLen {
-			prefixLen = len(provided)
+		if len(provided) < cidLen {
+			cidLen = len(provided)
 		}
-		if len(cid) < prefixLen || cid[:prefixLen] != provided[:prefixLen] {
+		if len(cid) < cidLen || cid[len(cid)-cidLen:] != provided[len(provided)-cidLen:] {
 			return "\n> [!NOTE]\n> event details changed check for updates: " + link
 		}
 	}
-	// TODO: actually wire this up to a form to make usable
-	voteUpLink := ufmt.Sprintf("[vote↑up](?cid=%s&vote=up)", cid)
-	voteDownLink := ufmt.Sprintf("[vote↓down](?cid=%s&vote=down)", cid)
-	return "---\n" + link + " | " + voteUpLink + " | " + voteDownLink + "\n"
+	voteUpLink := ufmt.Sprintf("[vote↑up](" + permalink + "&vote=up)")
+	voteDownLink := ufmt.Sprintf("[vote↓down](" + permalink + "&vote=down)")
+	proposeLink := ufmt.Sprintf("[propose](" + permalink + "&action=propose)")
+
+	return "\n[" + logo.AllInBits.Thumbnail() + "](/r/labs000/officehours) \n\n " +
+	link + " | " + voteUpLink + " | " + voteDownLink + " | " + proposeLink
 }
 
-func (rec Record)Render(path string) string {
+func (rec Record) Render(path string) string {
 	q := eve.ParseQuery(path)
 	var evt *event.Event
 	page := q.Get("p")
@@ -91,5 +94,5 @@ func (rec Record)Render(path string) string {
 		evt = rec.Compose(WithoutTitle(opts))
 	}
 
-	return evt.RenderContent(path, rec.Content) + "\n" + rec.Permalink(path, opts)
+	return evt.RenderContent(path, rec.Content) + "\n" + rec.BottomNav(path, opts)
 }

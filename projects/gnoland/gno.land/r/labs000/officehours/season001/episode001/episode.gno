@@ -23,7 +23,7 @@ func (episode) Record() map[string]ohr.Record {
 	return map[string]ohr.Record{
 		S001E001: {
 			Episode.Event,
-			ohr.Nav("- v0 | [index](?) | [speakers](?p=speakers)"),
+			ohr.Nav("- [index](?) | [speakers](?p=speakers)"),
 			ohr.Writer(ohr.ApplyScheduleOptionsFromPath),
 			ohr.Keywords("logoverse"),
 		},

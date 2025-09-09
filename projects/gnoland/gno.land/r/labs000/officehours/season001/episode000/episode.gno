@@ -29,7 +29,7 @@ func (episode) Record() map[string]ohr.Record {
                 ohr.InDraft,
                 //ohr.PublishDraft,
 			),
-			Meta:       ohr.Keywords("tutorial", "getting started"),
+			Meta:       ohr.Keywords("tutorial", "getting-started"),
 		},
 	}
 }

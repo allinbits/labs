@@ -5,16 +5,8 @@ import (
 	"strings"
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
+	logo "gno.land/r/stackdump000/logoverse"
 )
-
-var (
-	registry = Registry{}
-)
-
-func Register(episodes map[string]Record) {
-	registry.Register(episodes)
-}
-
 var e0 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode000?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
 var e1 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode001?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
 
@@ -23,6 +15,7 @@ var e1 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode001?statu
 func Render(path string) string {
 	return `
 # Office Hours
+[` + logo.AllInBits.Image() +`](/r/labs000/officehours)
 - episode | [index](?)
 
 | Recording        | Episode |
@@ -100,6 +93,30 @@ func GetScheduleOpts(path string) map[string]any {
 		}
 	}
 	return opts
+}
+
+func OptsToPath(opts map[string]any) string {
+    var q []string
+    if status, ok := opts["status"]; ok {
+        q = append(q, "status="+status.(string))
+    }
+    if startDate, ok := opts["startDate"]; ok {
+        q = append(q, "startDate="+startDate.(time.Time).Format(time.RFC3339))
+    }
+    if endDate, ok := opts["endDate"]; ok {
+        q = append(q, "endDate="+endDate.(time.Time).Format(time.RFC3339))
+    }
+    if cid, ok := opts["ExpectedCid"]; ok {
+        q = append(q, "cid="+cid.(string))
+    }
+    if len(q) > 0 {
+        return "?" + strings.Join(q, "&")
+    }
+    return ""
+}
+
+func Normalize(path string) string {
+    return OptsToPath(GetScheduleOpts(path))
 }
 
 func OptsWithKeyValue(key string, value any, inputOpts ...map[string]any) map[string]any {

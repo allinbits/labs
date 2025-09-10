@@ -13,10 +13,6 @@ func init() {
 	ohr.Register(Episode.Record())
 }
 
-func Render(path string) string {
-	return path
-}
-
 type episode struct{}
 
 var Episode = episode{}

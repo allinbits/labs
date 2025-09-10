@@ -1,14 +1,8 @@
-package logoverse
+package officehours
 
 import (
 	"net/url"
 )
-
-func init() {
-	if registry != nil {
-		registry["$allinbits"] = Term{Word: "allinbits", Binding: func (_ string) string { return AllInBits.Markdown() } }
-	}
-}
 
 type allInBits struct{}
 var AllInBits = allInBits{}
@@ -55,11 +49,11 @@ var aibLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12
     {
       "@context": "https://schema.org",
       "@type": "ImageObject",
-      "name": "allinbits.com",
+      "name": "aiblabs.net",
       "description": "Censorship-Resistance, Sovereignty, Privacy",
       "author": {
         "@type": "Organization",
-        "name": "All In Bits"
+        "name": "allinbits.com"
       }
     }
   </script>

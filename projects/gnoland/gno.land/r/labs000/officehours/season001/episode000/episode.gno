@@ -23,7 +23,7 @@ func (episode) Record() map[string]ohr.Record {
 	return map[string]ohr.Record{
 		S001E000: ohr.Record{
 			Episode:    Episode.Event,
-			Content:    ohr.Nav(`- nav | [index](?) `),
+			Content:    ohr.Nav("- " + S001E000 + " | [index](?) "),
 			EvtWriters: ohr.Writer(
                 ohr.ApplyScheduleOptionsFromPath,
                 ohr.InDraft,
@@ -42,13 +42,46 @@ func (episode) Event(opts map[string]any) *event.Event {
 			{
 				Title:       "episode.gno",
 				Description: "Minimum viable episode.go",
-				Body:        []eve.Content{*povDescription},
+				Body:        []eve.Content{*povDescription, eve.Content{
+				    Published: true,
+                    Callback: func(_ string) string {
+                        return proposalForm(opts)
+                     },
+				}},
 			},
 		},
 	}
 }
 
+func toString(v any) string {
+    if v == nil {
+        return ""
+    }
+    if ts, ok := v.(interface{ Format(string) string }); ok {
+        return ts.Format("2006-01-02T15:04:05Z")
+    }
+    return v.(string)
+}
+
+
 var povDescription = ohr.ContentBlock(`
 POV: You’re building a tiny, stateless DSL where each episode is a pure, namespaced object
 all extensibility happens via composable writers — not mutable state.
 `)
+
+func proposalForm(opts map[string]any) string {
+return `
+<gno-columns>
+
+<gno-form>
+    <gno-input name="status" type="checkbox" checked="true" value="EventScheduled" description="Fill out form to schedule a session." />
+    <gno-input name="startDate" type="checkbox" checked="true" value="`+ toString(opts["startDate"]) + `" description="StartDate" />
+    <gno-input name="endDate" type="checkbox" checked="true" value="`+ toString(opts["endDate"]) + `" description="EndDate" />
+    <gno-textarea name="description"  placeholder="` + toString(opts["description"]) + `"  description="Propose a session topic"/>
+</gno-form>
+
+|||
+
+</gno-columns>
+`
+}

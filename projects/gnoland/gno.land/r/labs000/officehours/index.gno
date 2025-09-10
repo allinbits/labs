@@ -5,7 +5,6 @@ import (
 	"strings"
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
-	logo "gno.land/r/stackdump000/logoverse"
 )
 var e0 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode000?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
 var e1 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode001?status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
@@ -15,24 +14,13 @@ var e1 = "http://127.0.0.1:8888/r/labs000/officehours/season001/episode001?statu
 func Render(path string) string {
 	return `
 # Office Hours
-[` + logo.AllInBits.Image() +`](/r/labs000/officehours)
-- episode | [index](?)
+[` + AllInBits.Image() +`](/r/labs000/officehours)
+- episode | [index](?) | [help](?p=help) | [propose](?p=propose)
 
 | Recording        | Episode |
 |----------------|-|
 | [s001e000](https://example.com/path-to-video.mkv) | [HowTo: add episodes](` + e0 + `)
 | [s001e001](                               ) | [Wtf is the Logoverse?](` + e1 + `)
-| [s001e002](                               ) | [$Tickers](/r/labs000/officehours/season001/episode002)
-| [s001e003](                               ) | [Petri-Nets](/r/labs000/officehours/season001/episode003)
-| [s001e004](                               ) | [GRC-000](/r/labs000/officehours/season001/episode004)
-| [s001e005](                               ) | [GRC-20](/r/labs000/officehours/season001/episode005)
-| [s001e006](                               ) | [Modeling101](/r/labs000/officehours/season001/episode006)
-| [s001e007](                               ) | [Modeling201](/r/labs000/officehours/season001/episode007)
-| [s001e008](                               ) | [Simulation with Petri.jl](/r/labs000/officehours/season001/episode008)
-| [s001e009](                               ) | [Fungible Objects](/r/labs000/officehours/season001/episode009)
-| [s001e010](                               ) | [Wtf does Fungible Mean Anyway?](/r/labs000/officehours/season001/episode010)
-| [s001e011](                               ) | [Yoneda: You are known by what you do. ](/r/labs000/officehours/season001/episode011)
-| [s001e012](                               ) | [Forgetting in Category Theory](/r/labs000/officehours/season001/episode012)
 
 `
 }

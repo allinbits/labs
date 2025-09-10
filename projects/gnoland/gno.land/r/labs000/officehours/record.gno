@@ -3,7 +3,6 @@ package officehours
 import (
     "strings"
 
-    logo "gno.land/r/stackdump000/logoverse"
     "gno.land/p/eve000/event"
     eve "gno.land/p/eve000/event/component"
     ufmt "gno.land/p/demo/ufmt"
@@ -67,7 +66,7 @@ func (rec Record) BottomNav(path string, opts map[string]interface{}) string {
 	voteDownLink := ufmt.Sprintf("[vote↓down](" + permalink + "&vote=down)")
 	proposeLink := ufmt.Sprintf("[propose](" + permalink + "&action=propose)")
 
-	return "\n[" + logo.AllInBits.Thumbnail() + "](/r/labs000/officehours) \n\n " +
+	return "\n[" + AllInBits.Thumbnail() + "](/r/labs000/officehours) \n\n " +
 	link + " | " + voteUpLink + " | " + voteDownLink + " | " + proposeLink
 }
 

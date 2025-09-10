@@ -1,26 +1,23 @@
-package officehours
+package logoverse
 
 import (
 	"net/url"
 )
 
 type allInBits struct{}
+
 var AllInBits = allInBits{}
 
-func (allInBits) Markdown() string {
-    return AllInBits.Image() + "\n\n" +AllInBits.Thumbnail()
-}
-
 func (allInBits) Image() string {
-	return "![allinbits](" + AllInBits.DataUrl() + ")"
+	return "![AllInBits](" + AllInBits.DataUrl() + ")"
 }
 
 func (allInBits) DataUrl() string {
-	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(aibLogoSvg)
+	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(AllInBits.SVG())
 }
 
 func (allInBits) Thumbnail() string {
-    return "![allinbits](" + AllInBits.ThumbnailDataUrl() + ")"
+	return "![AllInBits](" + AllInBits.ThumbnailDataUrl() + ")"
 }
 
 func (allInBits) ThumbnailDataUrl() string {
@@ -35,8 +32,8 @@ func (allInBits) ThumbnailSvg(w, h string) string {
 	</svg>`
 }
 
-func (allInBits) Svg() string {
-    return aibLogoSvg
+func (allInBits) SVG() string {
+	return aibLogoSvg
 }
 
 var aibLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">

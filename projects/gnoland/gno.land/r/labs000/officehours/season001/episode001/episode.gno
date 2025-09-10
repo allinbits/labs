@@ -3,6 +3,7 @@ package s1e1
 import (
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
+	logo "gno.land/r/labs000/logoverse"
 	ohr "gno.land/r/labs000/officehours"
 )
 
@@ -13,10 +14,11 @@ func init() {
 }
 
 func Render(path string) string {
-	return Episode.Record()[S001E001].Render(path)
+	return path
 }
 
 type episode struct{}
+
 var Episode = episode{}
 
 func (episode) Record() map[string]ohr.Record {
@@ -39,20 +41,11 @@ func (episode) Event(opts map[string]any) *event.Event {
 	return evt
 }
 
-func (episode) MattYork() *eve.Speaker {
-	return &eve.Speaker{
-		Name:        "Matt York",
-		Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",
-		Affiliation: "[allinbits.com](https://allinbits.com)",
-		Biography:   "[gh/stackdump](https://github.com/stackdump)\n\n" + Pflow.Render(),
-	}
-}
-
 func (episode) WhatIsTheLogoverse() *eve.Session {
 	return &eve.Session{
 		Title:   "What is the Logoverse?",
 		Body:    []eve.Content{*logoverseSession},
-		Speaker: Episode.MattYork(),
+		Speaker: logo.Pflow.Author(),
 	}
 }
 
@@ -62,4 +55,3 @@ var logoverseSession = ohr.ContentBlock(`
 - How do Petri-nets work?
 - Examples of Petri-nets
 `)
-

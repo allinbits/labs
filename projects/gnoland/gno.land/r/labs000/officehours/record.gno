@@ -1,11 +1,12 @@
 package officehours
 
 import (
-    "strings"
+	"strings"
 
-    "gno.land/p/eve000/event"
-    eve "gno.land/p/eve000/event/component"
-    ufmt "gno.land/p/demo/ufmt"
+	ufmt "gno.land/p/demo/ufmt"
+	"gno.land/p/eve000/event"
+	eve "gno.land/p/eve000/event/component"
+	logo "gno.land/r/labs000/logoverse"
 )
 
 type Record struct {
@@ -16,18 +17,44 @@ type Record struct {
 }
 
 func (rec Record) RenderCalendar(path string) string {
-    opts := GetScheduleOpts(path)
+	opts := GetScheduleOpts(path)
 	evt := rec.Episode(WithSpeaker(opts))
 	evt.SetRenderOpts(opts) // REVIEW: need to re-asses how opts used w/ nested data
 	return evt.Render(path, eve.IcsCalendarFile)
 }
 
 func (rec Record) Compose(opts map[string]any) *event.Event {
-    evt := rec.Episode(opts)
-    for _, opSetter := range rec.EvtWriters {
-        opSetter(evt, opts)
-    }
-    return evt
+	evt := rec.Episode(opts)
+	for _, opSetter := range rec.EvtWriters {
+		opSetter(evt, opts)
+	}
+	return evt
+}
+
+func (rec Record) Render(path string) string {
+	q := eve.ParseQuery(path)
+	var evt *event.Event
+	page := q.Get("p")
+	opts := GetScheduleOpts(path)
+
+	switch page {
+	case "json":
+		evt = rec.Compose(WithSpeaker(opts))
+		return "```json\n" + evt.Flyer().ToJson() + "\n```"
+
+	case "calendar":
+		evt = rec.Compose(WithSpeaker(opts))
+		ics := evt.Render(path, eve.IcsCalendarFile)
+		return "```" + ics + "```"
+
+	case "speakers":
+		evt = rec.Compose(WithSpeaker(opts))
+
+	default:
+		evt = rec.Compose(WithoutTitle(opts))
+	}
+
+	return evt.RenderContent(path, rec.Content) + "\n" + rec.BottomNav(path, opts)
 }
 
 func (rec Record) BottomNav(path string, opts map[string]interface{}) string {
@@ -64,34 +91,8 @@ func (rec Record) BottomNav(path string, opts map[string]interface{}) string {
 	}
 	voteUpLink := ufmt.Sprintf("[vote↑up](" + permalink + "&vote=up)")
 	voteDownLink := ufmt.Sprintf("[vote↓down](" + permalink + "&vote=down)")
-	proposeLink := ufmt.Sprintf("[propose](" + permalink + "&action=propose)")
+	proposeLink := ufmt.Sprintf("[propose](/r/labs000/officehours/season001/episode000" + todayLink() + ")")
 
-	return "\n[" + AllInBits.Thumbnail() + "](/r/labs000/officehours) \n\n " +
-	link + " | " + voteUpLink + " | " + voteDownLink + " | " + proposeLink
-}
-
-func (rec Record) Render(path string) string {
-	q := eve.ParseQuery(path)
-	var evt *event.Event
-	page := q.Get("p")
-	opts := GetScheduleOpts(path)
-
-	switch page {
-	case "json":
-		evt = rec.Compose(WithSpeaker(opts))
-		return "```json\n" + evt.Flyer().ToJson() + "\n```"
-
-	case "calendar":
-		evt = rec.Compose(WithSpeaker(opts))
-		ics := evt.Render(path, eve.IcsCalendarFile)
-		return "```" + ics + "```"
-
-	case "speakers":
-		evt = rec.Compose(WithSpeaker(opts))
-
-	default:
-		evt = rec.Compose(WithoutTitle(opts))
-	}
-
-	return evt.RenderContent(path, rec.Content) + "\n" + rec.BottomNav(path, opts)
+	return "\n[" + logo.AllInBits.Thumbnail() + "](/r/labs000/officehours) \n\n " +
+		link + " | " + voteUpLink + " | " + voteDownLink + " | " + proposeLink
 }

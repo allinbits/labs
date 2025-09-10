@@ -1,38 +1,61 @@
 package officehours
 
+import (
+	"gno.land/p/demo/avl"
+	"gno.land/p/eve000/event"
+)
+
 type Registry struct {
-    records map[string]Record
+	Tree *avl.Tree
+}
+
+func (r Registry) Get(episode string) (Record, bool) {
+	if r.Tree == nil {
+		return Record{}, false
+	}
+	if val, found := r.Tree.Get(episode); found {
+		return val.(Record), true
+	}
+	return Record{}, false
+}
+
+func (r Registry) Exists(episode string) bool {
+	_, exists := r.Get(episode)
+	return exists
 }
 
 func (r Registry) AssertExists(episode string) {
-    if _, exists := r.records[episode]; !exists {
-        panic("Episode not registered: " + episode)
-    }
+	if !r.Exists(episode) {
+		panic("Episode not found: " + episode)
+	}
 }
 
 func (r Registry) Register(episodes map[string]Record) {
-    if r.records == nil {
-        r.records = map[string]Record{}
-    }
+	if r.Tree == nil {
+		r.Tree = avl.NewTree()
+	}
 	for name, rec := range episodes {
-		if _, exists := r.records[name]; exists {
+		if r.Exists(name) {
 			panic("Episode already registered: " + name)
 		}
-		r.records[name] = rec
+		r.Tree.Set(name, rec)
 	}
 }
 
 // Extend allows adding additional EvtWriters to an existing episode record.
 // this is useful for adding custom behavior without modifying the original registration.
 func (r Registry) Extend(name string, writers ...EvtWriter) {
-	if rec, ok := r.records[name]; ok {
-		r.records[name] = Record{
-			Episode:    rec.Episode,
-			Content:    rec.Content,
-			EvtWriters: append(rec.EvtWriters, writers...),
-			Meta:       rec.Meta,
-		}
-	} else {
+	rec, exists := r.Get(name)
+	if !exists {
 		panic("Episode not found: " + name)
 	}
+	for _, w := range writers {
+		w(&event.Event{}, map[string]any{})
+	}
+	r.Tree.Set(name, Record{
+		Episode:    rec.Episode,
+		Content:    rec.Content,
+		EvtWriters: append(rec.EvtWriters, writers...),
+		Meta:       rec.Meta,
+	})
 }

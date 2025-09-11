@@ -1,8 +1,6 @@
 package officehours
 
 import (
-    "time"
-	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 )
 

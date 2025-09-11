@@ -24,8 +24,10 @@ func Render(path string) string {
 		}
 	}
 
+    // TODO: make this a notice??
 	if cid := q.Get("cid"); cid != "" {
-		return "Thank you for your proposal! Your proposal ID is: " + cid + "\n\n" + RenderStatic(path)
+		return "Thank you for your proposal! Your proposal ID is: " +
+		cid + "\n\n" + RenderStatic(path)
 	}
 	return RenderStatic(path)
 }

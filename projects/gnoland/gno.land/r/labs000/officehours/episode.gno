@@ -10,7 +10,11 @@ func init() {
 	Register(ProposedEpisode.Record())
 }
 
-type Episode struct {}
+type Episode struct{}
+
+// TODO: this is a singleton
+// it represents a class of events - not a specific event
+// it belongs in the logoverse
 var ProposedEpisode = Episode{}
 
 func (Episode) Record() map[string]Record {

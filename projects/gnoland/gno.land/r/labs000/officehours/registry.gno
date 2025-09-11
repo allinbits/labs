@@ -31,7 +31,7 @@ func (r Registry) AssertExists(episode string) {
 }
 
 func (r Registry) Register(episodes map[string]Record) {
-    assertAccess()
+	assertAccess()
 	if r.Tree == nil {
 		r.Tree = avl.NewTree()
 	}

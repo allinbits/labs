@@ -8,6 +8,8 @@ type allInBits struct{}
 
 var AibLabs = allInBits{}
 
+var _ Logo = allInBits{}
+
 func (allInBits) Image() string {
 	return "![AibLabs](" + AibLabs.DataUrl() + ")"
 }
@@ -36,6 +38,19 @@ func (allInBits) SVG() string {
 	return aibLogoSvg
 }
 
+func (allInBits) JsonLD() JsonLDMap {
+    return JsonLDMap{
+        "@context": "https://schema.org",
+        "@type":    "ImageObject",
+        "name":     "aiblabs.net",
+        "description": "Censorship-Resistance, Sovereignty, Privacy",
+        "author": JsonLDMap{
+            "@type": "Organization",
+            "name":  "allinbits.com",
+        },
+    }
+}
+
 var aibLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
   <style>
     .aib-stroke { stroke: black; fill: none; }
@@ -46,16 +61,7 @@ var aibLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12
     #privacy .aib-path { stroke: #27ae60; } /* privacy + security */
   </style>
   <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "ImageObject",
-      "name": "aiblabs.net",
-      "description": "Censorship-Resistance, Sovereignty, Privacy",
-      "author": {
-        "@type": "Organization",
-        "name": "allinbits.com"
-      }
-    }
+  ` + AibLabs.JsonLD().String() + `
   </script>
   <g transform="scale(1.5, 1.5) rotate(180, 60, 60) translate(19, 5)">
     <circle cx="60" cy="66.7" r="3" class="aib-stroke aib-circle"/>

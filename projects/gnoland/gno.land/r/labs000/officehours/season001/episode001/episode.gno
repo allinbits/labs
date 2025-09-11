@@ -1,7 +1,6 @@
 package s1e1
 
 import (
-	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 	logo "gno.land/r/labs000/logoverse"
 	ohr "gno.land/r/labs000/officehours"

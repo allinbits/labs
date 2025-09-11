@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	admin           string
+	admin string
 )
 
 func init() {
@@ -13,9 +13,9 @@ func init() {
 }
 
 func assertAccess() {
-    callerAddr := std.PreviousRealm().Address().String()
-    if callerAddr == admin {
-        return
-    }
-    panic("access denied: caller "+ callerAddr + " is not admin " + admin )
+	callerAddr := std.PreviousRealm().Address().String()
+	if callerAddr == admin {
+		return
+	}
+	panic("access denied: caller " + callerAddr + " is not admin " + admin)
 }

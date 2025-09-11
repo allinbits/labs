@@ -22,16 +22,14 @@ type JsonLDMap map[string]interface{}
 func (ld JsonLDMap) String() string {
 	s := "{\n"
 	for k, v := range ld {
-		s += `"` + k + `": ` + toJSONString(v) + ",\n"
+		s += `  "` + k + `": ` + toJSONString(v) + ",\n"
 	}
 	s += "}"
 	return s
 }
 
 func (ld JsonLDMap) Cid() string {
-    return eve.BuildMerkleRoot([]string{
-        eve.HashString(ld.String()),
-    })
+    return eve.ShaToCid(eve.HashString(ld.String()))
 }
 
 // toJSONString recursively converts values to JSON-like strings.
@@ -60,14 +58,20 @@ func toJSONString(v interface{}) string {
 
 func Render(_ string) string {
 	return cb + " \n## pflow.xyz \n" + Pflow.Image() +
+	    "\n```\n\n" + Pflow.JsonLD().String() + "\n\n```\n" +
 		"\n\n---\n\n" +
 		"## aiblabs.net \n" + AibLabs.Image() +
+		"\n```\n\n" + AibLabs.JsonLD().String() + "\n\n```\n" +
 		"\n\n---\n\n" +
 		"## allinbits.com \n" + AllInBits.Image() +
+		"\n```\n\n" + AllInBits.JsonLD().String() + "\n\n```\n" +
 		"\n\n---\n\n" +
 		"## $photon \n" + Photon.ThumbnailImage() +
+		"\n```\n\n" + Photon.JsonLD().String() + "\n\n```\n" +
 		"\n\n---\n\n" +
 		"## $atone \n" + Atone.ThumbnailImage() +
+		"\n```\n\n" + Atone.JsonLD().String() + "\n\n```\n" +
 		"\n\n---\n\n" +
-		"## Event \n" + Event.Thumbnail()
+		"## Event \n" + Event.Thumbnail() +
+		"\n```\n\n" + Event.JsonLD().String() + "\n\n```\n"
 }

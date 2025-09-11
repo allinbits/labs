@@ -50,7 +50,8 @@ func (allInBits) JsonLD() JsonLDMap {
         "description": "Censorship-Resistance, Sovereignty, Privacy",
         "author": JsonLDMap{
             "@type": "Organization",
-            "name":  "allinbits.com",
+            "name":  "Experimental Blockchain Instances by All in Bits Labs group",
+            "url":   "https://aiblabs.net",
         },
     }
 }

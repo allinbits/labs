@@ -68,7 +68,7 @@ func (eventFlyer) ThumbnailDataUrl() string {
 
 func (eventFlyer) ThumbnailSvg(w, h string) string {
     encodedSvg := url.PathEscape(AibLabs.SVG())
-    fileIcon := `<svg width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
+    fileIcon := `<svg id="` + Event.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
         <!-- Paper with folded corner -->
         <g>
             <!-- Main paper body -->

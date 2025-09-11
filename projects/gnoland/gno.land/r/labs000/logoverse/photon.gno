@@ -12,6 +12,10 @@ var Photon = photonGlyph{}
 
 var _ Logo = photonGlyph{}
 
+func (photonGlyph) Cid() string {
+    return Photon.JsonLD().Cid()
+}
+
 func (photonGlyph) JsonLD() JsonLDMap {
 	return JsonLDMap{
 		"@context":   "https://schema.org",

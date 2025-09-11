@@ -12,6 +12,10 @@ var Atone atoneGlyph
 
 var _ Logo = atoneGlyph{}
 
+func (atoneGlyph) Cid() string {
+    return Atone.JsonLD().Cid()
+}
+
 var atoneDescription = "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem. Serving as a minimal fork of the Cosmos Hub, it supports IBC and ICS for scalable interchain solutions."
 
   func (atoneGlyph) JsonLD() JsonLDMap {
@@ -38,7 +42,7 @@ var atoneDescription = "AtomOne is a community-driven, constitutionally governed
  }
 
 func (atoneGlyph) SVG() string {
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="608" height="144" viewBox="0 0 608 144" fill="none">
+	return `<svg id="` + Atone.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="608" height="144" viewBox="0 0 608 144" fill="none">
     <script type="application/ld+json">
     ` + Atone.JsonLD().String() + `
     </script>

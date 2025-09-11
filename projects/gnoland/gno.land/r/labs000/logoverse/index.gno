@@ -1,6 +1,7 @@
 package logoverse
 
 import (
+    eve "gno.land/p/eve000/event/component"
     "gno.land/p/demo/ufmt"
 )
 
@@ -13,6 +14,7 @@ This is an index of immutable objects found in this realm.
 type Logo interface {
     SVG() string
     JsonLD() JsonLDMap
+    Cid() string
 }
 
 type JsonLDMap map[string]interface{}
@@ -24,6 +26,12 @@ func (ld JsonLDMap) String() string {
 	}
 	s += "}"
 	return s
+}
+
+func (ld JsonLDMap) Cid() string {
+    return eve.BuildMerkleRoot([]string{
+        eve.HashString(ld.String()),
+    })
 }
 
 // toJSONString recursively converts values to JSON-like strings.

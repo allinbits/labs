@@ -17,6 +17,10 @@ type pflowGlyph struct{}
 
 var Pflow pflowGlyph
 
+func (pflowGlyph) Cid() string {
+    return Pflow.JsonLD().Cid()
+}
+
 var _ Logo = pflowGlyph{}
 
 func (pflowGlyph) JsonLD() JsonLDMap {
@@ -42,7 +46,7 @@ func (pflowGlyph) JsonLD() JsonLDMap {
 }
 
 func (pflowGlyph) SVG() string {
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="33" viewBox="0 0 150 33" role="img" fill="black" >
+    return `<svg id="`+ Pflow.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="150" height="33" viewBox="0 0 150 33" role="img" fill="black" >
 <script type="application/ld+json">
 ` + Pflow.JsonLD().String() + `
 </script>

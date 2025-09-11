@@ -2,7 +2,6 @@ package logoverse
 
 import (
 	"net/url"
-	eve "gno.land/p/eve000/event/component"
 )
 
 type allInBitsOrg struct{}
@@ -12,9 +11,7 @@ var AllInBits = allInBitsOrg{}
 var _ Logo = allInBitsOrg{}
 
 func (allInBitsOrg) Cid() string {
-    return eve.BuildMerkleRoot([]string{
-        eve.HashString(AllInBits.JsonLD().String()),
-    })
+    return AllInBits.JsonLD().Cid()
 }
 
 func (allInBitsOrg) Image() string {

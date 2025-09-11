@@ -10,6 +10,10 @@ var AibLabs = allInBits{}
 
 var _ Logo = allInBits{}
 
+func (allInBits) Cid() string {
+    return AibLabs.JsonLD().Cid()
+}
+
 func (allInBits) Image() string {
 	return "![AibLabs](" + AibLabs.DataUrl() + ")"
 }
@@ -51,7 +55,7 @@ func (allInBits) JsonLD() JsonLDMap {
     }
 }
 
-var aibLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+var aibLogoSvg = `<svg id="`+ AibLabs.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
   <style>
     .aib-stroke { stroke: black; fill: none; }
     .aib-circle { stroke-width: 3; }

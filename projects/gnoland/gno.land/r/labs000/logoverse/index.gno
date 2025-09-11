@@ -8,6 +8,7 @@ var cb = `
 #### Welcome to a "**small 'L' logoverse**"
 This is an index of immutable objects found in this realm.
 `
+// TODO: add registry index by CID - we can hash JSON-LD to get a CIDv1
 
 type Logo interface {
     SVG() string
@@ -58,5 +59,7 @@ func Render(_ string) string {
 		"\n\n---\n\n" +
 		"## $photon \n" + Photon.ThumbnailImage() +
 		"\n\n---\n\n" +
-		"## $atone \n" + Atone.ThumbnailImage()
+		"## $atone \n" + Atone.ThumbnailImage() +
+		"\n\n---\n\n" +
+		"## Event \n" + Event.Thumbnail()
 }

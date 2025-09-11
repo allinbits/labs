@@ -224,14 +224,14 @@ func (a *Flyer) RenderContent(path string, blocks []*Content) string {
 func (a *Flyer) Cid() string {
 	var elements []string
 
-	elements = append(elements, hashString(a.Name))
-	elements = append(elements, hashString(a.Description))
-	elements = append(elements, hashString(a.Status))
-	elements = append(elements, hashString(a.AttendanceMode))
-	elements = append(elements, hashString(a.StartDate))
-	elements = append(elements, hashString(a.EndDate))
+	elements = append(elements, HashString(a.Name))
+	elements = append(elements, HashString(a.Description))
+	elements = append(elements, HashString(a.Status))
+	elements = append(elements, HashString(a.AttendanceMode))
+	elements = append(elements, HashString(a.StartDate))
+	elements = append(elements, HashString(a.EndDate))
 	if a.Location != nil {
-		elements = append(elements, hashStrings(
+		elements = append(elements, HashStrings(
             a.Location.Name,
             a.Location.Address,
             a.Location.Coordinates,
@@ -239,10 +239,10 @@ func (a *Flyer) Cid() string {
 		))
 	}
 
-	return shaToCid(buildMerkleRoot(elements))
+	return ShaToCid(BuildMerkleRoot(elements))
 }
 
-func buildMerkleRoot(elements []string) string {
+func BuildMerkleRoot(elements []string) string {
     if len(elements) == 0 {
         return ""
     }
@@ -254,23 +254,23 @@ func buildMerkleRoot(elements []string) string {
     for i := 0; i < len(elements); i += 2 {
         if i+1 < len(elements) {
             combined := elements[i] + elements[i+1]
-            nextLevel = append(nextLevel, hashString(combined))
+            nextLevel = append(nextLevel, HashString(combined))
         } else {
             nextLevel = append(nextLevel, elements[i])
         }
     }
-    return buildMerkleRoot(nextLevel)
+    return BuildMerkleRoot(nextLevel)
 }
 
-func hashStrings(elements ...string) string {
+func HashStrings(elements ...string) string {
     combined := ""
     for _, e := range elements {
         combined += e
     }
-    return hashString(combined)
+    return HashString(combined)
 }
 
-func hashString(s interface{}) string {
+func HashString(s interface{}) string {
     if s == nil {
         return ""
     }
@@ -290,9 +290,9 @@ func hashString(s interface{}) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// shaToCid converts a hex-encoded SHA-256 digest into a CIDv1 (base32, multibase "b").
+// ShaToCid converts a hex-encoded SHA-256 digest into a CIDv1 (base32, multibase "b").
 // Layout: <0x01 version><0x55 codec=raw><0x12 mh=sha2-256><0x20 len=32><digest>
-func shaToCid(sha string) string {
+func ShaToCid(sha string) string {
 	sha = strings.TrimSpace(sha)
 
 	// Decode hex digest (must be 32 bytes for sha2-256)

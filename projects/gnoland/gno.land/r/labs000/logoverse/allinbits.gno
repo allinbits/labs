@@ -2,6 +2,7 @@ package logoverse
 
 import (
 	"net/url"
+	eve "gno.land/p/eve000/event/component"
 )
 
 type allInBitsOrg struct{}
@@ -10,12 +11,18 @@ var AllInBits = allInBitsOrg{}
 
 var _ Logo = allInBitsOrg{}
 
+func (allInBitsOrg) Cid() string {
+    return eve.BuildMerkleRoot([]string{
+        eve.HashString(AllInBits.JsonLD().String()),
+    })
+}
+
 func (allInBitsOrg) Image() string {
 	return "![AllInBits](" + AllInBits.DataUrl() + ")"
 }
 
 func (allInBitsOrg) JsonLD() JsonLDMap {
-   return JsonLDMap{
+   return JsonLDMap {
         "@context": "https://schema.org",
         "@type":    "ImageObject",
         "name":     "allinbits.org",
@@ -28,7 +35,7 @@ func (allInBitsOrg) JsonLD() JsonLDMap {
 }
 
 func (allInBitsOrg) SVG() string {
-    return `<svg width="80" height="53" viewBox="0 0 80 53" fill="none" xmlns="http://www.w3.org/2000/svg">
+    return `<svg id="` + AllInBits.Cid() + `" width="80" height="53" viewBox="0 0 80 53" fill="none" xmlns="http://www.w3.org/2000/svg">
 <script type="application/ld+json">
 ` + AllInBits.JsonLD().String() + `
 </script>

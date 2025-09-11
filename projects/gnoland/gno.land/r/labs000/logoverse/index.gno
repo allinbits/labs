@@ -6,7 +6,7 @@ This is an index of immutable objects found in this realm.
 `
 
 func Render(_ string) string {
-	return cb + " \n## Pflow.xyz \n" + Pflow.Image() +
+	return cb + " \n## pflow.xyz \n" + Pflow.Image() +
 		"\n\n---\n\n" +
-		"## AllInBits.com \n" + AllInBits.Image()
+		"## aiblabs.net \n" + AibLabs.Image()
 }

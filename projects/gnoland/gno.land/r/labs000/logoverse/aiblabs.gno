@@ -6,26 +6,26 @@ import (
 
 type allInBits struct{}
 
-var AllInBits = allInBits{}
+var AibLabs = allInBits{}
 
 func (allInBits) Image() string {
-	return "![AllInBits](" + AllInBits.DataUrl() + ")"
+	return "![AibLabs](" + AibLabs.DataUrl() + ")"
 }
 
 func (allInBits) DataUrl() string {
-	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(AllInBits.SVG())
+	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(AibLabs.SVG())
 }
 
 func (allInBits) Thumbnail() string {
-	return "![AllInBits](" + AllInBits.ThumbnailDataUrl() + ")"
+	return "![AibLabs](" + AibLabs.ThumbnailDataUrl() + ")"
 }
 
 func (allInBits) ThumbnailDataUrl() string {
-	return "data:image/svg+xml;utf8," + url.PathEscape(AllInBits.ThumbnailSvg("70", "30"))
+	return "data:image/svg+xml;utf8," + url.PathEscape(AibLabs.ThumbnailSvg("70", "30"))
 }
 
 func (allInBits) ThumbnailSvg(w, h string) string {
-	dataUrl := AllInBits.DataUrl()
+	dataUrl := AibLabs.DataUrl()
 	return `<svg width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="none" stroke="#facade"/>
 		<image href="` + dataUrl + `" width="` + w + `" height="` + h + `"/>
@@ -41,6 +41,9 @@ var aibLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="12
     .aib-stroke { stroke: black; fill: none; }
     .aib-circle { stroke-width: 3; }
     .aib-path { stroke-width: 4; }
+    #censorship-resistance .aib-path { stroke: rgb(25, 108, 87); } /* gno.land + blockchain */
+    #sovereignty .aib-path { stroke: #3498db; } /* freedom + decentralization */
+    #privacy .aib-path { stroke: #27ae60; } /* privacy + security */
   </style>
   <script type="application/ld+json">
     {

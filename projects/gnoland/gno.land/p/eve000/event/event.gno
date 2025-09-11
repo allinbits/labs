@@ -69,29 +69,6 @@ type Event struct {
 	storage        *Storage
 }
 
-func (evt *Event) SetEventName(name string) {
-	evt.Name = name
-}
-
-func (evt *Event) SetEventLocation(loc *eve.Location) {
-	evt.Location = loc
-}
-
-func (evt *Event) SetEventStartDate(startDate time.Time) {
-	evt.StartDate = startDate
-}
-
-func (evt *Event) SetEventEndDate(endDate time.Time) {
-	evt.EndDate = endDate
-}
-
-func (evt *Event) SetEventDescription(description string) {
-	evt.Description = description
-}
-
-func (evt *Event) SetSessions(sessions []*eve.Session) {
-	evt.Sessions = sessions
-}
 
 func (evt *Event) AddSpeaker(s *eve.Speaker) {
 	if evt.storage == nil {

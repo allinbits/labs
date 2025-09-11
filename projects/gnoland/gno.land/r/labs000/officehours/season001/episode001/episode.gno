@@ -13,6 +13,10 @@ func init() {
 	ohr.Register(Episode.Record())
 }
 
+func Render(path string) string {
+	return path
+}
+
 type episode struct{}
 
 var Episode = episode{}
@@ -28,8 +32,8 @@ func (episode) Record() map[string]ohr.Record {
 	}
 }
 
-func (episode) Event(opts map[string]any) *event.Event {
-	evt := &event.Event{
+func (episode) Event(opts map[string]any) *eve.Flyer {
+	evt := &eve.Flyer{
 		Name:        "Intro To Petri-nets",
 		Description: "Introducing the Logoverse",
 	}

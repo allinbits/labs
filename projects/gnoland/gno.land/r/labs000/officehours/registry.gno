@@ -2,7 +2,7 @@ package officehours
 
 import (
 	"gno.land/p/demo/avl"
-	"gno.land/p/eve000/event"
+	eve "gno.land/p/eve000/event/component"
 )
 
 type Registry struct {
@@ -51,7 +51,7 @@ func (r Registry) Extend(name string, writers ...EvtWriter) {
 		panic("Episode not found: " + name)
 	}
 	for _, w := range writers {
-		w(&event.Event{}, map[string]any{})
+		w(&eve.Flyer{}, map[string]any{})
 	}
 	r.Tree.Set(name, Record{
 		Episode:    rec.Episode,

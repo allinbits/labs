@@ -4,13 +4,12 @@ import (
 	"strings"
 
 	ufmt "gno.land/p/demo/ufmt"
-	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 	logo "gno.land/r/labs000/logoverse"
 )
 
 type Record struct {
-	Episode    func(map[string]any) *event.Event
+	Episode    func(map[string]any) *eve.Flyer
 	Content    []*eve.Content
 	EvtWriters []EvtWriter // Yoneda move: objects are known by how they’re probed (the writers).
 	Meta       []string
@@ -23,7 +22,7 @@ func (rec Record) RenderCalendar(path string) string {
 	return evt.Render(path, eve.IcsCalendarFile)
 }
 
-func (rec Record) Compose(opts map[string]any) *event.Event {
+func (rec Record) Compose(opts map[string]any) *eve.Flyer {
 	evt := rec.Episode(opts)
 	for _, opSetter := range rec.EvtWriters {
 		opSetter(evt, opts)
@@ -33,7 +32,7 @@ func (rec Record) Compose(opts map[string]any) *event.Event {
 
 func (rec Record) Render(path string) string {
 	q := eve.ParseQuery(path)
-	var evt *event.Event
+	var evt *eve.Flyer
 	page := q.Get("p")
 	opts := GetScheduleOpts(path)
 
@@ -93,6 +92,6 @@ func (rec Record) BottomNav(path string, opts map[string]interface{}) string {
 	voteDownLink := ufmt.Sprintf("[vote↓down](" + permalink + "&vote=down)")
 	proposeLink := ufmt.Sprintf("[propose](/r/labs000/officehours/season001/episode000" + todayLink() + ")")
 
-	return "\n[" + logo.AllInBits.Thumbnail() + "](/r/labs000/officehours) \n\n " +
+	return "\n[" + logo.AibLabs.Thumbnail() + "](/r/labs000/officehours) \n\n " +
 		link + " | " + voteUpLink + " | " + voteDownLink + " | " + proposeLink
 }

@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 	logo "gno.land/r/labs000/logoverse"
 )
@@ -15,7 +14,7 @@ func Render(path string) string {
 	if p := q.Get("p"); p != "" {
 		switch p {
 		case "propose":
-			return Episode.Record()[S000E000].Render(path)
+			return ProposedEpisode.Record()[S000E000].Render(path)
 		default:
 		}
 	}
@@ -36,7 +35,7 @@ func RenderStatic(path string) string {
 	var e1 = "?episode=s001e001&status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
 	return `
 # Office Hours
-[` + logo.AllInBits.Image() + `](/r/labs000/officehours)
+[` + logo.AibLabs.Image() + `](/r/labs000/officehours)
 - episode | [index](?) | [help](?p=help) | [propose](` + todayLink() + `)
 
 | Recording        | Episode |
@@ -55,10 +54,10 @@ func DefaultOpts() map[string]any {
 	}
 }
 
-type EvtWriter = func(evt *event.Event, opts map[string]any)
+type EvtWriter = func(evt *eve.Flyer, opts map[string]any)
 
 // ApplyScheduleOptionsFromPath applies scheduling options from the provided opts map to the event.
-func ApplyScheduleOptionsFromPath(evt *event.Event, opts map[string]any) {
+func ApplyScheduleOptionsFromPath(evt *eve.Flyer, opts map[string]any) {
 	evt.SetRenderOpts(opts) // TODO: should opts + renderOpts be separate?
 
 	if d, ok := opts["description"]; ok {
@@ -189,14 +188,14 @@ func Keywords(tags ...string) []string {
 }
 
 // InDraft marks the event as a draft by clearing its start and end dates and appending " (draft)" to its name.
-func InDraft(evt *event.Event, opts map[string]any) {
+func InDraft(evt *eve.Flyer, opts map[string]any) {
 	evt.StartDate = time.Time{}
 	evt.EndDate = time.Time{}
 	evt.Name = evt.Name + " (draft)"
 }
 
 // PublishDraft finalizes a draft event by setting its start and end dates based on its sessions or defaulting to today if not set.
-func PublishDraft(evt *event.Event, opts map[string]any) {
+func PublishDraft(evt *eve.Flyer, opts map[string]any) {
 	// set start end time based on sessions default to today if not set
 	if evt.StartDate.IsZero() || evt.EndDate.IsZero() {
 		if len(evt.Sessions) > 0 {

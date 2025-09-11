@@ -1,6 +1,7 @@
 package officehours
 
 import (
+    "time"
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 )
@@ -8,17 +9,16 @@ import (
 const S000E000 = "s000e000"
 
 func init() {
-	Register(Episode.Record())
+	Register(ProposedEpisode.Record())
 }
 
-type episode struct{}
+type Episode struct {}
+var ProposedEpisode = Episode{}
 
-var Episode = episode{}
-
-func (episode) Record() map[string]Record {
+func (Episode) Record() map[string]Record {
 	return map[string]Record{
 		S000E000: Record{
-			Episode: Episode.Event,
+			Episode: ProposedEpisode.Event,
 			EvtWriters: Writer(
 				ApplyScheduleOptionsFromPath,
 				InDraft,
@@ -28,8 +28,8 @@ func (episode) Record() map[string]Record {
 	}
 }
 
-func (episode) Event(opts map[string]any) *event.Event {
-	return &event.Event{
+func (Episode) Event(opts map[string]any) *eve.Flyer {
+	return &eve.Flyer{
 		Name: "OfficeHours Proposal: " + S000E000,
 		Sessions: []*eve.Session{
 			{

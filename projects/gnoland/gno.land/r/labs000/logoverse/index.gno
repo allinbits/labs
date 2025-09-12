@@ -32,47 +32,41 @@ type Record struct {
 
 // Register adds a LogoGraph object to the registry and returns its Record.
 // It panics if the object does not have a valid CID or if the CID is already registered.
+// --- register.go ---
 func Register(i interface{}) string {
-    var newCid string
-	if ld, ok := i.(LogoGraph); !ok {
-        panic("object must implement LogoGraph interface")
-    } else {
-        newCid = ld.Cid()
-        if len(newCid) != 59 {
-            panic("object must have a valid CID")
-        }
-        if strings.HasPrefix(newCid, "bafkrei") == false {
-            panic("object must have a valid CID")
-        }
-    }
-    _ = i.(LogoGraph).SVG()
-    _ = i.(LogoGraph).Thumbnail()
-    ld := i.(LogoGraph).JsonLD()
-    for _, col := range columns {
-        if _, ok := ld[col]; !ok {
-            if col == "cid" || col == "committer" {
-                continue
-            }
-            panic("object must have " + col + " in its JSON-LD")
-        }
-    }
-    if ld.StringVal("@type") == "" {
-        panic("object must have @type in its JSON-LD")
-    }
-	rec := Record {
+	ldg, ok := i.(LogoGraph)
+	if !ok {
+		panic("object must implement LogoGraph interface")
+	}
+	newCid := ldg.Cid()
+	if !isLikelyCIDv1(newCid) {
+		panic("object must have a likely CIDv1 (base32, 'baf...' style)")
+	}
+
+	// Nudge implementors to fill the full surface (no-ops ok).
+	_ = ldg.SVG()
+	_ = ldg.Thumbnail()
+
+	ld := ldg.JsonLD()
+	for _, col := range columns {
+		if col == "cid" || col == "committer" { continue }
+		if _, ok := ld[col]; !ok {
+			panic("object must have " + col + " in its JSON-LD")
+		}
+	}
+	rec := Record{
 		Name:        ld.StringVal(columns[1]),
 		Description: ld.StringVal(columns[2]),
 		Cid:         newCid,
-		Object:     i,
-		Committer:  std.PreviousRealm().Address().String(),
+		Object:      i,
+		Committer:   std.PreviousRealm().Address().String(),
 	}
-    if _, ok := registry.Get(rec.Cid); ok {
-        panic("duplicate CID registered: " + rec.Cid)
-    }
+	if _, ok := registry.Get(rec.Cid); ok {
+		panic("duplicate CID registered: " + rec.Cid)
+	}
 	registry.Set(rec.Cid, rec)
-
-	std.Emit("RegisteredGlyph", "cid", rec.Cid)
-    return newCid
+	std.Emit( "GlyphRegistered", "cid", rec.Cid, "ldtype", ld.StringVal("@type"))
+	return newCid
 }
 
 var rows = []string{
@@ -95,7 +89,7 @@ func Render(path string) string {
     if cid, ok := q["cid"]; ok {
         if v, ok := registry.Get(cid[0]); ok {
             r := v.(Record)
-            if format, ok := q["format"]; ok  {
+            if format, ok := q["v"]; ok  {
                 switch format[0] {
                 case "committer":
                     return r.Committer
@@ -147,10 +141,24 @@ func renderTable() string {
 	return result
 }
 
-// capitalize returns the input string with the first letter in uppercase.
 func capitalize(s string) string {
 	if len(s) == 0 {
 		return s
 	}
 	return string(s[0]-32) + s[1:]
+}
+
+// Lightweight CID sanity check (keeps “permissionless” ethos).
+func isLikelyCIDv1(s string) bool {
+	// CIDv1 is multibase (usually base32 'b...'), lowercase, no padding.
+	if len(s) < 10 { return false }
+	if s[0] != 'b' { return false } // multibase prefix (base32 lower)
+	for _, r := range s {
+		if !('a' <= r && r <= 'z' || '2' <= r && r <= '7') { // base32 alphabet
+			return false
+		}
+	}
+	// Optional beams: quick IPLD prefix sanity (not exhaustive).
+	if !strings.HasPrefix(s, "baf") { return false }
+	return true
 }

@@ -1,33 +1,34 @@
 package logoverse
 
 import (
-    "time"
-    "net/url"
+	"net/url"
+	"time"
+
 	eve "gno.land/p/eve000/event/component"
 )
 
 type EventOpts struct {
-    Status    string
-    StartDate string
-    EndDate   string
-    Settings  map[string]string
+	Status    string
+	StartDate string
+	EndDate   string
+	Settings  map[string]string
 }
 
 var Event = EventOpts{
-    Status:    "EventScheduled", // FIXME: not showing up in metadata
-    StartDate: "2025-01-01T13:00:00Z",
-    EndDate:   "2025-01-01T13:00:00Z",
-    Settings:  map[string]string{"location": "Online"},
+	Status:    "EventScheduled", // FIXME: not showing up in metadata
+	StartDate: "2025-01-01T13:00:00Z",
+	EndDate:   "2025-01-01T13:00:00Z",
+	Settings:  map[string]string{"location": "Online"},
 }
 
 var _ = eve.Flyer{} // ensure eve imported
-var _ Logo = EventOpts{}
+var _ LogoGraph = EventOpts{}
 
 func (EventOpts) Cid() string {
-    return Event.WithFlyer(Event.Flyer()).Cid()
+	return Event.WithFlyer(Event.Flyer()).Cid()
 }
 
-func (EventOpts)RenderOpts() map[string]any {
+func (EventOpts) RenderOpts() map[string]any {
 	return map[string]any{
 		"dev":      map[string]any{}, // REVIEW: chainIds are used to provide a chain-level opts namespace
 		"labsnet1": map[string]any{},
@@ -35,60 +36,60 @@ func (EventOpts)RenderOpts() map[string]any {
 }
 
 func (EventOpts) Flyer(ef ...EventOpts) *eve.Flyer {
-    var evt EventOpts
-    if len(ef) > 0 {
-        evt = ef[0]
-    } else {
-        evt = Event
-    }
-    start, _ := time.Parse(time.RFC3339, evt.StartDate)
-    end, _ := time.Parse(time.RFC3339, evt.EndDate)
-    if !end.After(start) {
-        end = start
-    }
-    location := "Online"
-    if loc, ok := Event.Settings["location"]; ok {
-        location = loc
-    }
-    f := &eve.Flyer{
-        Name:      "Event Flyer",
-        Location:  &eve.Location{Name: location},
-        StartDate: start,
-        EndDate:   end,
-        Status:    eve.EventStatus(Event.Status),
-        Description: "This is an example event flyer generated as code in gno.land. " +
-            "It can be stored, versioned, and composed directly, without extra boilerplate or access control.",
-        Sessions: []*eve.Session{
-            {
-                Title:        "Main Session",
-                Description: "This is the main session of the event.",
-            },
-        },
-        Images:     []string{},
-    }
-    f.SetRenderOpts(Event.RenderOpts())
-    return f
+	var evt EventOpts
+	if len(ef) > 0 {
+		evt = ef[0]
+	} else {
+		evt = Event
+	}
+	start, _ := time.Parse(time.RFC3339, evt.StartDate)
+	end, _ := time.Parse(time.RFC3339, evt.EndDate)
+	if !end.After(start) {
+		end = start
+	}
+	location := "Online"
+	if loc, ok := Event.Settings["location"]; ok {
+		location = loc
+	}
+	f := &eve.Flyer{
+		Name:      "Event Flyer",
+		Location:  &eve.Location{Name: location},
+		StartDate: start,
+		EndDate:   end,
+		Status:    eve.EventStatus(Event.Status),
+		Description: "This is an example event flyer generated as code in gno.land. " +
+			"It can be stored, versioned, and composed directly, without extra boilerplate or access control.",
+		Sessions: []*eve.Session{
+			{
+				Title:       "Main Session",
+				Description: "This is the main session of the event.",
+			},
+		},
+		Images: []string{},
+	}
+	f.SetRenderOpts(Event.RenderOpts())
+	return f
 }
 
 func (EventOpts) Image() string {
-    return "![Event](" + Event.DataUrl() + ")"
+	return "![Event](" + Event.DataUrl() + ")"
 }
 
 func (EventOpts) DataUrl() string {
-    return "data:image/svg+xml;charset=utf-8," + url.PathEscape(Event.SVG())
+	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(Event.SVG())
 }
 
 func (EventOpts) Thumbnail() string {
-    return "![Event](" + Event.ThumbnailDataUrl() + ")"
+	return "![Event](" + Event.ThumbnailDataUrl() + ")"
 }
 
 func (EventOpts) ThumbnailDataUrl() string {
-    return "data:image/svg+xml;utf8," + url.PathEscape(Event.ThumbnailSvg("75", "94"))
+	return "data:image/svg+xml;utf8," + url.PathEscape(Event.ThumbnailSvg("75", "94"))
 }
 
 func (EventOpts) ThumbnailSvg(w, h string) string {
-    encodedSvg := url.PathEscape(Event.SVG())
-    fileIcon := `<svg id="` + Event.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
+	encodedSvg := url.PathEscape(Event.SVG())
+	fileIcon := `<svg id="` + Event.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
     <script type="application/ld+json">
     ` + Event.WithFlyer(Event.Flyer()).String() + `
     </script>
@@ -107,36 +108,36 @@ func (EventOpts) ThumbnailSvg(w, h string) string {
                width="calc(` + w + ` - 24)"
                height="calc(` + h + ` - 32)"/>
     </svg>`
-    return fileIcon
+	return fileIcon
 }
 
 func (EventOpts) SVG() string {
-    return AibLabs.SVG()
+	return AibLabs.SVG()
 }
 
-func (EventOpts) WithFlyer(ef *eve.Flyer) JsonLDMap {
-    start := ef.StartDate.Format(time.RFC3339)
-    end := ef.EndDate.Format(time.RFC3339)
-    if !ef.EndDate.After(ef.StartDate) {
-        end = start
-    }
-    location := "Online"
-    return JsonLDMap{
-        "@context":    "https://schema.org",
-        "@type":       "Event",
-        "name":        ef.Name,
-        "description": ef.Sessions[0].Description,
-        "eventStatus": string(ef.Status),
-        "startDate":   start,
-        "endDate":     end,
-        "location": map[string]interface{}{
-            "@type":   "Place",
-            "name":    location,
-            "address": location,
-        },
-    }
+func (EventOpts) WithFlyer(ef *eve.Flyer) eve.JsonLDMap {
+	start := ef.StartDate.Format(time.RFC3339)
+	end := ef.EndDate.Format(time.RFC3339)
+	if !ef.EndDate.After(ef.StartDate) {
+		end = start
+	}
+	location := "Online"
+	return eve.JsonLDMap{
+		"@context":    "https://schema.org",
+		"@type":       "Event",
+		"name":        ef.Name,
+		"description": ef.Sessions[0].Description,
+		"eventStatus": string(ef.Status),
+		"startDate":   start,
+		"endDate":     end,
+		"location": map[string]interface{}{
+			"@type":   "Place",
+			"name":    location,
+			"address": location,
+		},
+	}
 }
 
-func (EventOpts) JsonLD() JsonLDMap {
-    return Event.WithFlyer(Event.Flyer())
+func (EventOpts) JsonLD() eve.JsonLDMap {
+	return Event.WithFlyer(Event.Flyer())
 }

@@ -2,37 +2,39 @@ package logoverse
 
 import (
 	"net/url"
+
+	eve "gno.land/p/eve000/event/component"
 )
 
 type allInBitsOrg struct{}
 
 var AllInBits = allInBitsOrg{}
 
-var _ Logo = allInBitsOrg{}
+var _ LogoGraph = allInBitsOrg{}
 
 func (allInBitsOrg) Cid() string {
-    return AllInBits.JsonLD().Cid()
+	return AllInBits.JsonLD().Cid()
 }
 
 func (allInBitsOrg) Image() string {
 	return "![AllInBits](" + AllInBits.DataUrl() + ")"
 }
 
-func (allInBitsOrg) JsonLD() JsonLDMap {
-   return JsonLDMap {
-        "@context": "https://schema.org",
-        "@type":    "ImageObject",
-        "name":     "allinbits.org",
-        "description": "All In Bits",
-        "author": JsonLDMap{
-            "@type": "Organization",
-            "name":  "allinbits.com",
-        },
-    }
+func (allInBitsOrg) JsonLD() eve.JsonLDMap {
+	return eve.JsonLDMap{
+		"@context":    "https://schema.org",
+		"@type":       "ImageObject",
+		"name":        "allinbits.org",
+		"description": "All In Bits",
+		"author": eve.JsonLDMap{
+			"@type": "Organization",
+			"name":  "allinbits.com",
+		},
+	}
 }
 
 func (allInBitsOrg) SVG() string {
-    return `<svg id="` + AllInBits.Cid() + `" width="80" height="53" viewBox="0 0 80 53" fill="none" xmlns="http://www.w3.org/2000/svg">
+	return `<svg id="` + AllInBits.Cid() + `" width="80" height="53" viewBox="0 0 80 53" fill="none" xmlns="http://www.w3.org/2000/svg">
 <script type="application/ld+json">
 ` + AllInBits.JsonLD().String() + `
 </script>

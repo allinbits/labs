@@ -10,36 +10,36 @@ type atoneGlyph struct{}
 
 var Atone atoneGlyph
 
-var _ Logo = atoneGlyph{}
+var _ LogoGraph = atoneGlyph{}
 
 func (atoneGlyph) Cid() string {
-    return Atone.JsonLD().Cid()
+	return Atone.JsonLD().Cid()
 }
 
 var atoneDescription = "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem. Serving as a minimal fork of the Cosmos Hub, it supports IBC and ICS for scalable interchain solutions."
 
-  func (atoneGlyph) JsonLD() JsonLDMap {
-  	return JsonLDMap {
-        "@context":    "https://schema.org",
-        "@type":       "ImageObject",
-        "name":        "atone.dev",
-        "description": atoneDescription,
-        "url":         "https://atom.one",
-        "hasPart": []interface{}{
-            JsonLDMap{
-                "@type": "CreativeWork",
-                "name":  "Constitution",
-                "url":   "https://github.com/atomone-hub/genesis/blob/main/CONSTITUTION.md",
-            },
-            JsonLDMap{
-                "@type":       "Product",
-                "name":        "Osmosis Asset",
-                "url":         "https://app.osmosis.zone/assets/ibc/BC26A7A805ECD6822719472BCB7842A48EF09DF206182F8F259B2593EB5D23FB",
-                "tickerSymbol": "$ATONE",
-            },
-        },
-      }
- }
+func (atoneGlyph) JsonLD() eve.JsonLDMap {
+	return eve.JsonLDMap{
+		"@context":    "https://schema.org",
+		"@type":       "ImageObject",
+		"name":        "atone.dev",
+		"description": atoneDescription,
+		"url":         "https://atom.one",
+		"hasPart": []interface{}{
+			eve.JsonLDMap{
+				"@type": "CreativeWork",
+				"name":  "Constitution",
+				"url":   "https://github.com/atomone-hub/genesis/blob/main/CONSTITUTION.md",
+			},
+			eve.JsonLDMap{
+				"@type":        "Product",
+				"name":         "Osmosis Asset",
+				"url":          "https://app.osmosis.zone/assets/ibc/BC26A7A805ECD6822719472BCB7842A48EF09DF206182F8F259B2593EB5D23FB",
+				"tickerSymbol": "$ATONE",
+			},
+		},
+	}
+}
 
 func (atoneGlyph) SVG() string {
 	return `<svg id="` + Atone.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="608" height="144" viewBox="0 0 608 144" fill="none">

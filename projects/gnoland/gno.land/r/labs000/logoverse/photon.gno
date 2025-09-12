@@ -10,21 +10,21 @@ type photonGlyph struct{}
 
 var Photon = photonGlyph{}
 
-var _ Logo = photonGlyph{}
+var _ LogoGraph = photonGlyph{}
 
 func (photonGlyph) Cid() string {
-    return Photon.JsonLD().Cid()
+	return Photon.JsonLD().Cid()
 }
 
-func (photonGlyph) JsonLD() JsonLDMap {
-	return JsonLDMap{
-		"@context":   "https://schema.org",
-		"@type":      "ImageObject",
-		"name":       "$photon",
+func (photonGlyph) JsonLD() eve.JsonLDMap {
+	return eve.JsonLDMap{
+		"@context":    "https://schema.org",
+		"@type":       "ImageObject",
+		"name":        "$photon",
 		"description": "Photon is a digital asset in the AtomOne ecosystem.",
-		"url":        "https://photon.atomone.dev",
+		"url":         "https://photon.atomone.dev",
 		"hasPart": []interface{}{
-			JsonLDMap{
+			eve.JsonLDMap{
 				"@type":        "Product",
 				"name":         "Osmosis Asset",
 				"url":          "https://app.osmosis.zone/assets/ibc/D6E02C5AE8A37FC2E3AB1FC8AC168878ADB870549383DFFEA9FD020C234520A7",

@@ -2,16 +2,18 @@ package logoverse
 
 import (
 	"net/url"
+
+	eve "gno.land/p/eve000/event/component"
 )
 
 type allInBits struct{}
 
 var AibLabs = allInBits{}
 
-var _ Logo = allInBits{}
+var _ LogoGraph = allInBits{}
 
 func (allInBits) Cid() string {
-    return AibLabs.JsonLD().Cid()
+	return AibLabs.JsonLD().Cid()
 }
 
 func (allInBits) Image() string {
@@ -42,21 +44,21 @@ func (allInBits) SVG() string {
 	return aibLogoSvg
 }
 
-func (allInBits) JsonLD() JsonLDMap {
-    return JsonLDMap{
-        "@context": "https://schema.org",
-        "@type":    "ImageObject",
-        "name":     "aiblabs.net",
-        "description": "Censorship-Resistance, Sovereignty, Privacy",
-        "author": JsonLDMap{
-            "@type": "Organization",
-            "name":  "Experimental Blockchain Instances by All in Bits Labs group",
-            "url":   "https://aiblabs.net",
-        },
-    }
+func (allInBits) JsonLD() eve.JsonLDMap {
+	return eve.JsonLDMap{
+		"@context":    "https://schema.org",
+		"@type":       "ImageObject",
+		"name":        "aiblabs.net",
+		"description": "Censorship-Resistance, Sovereignty, Privacy",
+		"author": eve.JsonLDMap{
+			"@type": "Organization",
+			"name":  "Experimental Blockchain Instances by All in Bits Labs group",
+			"url":   "https://aiblabs.net",
+		},
+	}
 }
 
-var aibLogoSvg = `<svg id="`+ AibLabs.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+var aibLogoSvg = `<svg id="` + AibLabs.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
   <style>
     .aib-stroke { stroke: black; fill: none; }
     .aib-circle { stroke-width: 3; }

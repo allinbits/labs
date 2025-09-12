@@ -18,35 +18,35 @@ type pflowGlyph struct{}
 var Pflow pflowGlyph
 
 func (pflowGlyph) Cid() string {
-    return Pflow.JsonLD().Cid()
+	return Pflow.JsonLD().Cid()
 }
 
-var _ Logo = pflowGlyph{}
+var _ LogoGraph = pflowGlyph{}
 
-func (pflowGlyph) JsonLD() JsonLDMap {
-    return JsonLDMap{
-        "@context": "https://schema.org",
-        "@type":    "ImageObject",
-        "name":     "pflow.xyz",
-        "description": "petri-net models for web3",
-        "hasPart": []interface{}{
-            JsonLDMap{
-                "@type": "Product",
-                "name": "Pflow Editor",
-                "description": "A single page app for building and sharing petri-net models.",
-                "url": "https://pflow.xyz",
-            },
-        },
-        "author": JsonLDMap{
-            "@type": "Person",
-            "name": "Matt York",
-            "url": "https://github.com/stackdump",
-        },
-    }
+func (pflowGlyph) JsonLD() eve.JsonLDMap {
+	return eve.JsonLDMap{
+		"@context":    "https://schema.org",
+		"@type":       "ImageObject",
+		"name":        "pflow.xyz",
+		"description": "petri-net models for web3",
+		"hasPart": []interface{}{
+			eve.JsonLDMap{
+				"@type":       "Product",
+				"name":        "Pflow Editor",
+				"description": "A single page app for building and sharing petri-net models.",
+				"url":         "https://pflow.xyz",
+			},
+		},
+		"author": eve.JsonLDMap{
+			"@type": "Person",
+			"name":  "Matt York",
+			"url":   "https://github.com/stackdump",
+		},
+	}
 }
 
 func (pflowGlyph) SVG() string {
-    return `<svg id="`+ Pflow.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="150" height="33" viewBox="0 0 150 33" role="img" fill="black" >
+	return `<svg id="` + Pflow.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="150" height="33" viewBox="0 0 150 33" role="img" fill="black" >
 <script type="application/ld+json">
 ` + Pflow.JsonLD().String() + `
 </script>

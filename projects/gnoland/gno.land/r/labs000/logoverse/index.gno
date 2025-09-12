@@ -1,6 +1,7 @@
 package logoverse
 
 import (
+    "std"
     "strings"
     "gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
@@ -26,6 +27,7 @@ type Record struct {
 	Description string
 	Cid         string
 	Object      interface{}
+	Committer   string
 }
 
 // Register adds a LogoGraph object to the registry and returns its Record.
@@ -48,7 +50,7 @@ func Register(i interface{}) string {
     ld := i.(LogoGraph).JsonLD()
     for _, col := range columns {
         if _, ok := ld[col]; !ok {
-            if col == "cid" {
+            if col == "cid" || col == "committer" {
                 continue
             }
             panic("object must have " + col + " in its JSON-LD")
@@ -62,11 +64,14 @@ func Register(i interface{}) string {
 		Description: ld.StringVal(columns[2]),
 		Cid:         newCid,
 		Object:     i,
+		Committer:  std.PreviousRealm().Address().String(),
 	}
     if _, ok := registry.Get(rec.Cid); ok {
         panic("duplicate CID registered: " + rec.Cid)
     }
 	registry.Set(rec.Cid, rec)
+
+	std.Emit("RegisteredGlyph", "cid", rec.Cid)
     return newCid
 }
 
@@ -79,10 +84,10 @@ var rows = []string{
     Register(Photon),
 }
 
-var columns = []string{"cid", "name", "description"}
+var columns = []string{"cid", "name", "description", "committer"}
 
 func (e Record) String() string {
-    return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " |\n"
+    return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
 }
 
 func Render(path string) string {
@@ -92,6 +97,8 @@ func Render(path string) string {
             r := v.(Record)
             if format, ok := q["format"]; ok  {
                 switch format[0] {
+                case "committer":
+                    return r.Committer
                 case "svg":
                     return r.Object.(LogoGraph).Thumbnail()
                 case "json":

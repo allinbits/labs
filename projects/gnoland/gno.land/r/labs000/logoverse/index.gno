@@ -17,44 +17,56 @@ type LogoGraph interface {
 
 type entry struct {
 	Name        string
-	LDType      string
 	Description string
 }
 
-func (e entry) Title() string {
-	if e.Name != "" {
-		return "[" + e.Name + "](#" + e.LDType + ")"
-	}
-	return e.LDType
+var rows = []entry{
+    Row(Pflow),
+    Row(AibLabs),
+    Row(AllInBits),
+    Row(Photon),
+    Row(Atone),
+    Row(Event),
 }
+
+var columns = []string{"name", "description"}
 
 func Row(i interface{}) entry {
 	ld := i.(LogoGraph).JsonLD()
-	return entry{
-		Name:        ld.StringVal("name"),
-		LDType:      ld.StringVal("@type"),
-		Description: ld.StringVal("description"),
+	return entry {
+		Name:        ld.StringVal(columns[0]),
+		Description: ld.StringVal(columns[1]),
 	}
 }
+func Render(path string) string {
+    // TODO: build composite SVG from all logos
+    return RenderTable("")
+}
 
-func Render(_ string) string {
-	key := "description"
-	rows := []entry{
-		Row(Pflow),
-		Row(AibLabs),
-		Row(AllInBits),
-		Row(Photon),
-		Row(Atone),
-		Row(Event),
-	}
+func RenderTable(_ string) string {
 
 	result := cb + "\n"
 	// Header
-	result += "| Name | Type | " + key + " |\n"
-	result += "| ---- | ---- | ------- |\n"
+	result += "|"
+	for _, col := range columns {
+		result += " " + capitalize(col) + " |"
+	}
+	result += "\n|"
+	for range columns {
+		result += " ---- |"
+	}
+	result += "\n"
 	// Rows
 	for _, r := range rows {
-		result += "| " + r.Name + " | " + r.LDType + " | " + r.Description + " |\n"
+		result += "| " + r.Name + " | " + r.Description + " |\n"
 	}
 	return result
+}
+
+// capitalize returns the input string with the first letter in uppercase.
+func capitalize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return string(s[0]-32) + s[1:]
 }

@@ -18,14 +18,16 @@ var Event = EventOpts{
 	Status:    "EventScheduled", // FIXME: not showing up in metadata
 	StartDate: "2025-01-01T13:00:00Z",
 	EndDate:   "2025-01-01T13:00:00Z",
-	Settings:  map[string]string{"location": "Online"},
+	Settings:  map[string]string{
+        "location": "Online",
+        "description": "An example event flyer generated as code in gno.land.",
+	},
 }
 
-var _ = eve.Flyer{} // ensure eve imported
 var _ LogoGraph = EventOpts{}
 
 func (EventOpts) Cid() string {
-	return Event.WithFlyer(Event.Flyer()).Cid()
+	return Event.WithOpts().Cid()
 }
 
 func (EventOpts) RenderOpts() map[string]any {
@@ -51,18 +53,20 @@ func (EventOpts) Flyer(ef ...EventOpts) *eve.Flyer {
 	if loc, ok := Event.Settings["location"]; ok {
 		location = loc
 	}
+	descr := "This is an example event flyer generated as code in gno.land."
+	if d, ok := Event.Settings["description"]; ok {
+	    descr = d
+    }
 	f := &eve.Flyer{
 		Name:      "Event Flyer",
 		Location:  &eve.Location{Name: location},
 		StartDate: start,
 		EndDate:   end,
 		Status:    eve.EventStatus(Event.Status),
-		Description: "This is an example event flyer generated as code in gno.land. " +
-			"It can be stored, versioned, and composed directly, without extra boilerplate or access control.",
 		Sessions: []*eve.Session{
 			{
 				Title:       "Main Session",
-				Description: "This is the main session of the event.",
+                Description: descr,
 			},
 		},
 		Images: []string{},
@@ -91,9 +95,8 @@ func (EventOpts) ThumbnailSvg(w, h string) string {
 	encodedSvg := url.PathEscape(Event.SVG())
 	fileIcon := `<svg id="` + Event.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
     <script type="application/ld+json">
-    ` + Event.WithFlyer(Event.Flyer()).String() + `
+    ` + Event.WithOpts().String() + `
     </script>
-        <!-- Paper with folded corner -->
         <g>
             <!-- Main paper body -->
             <path d="M4,0 h` + w + ` v` + h + ` h-` + w + ` z" fill="#fff" stroke="#ccc" stroke-width="1"/>
@@ -102,7 +105,6 @@ func (EventOpts) ThumbnailSvg(w, h string) string {
         </g>
         <text x="12" y="82" font-size="14" font-weight="bold" fill="#666">eve.Flyer</text>
 
-        <!-- Embedded event content -->
         <image href="data:image/svg+xml;utf8,` + encodedSvg + `"
                x="12" y="5"
                width="calc(` + w + ` - 24)"
@@ -115,29 +117,63 @@ func (EventOpts) SVG() string {
 	return AibLabs.SVG()
 }
 
-func (EventOpts) WithFlyer(ef *eve.Flyer) eve.JsonLDMap {
-	start := ef.StartDate.Format(time.RFC3339)
-	end := ef.EndDate.Format(time.RFC3339)
-	if !ef.EndDate.After(ef.StartDate) {
+func (EventOpts) MergeOpts(opts []EventOpts) EventOpts {
+    e := Event
+    for _, o := range opts {
+        if o.Status != "" {
+            e.Status = o.Status
+        }
+        if o.StartDate != "" {
+            e.StartDate = o.StartDate
+        }
+        if o.EndDate != "" {
+            e.EndDate = o.EndDate
+        }
+        for k, v := range o.Settings {
+            e.Settings[k] = v
+        }
+    }
+    return e
+}
+
+func (EventOpts) WithOpts(opts ...EventOpts) eve.JsonLDMap {
+    eventOpts := Event.MergeOpts(opts)
+	start, _ := time.Parse(time.RFC3339, eventOpts.StartDate)
+	end, _ := time.Parse(time.RFC3339, eventOpts.EndDate)
+	if !end.After(start) {
 		end = start
 	}
 	location := "Online"
+	if loc, ok := eventOpts.Settings["location"]; ok {
+		location = loc
+	}
+	descr := "This is an example event flyer generated as code in gno.land."
+	if d, ok := eventOpts.Settings["description"]; ok {
+		descr = d
+	}
+	// REVIEW: consider using eve.Flyer.ToJsonLD() to populate about section
 	return eve.JsonLDMap{
-		"@context":    "https://schema.org",
-		"@type":       "Event",
-		"name":        ef.Name,
-		"description": ef.Sessions[0].Description,
-		"eventStatus": string(ef.Status),
-		"startDate":   start,
-		"endDate":     end,
-		"location": map[string]interface{}{
-			"@type":   "Place",
-			"name":    location,
-			"address": location,
+		"@context": "https://schema.org",
+		"@type":    "ImageObject",
+		"name":     "Event Flyer",
+		"description": descr,
+		"representativeOfPage": true,
+		"about": map[string]interface{}{
+			"@type":       "Event",
+			"name":        "Event Flyer",
+			"description": descr,
+			"eventStatus": string(eventOpts.Status),
+			"startDate":   start.Format(time.RFC3339),
+			"endDate":     end.Format(time.RFC3339),
+			"location": map[string]interface{}{
+				"@type":   "Place",
+				"name":    location,
+				"address": location,
+			},
 		},
 	}
 }
 
 func (EventOpts) JsonLD() eve.JsonLDMap {
-	return Event.WithFlyer(Event.Flyer())
+	return Event.WithOpts()
 }

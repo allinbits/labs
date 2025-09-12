@@ -49,8 +49,8 @@ func (allInBits) JsonLD() eve.JsonLDMap {
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
 		"name":        "aiblabs.net",
-		"description": "Censorship-Resistance, Sovereignty, Privacy",
-		"author": eve.JsonLDMap{
+		"description": "Working group fostering core principals: Censorship-Resistance, Sovereignty, Privacy",
+		"about": eve.JsonLDMap{
 			"@type": "Organization",
 			"name":  "Experimental Blockchain Instances by All in Bits Labs group",
 			"url":   "https://aiblabs.net",

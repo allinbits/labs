@@ -16,14 +16,12 @@ func (atoneGlyph) Cid() string {
 	return Atone.JsonLD().Cid()
 }
 
-var atoneDescription = "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem. Serving as a minimal fork of the Cosmos Hub, it supports IBC and ICS for scalable interchain solutions."
-
 func (atoneGlyph) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
-		"name":        "atone.dev",
-		"description": atoneDescription,
+		"name":        "$atone",
+		"description": "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem. Serving as a minimal fork of the Cosmos Hub, it supports IBC and ICS for scalable interchain solutions.",
 		"url":         "https://atom.one",
 		"hasPart": []interface{}{
 			eve.JsonLDMap{

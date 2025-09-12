@@ -25,7 +25,7 @@ func (allInBitsOrg) JsonLD() eve.JsonLDMap {
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
 		"name":        "allinbits.org",
-		"description": "All In Bits",
+		"description": "We build secure networks and decentralized applications for web3 that advance community-based governance, enable social coordination and foster community building.",
 		"author": eve.JsonLDMap{
 			"@type": "Organization",
 			"name":  "allinbits.com",

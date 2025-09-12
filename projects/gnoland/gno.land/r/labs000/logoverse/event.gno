@@ -20,8 +20,8 @@ var Event = EventOpts{
 	EndDate:   "2025-01-01T13:00:00Z",
 	Settings:  map[string]string{
         "location": "Online",
-        "description": "An example event flyer generated as code in gno.land.",
-	},
+        "description": "Immutable object used to compose event flyers in gno.land.",
+    },
 }
 
 var _ LogoGraph = EventOpts{}

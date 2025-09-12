@@ -18,6 +18,7 @@ type LogoGraph interface {
 type entry struct {
 	Name        string
 	Description string
+	Cid         string
 }
 
 var rows = []entry{
@@ -29,15 +30,26 @@ var rows = []entry{
     Row(Event),
 }
 
-var columns = []string{"name", "description"}
+var columns = []string{"cid", "name", "description"}
+
+func init() {
+    // build registry index by CID
+}
 
 func Row(i interface{}) entry {
 	ld := i.(LogoGraph).JsonLD()
 	return entry {
-		Name:        ld.StringVal(columns[0]),
-		Description: ld.StringVal(columns[1]),
+		Name:        ld.StringVal(columns[1]),
+		Description: ld.StringVal(columns[2]),
+		Cid:         ld.Cid(),
 	}
 }
+
+func (e entry) String() string {
+    return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " |\n"
+}
+
+
 func Render(path string) string {
     // TODO: build composite SVG from all logos
     return RenderTable("")
@@ -58,7 +70,7 @@ func RenderTable(_ string) string {
 	result += "\n"
 	// Rows
 	for _, r := range rows {
-		result += "| " + r.Name + " | " + r.Description + " |\n"
+		result += r.String()
 	}
 	return result
 }

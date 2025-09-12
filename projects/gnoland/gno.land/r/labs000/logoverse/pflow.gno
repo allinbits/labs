@@ -13,22 +13,22 @@ It can be stored, versioned, and composed directly, without extra boilerplate or
 If it carried internal state, we’d need many more methods to mutate it —
 but as pure code/data, it remains lightweight, composable, and self-describing.
 */
-type pflowGlyph struct{}
+type pflowEditor struct{}
 
-var Pflow pflowGlyph
+var Pflow pflowEditor
 
-func (pflowGlyph) Cid() string {
+func (pflowEditor) Cid() string {
 	return Pflow.JsonLD().Cid()
 }
 
-var _ LogoGraph = pflowGlyph{}
+var _ LogoGraph = pflowEditor{}
 
-func (pflowGlyph) JsonLD() eve.JsonLDMap {
+func (pflowEditor) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
-		"@context":    "https://schema.org",
+		"@context":    []string{"https://schema.org", "https://pflow.xyz/schema"},
 		"@type":       "ImageObject",
 		"name":        "pflow.xyz",
-		"description": "petri-net models for web3",
+		"description": "Petri-net models for web3 - Provides a state machine [json+ld schema](https://pflow.xyz/schema).",
 		"hasPart": []interface{}{
 			eve.JsonLDMap{
 				"@type":       "Product",
@@ -45,7 +45,7 @@ func (pflowGlyph) JsonLD() eve.JsonLDMap {
 	}
 }
 
-func (pflowGlyph) SVG() string {
+func (pflowEditor) SVG() string {
 	return `<svg id="` + Pflow.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="150" height="33" viewBox="0 0 150 33" role="img" fill="black" >
 <script type="application/ld+json">
 ` + Pflow.JsonLD().String() + `
@@ -54,18 +54,22 @@ func (pflowGlyph) SVG() string {
 </g></svg>`
 }
 
-func (pflowGlyph) DataUrl() string {
+func (pflowEditor) DataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(Pflow.SVG())
 }
 
-func (pflowGlyph) Image(url ...string) string {
+func (pflowEditor) Image(url ...string) string {
 	if len(url) == 0 {
-		return "![pflowGlyph](" + Pflow.DataUrl() + ")"
+		return "![pflowEditor](" + Pflow.DataUrl() + ")"
 	}
-	return "[![pflowGlyph](" + Pflow.DataUrl() + ")](" + url[0] + ")"
+	return "[![pflowEditor](" + Pflow.DataUrl() + ")](" + url[0] + ")"
 }
 
-func (pflowGlyph) Content(urlPath ...string) *eve.Content {
+func (pflowEditor) Thumbnail() string {
+    return Pflow.Image()
+}
+
+func (pflowEditor) Content(urlPath ...string) *eve.Content {
 	url := "https://pflow.dev"
 	if len(urlPath) > 0 {
 		url = urlPath[0]
@@ -75,11 +79,11 @@ func (pflowGlyph) Content(urlPath ...string) *eve.Content {
 	}
 }
 
-func (pflowGlyph) Render() string {
+func (pflowEditor) Render() string {
 	return Pflow.Content().Render()
 }
 
-func (pflowGlyph) Author() *eve.Speaker {
+func (pflowEditor) Author() *eve.Speaker {
 	return &eve.Speaker{
 		Name:        "Matt York",
 		Address:     "g1e8vw6gh284q7ggzqs8ne6r8j9aqhnmvl6rzzmz",

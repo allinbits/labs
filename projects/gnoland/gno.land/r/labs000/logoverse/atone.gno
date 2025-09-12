@@ -6,17 +6,17 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-type atoneGlyph struct{}
+type atoneToken struct{}
 
-var Atone atoneGlyph
+var Atone atoneToken
 
-var _ LogoGraph = atoneGlyph{}
+var _ LogoGraph = atoneToken{}
 
-func (atoneGlyph) Cid() string {
+func (atoneToken) Cid() string {
 	return Atone.JsonLD().Cid()
 }
 
-func (atoneGlyph) JsonLD() eve.JsonLDMap {
+func (atoneToken) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
@@ -39,7 +39,7 @@ func (atoneGlyph) JsonLD() eve.JsonLDMap {
 	}
 }
 
-func (atoneGlyph) SVG() string {
+func (atoneToken) SVG() string {
 	return `<svg id="` + Atone.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="608" height="144" viewBox="0 0 608 144" fill="none">
     <script type="application/ld+json">
     ` + Atone.JsonLD().String() + `
@@ -48,18 +48,18 @@ func (atoneGlyph) SVG() string {
     </svg>`
 }
 
-func (atoneGlyph) DataUrl() string {
+func (atoneToken) DataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(Atone.SVG())
 }
 
-func (atoneGlyph) Image(urls ...string) string {
+func (atoneToken) Image(urls ...string) string {
 	if len(urls) == 0 {
-		return "![atoneGlyph](" + Atone.DataUrl() + ")"
+		return "![atoneToken](" + Atone.DataUrl() + ")"
 	}
-	return "[![atoneGlyph](" + Atone.DataUrl() + ")](" + urls[0] + ")"
+	return "[![atoneToken](" + Atone.DataUrl() + ")](" + urls[0] + ")"
 }
 
-func (atoneGlyph) Content(urlPath ...string) *eve.Content {
+func (atoneToken) Content(urlPath ...string) *eve.Content {
 	url := "https://atone.atomone.dev"
 	if len(urlPath) > 0 {
 		url = urlPath[0]
@@ -69,26 +69,23 @@ func (atoneGlyph) Content(urlPath ...string) *eve.Content {
 	}
 }
 
-func (atoneGlyph) Render() string {
+func (atoneToken) Render() string {
 	return Atone.Content().Render()
 }
 
-func (atoneGlyph) Author() *eve.Speaker {
+func (atoneToken) Author() *eve.Speaker {
 	return &eve.Speaker{
 		Affiliation: "[atomone-hub](https://github.com/atomone-hub)",
 		Biography:   Atone.Render(),
 	}
 }
 
-func (atoneGlyph) Thumbnail() string {
+func (atoneToken) ThumbnailDataUrl() string {
 	return `data:image/svg+xml;utf8,` + url.PathEscape(
 		`<svg xmlns="http://www.w3.org/2000/svg" width="150" height="40" viewBox="0 0 150 40">`+
 			`<g transform="scale(0.24) translate(3, 10)">`+Atone.SVG()+`</g></svg>`)
 }
 
-func (atoneGlyph) ThumbnailImage(urls ...string) string {
-	if len(urls) == 0 {
-		return "![atoneGlyph](" + Atone.Thumbnail() + ")"
-	}
-	return "[![atoneGlyph](" + Atone.Thumbnail() + ")](" + urls[0] + ")"
+func (atoneToken) Thumbnail() string {
+	return "![atoneToken](" + Atone.ThumbnailDataUrl() + ")"
 }

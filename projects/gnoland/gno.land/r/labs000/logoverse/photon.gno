@@ -6,17 +6,17 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-type photonGlyph struct{}
+type photonToken struct{}
 
-var Photon = photonGlyph{}
+var Photon = photonToken{}
 
-var _ LogoGraph = photonGlyph{}
+var _ LogoGraph = photonToken{}
 
-func (photonGlyph) Cid() string {
+func (photonToken) Cid() string {
 	return Photon.JsonLD().Cid()
 }
 
-func (photonGlyph) JsonLD() eve.JsonLDMap {
+func (photonToken) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
@@ -30,11 +30,16 @@ func (photonGlyph) JsonLD() eve.JsonLDMap {
 				"url":          "https://app.osmosis.zone/assets/ibc/D6E02C5AE8A37FC2E3AB1FC8AC168878ADB870549383DFFEA9FD020C234520A7",
 				"tickerSymbol": "$PHOTON",
 			},
+			eve.JsonLDMap{
+				"@type": "WebPage",
+				"name":  "Photon Proposal",
+				"url":   "https://gov.atom.one/proposals/5",
+			},
 		},
 	}
 }
 
-func (photonGlyph) SVG() string {
+func (photonToken) SVG() string {
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none">
 <script type="application/ld+json">
 ` + Photon.JsonLD().String() + `
@@ -52,18 +57,18 @@ func (photonGlyph) SVG() string {
 </svg>`
 }
 
-func (photonGlyph) DataUrl() string {
+func (photonToken) DataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(Photon.SVG())
 }
 
-func (photonGlyph) Image(urls ...string) string {
+func (photonToken) Image(urls ...string) string {
 	if len(urls) == 0 {
-		return "![photonGlyph](" + Photon.DataUrl() + ")"
+		return "![photonToken](" + Photon.DataUrl() + ")"
 	}
-	return "[![photonGlyph](" + Photon.DataUrl() + ")](" + urls[0] + ")"
+	return "[![photonToken](" + Photon.DataUrl() + ")](" + urls[0] + ")"
 }
 
-func (photonGlyph) Content(urlPath ...string) *eve.Content {
+func (photonToken) Content(urlPath ...string) *eve.Content {
 	url := "https://photon.atomone.dev"
 	if len(urlPath) > 0 {
 		url = urlPath[0]
@@ -73,18 +78,18 @@ func (photonGlyph) Content(urlPath ...string) *eve.Content {
 	}
 }
 
-func (photonGlyph) Render() string {
+func (photonToken) Render() string {
 	return Photon.Content().Render()
 }
 
-func (photonGlyph) Author() *eve.Speaker {
+func (photonToken) Author() *eve.Speaker {
 	return &eve.Speaker{
 		Affiliation: "[atomone-hub](https://github.com/atomone-hub)",
 		Biography:   Photon.Render(),
 	}
 }
 
-func (photonGlyph) Thumbnail() string {
+func (photonToken) ThumbnailDataUrl() string {
 	svg := `
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 1024 1024" fill="none">
 <g clip-path="url(#photon_token)">
@@ -101,9 +106,6 @@ func (photonGlyph) Thumbnail() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(svg)
 }
 
-func (photonGlyph) ThumbnailImage(urls ...string) string {
-	if len(urls) == 0 {
-		return "![photonGlyph](" + Photon.Thumbnail() + ")"
-	}
-	return "[![photonGlyph](" + Photon.Thumbnail() + ")](" + urls[0] + ")"
+func (photonToken) Thumbnail() string {
+    return "![photonToken](" + Photon.ThumbnailDataUrl() + ")"
 }

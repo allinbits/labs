@@ -6,33 +6,33 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-type allInBits struct{}
+type aibLabs struct{}
 
-var AibLabs = allInBits{}
+var AibLabs = aibLabs{}
 
-var _ LogoGraph = allInBits{}
+var _ LogoGraph = aibLabs{}
 
-func (allInBits) Cid() string {
+func (aibLabs) Cid() string {
 	return AibLabs.JsonLD().Cid()
 }
 
-func (allInBits) Image() string {
+func (aibLabs) Image() string {
 	return "![AibLabs](" + AibLabs.DataUrl() + ")"
 }
 
-func (allInBits) DataUrl() string {
+func (aibLabs) DataUrl() string {
 	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(AibLabs.SVG())
 }
 
-func (allInBits) Thumbnail() string {
+func (aibLabs) Thumbnail() string {
 	return "![AibLabs](" + AibLabs.ThumbnailDataUrl() + ")"
 }
 
-func (allInBits) ThumbnailDataUrl() string {
+func (aibLabs) ThumbnailDataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(AibLabs.ThumbnailSvg("70", "30"))
 }
 
-func (allInBits) ThumbnailSvg(w, h string) string {
+func (aibLabs) ThumbnailSvg(w, h string) string {
 	dataUrl := AibLabs.DataUrl()
 	return `<svg width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="none" stroke="#facade"/>
@@ -40,11 +40,11 @@ func (allInBits) ThumbnailSvg(w, h string) string {
 	</svg>`
 }
 
-func (allInBits) SVG() string {
+func (aibLabs) SVG() string {
 	return aibLogoSvg
 }
 
-func (allInBits) JsonLD() eve.JsonLDMap {
+func (aibLabs) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",

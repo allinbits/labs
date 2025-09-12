@@ -45,6 +45,16 @@ func toJSONString(v interface{}) string {
 		}
 		s += "]"
 		return s
+	case []string:
+        s := "["
+        for i, elem := range val {
+            if i > 0 {
+                s += ", "
+            }
+            s += `"` + elem + `"`
+        }
+        s += "]"
+        return s
 	default:
 		return `"` + ufmt.Sprintf("%v", val) + `"`
 	}

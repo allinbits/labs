@@ -20,13 +20,17 @@ func (allInBitsOrg) Image() string {
 	return "![AllInBits](" + AllInBits.DataUrl() + ")"
 }
 
+func (allInBitsOrg) Thumbnail() string {
+    return AllInBits.Image()
+}
+
 func (allInBitsOrg) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
-		"name":        "allinbits.org",
+		"name":        "allinbits.com",
 		"description": "We build secure networks and decentralized applications for web3 that advance community-based governance, enable social coordination and foster community building.",
-		"author": eve.JsonLDMap{
+		"about": eve.JsonLDMap{
 			"@type": "Organization",
 			"name":  "allinbits.com",
 		},

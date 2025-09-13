@@ -1,0 +1,73 @@
+package logoverse
+import (
+    "net/url"
+
+    eve "gno.land/p/eve000/event/component"
+)
+
+type wojakMeme struct{}
+
+var Wojak wojakMeme
+
+func (wojakMeme) Cid() string {
+	return Wojak.JsonLD().Cid()
+}
+
+var _ LogoGraph = wojakMeme{}
+
+func (wojakMeme) JsonLD() eve.JsonLDMap {
+	return eve.JsonLDMap{
+		"@context":    []string{"https://schema.org", "https://wojak.xyz/schema"},
+		"@type":       "ImageObject",
+		"name":        "Wojak",
+		"description": "Wojak is an internet meme, often used to express emotions and reactions.",
+		"hasPart": []interface{}{
+			eve.JsonLDMap{
+				"@type":       "Product",
+				"name":        "Wojak Meme",
+				"description": "A popular meme character used in various internet cultures.",
+				"url":         "https://knowyourmeme.com/memes/wojak",
+			},
+		},
+		"author": eve.JsonLDMap{
+			"@type": "Person",
+			"name":  "Unknown",
+			"url":   "https://i.kym-cdn.com/entries/icons/original/000/018/433/wojak.jpg",
+		},
+		"license": "Fair use, see https://en.wikipedia.org/w/index.php?curid=59203462",
+	}
+}
+
+func (wojakMeme) SVG() string {
+	return `<svg id="` + Wojak.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="180" height="179" viewBox="0 0 47.625 47.36"><path d="M61.948 144.48v.53l7.937-1.853v-.264l-.793-.265c4.01-2.099 4.531-8.703 4.208-12.7-.238-2.945-2.578-5.852-3.451-8.731-1.389-4.581.23-11.683 3.212-15.331 1.104-1.352 2.73-1.68 4.233-2.428 6.884-3.422 16.674-1.302 21.139 5.325 2.701 4.01 2.74 8.725 3.042 13.228.12 1.78 1.22 3.112.885 5.027-.482 2.74-2.596 6.458-3.851 8.919-2.007 3.935-6.746 5.188-10.632 3.58-1.786-.74-3.043-2.247-4.498-3.465-3.688-3.09-6.735-6.008-6.085-11.15-3.032 2.307 1.748 8.163 3.44 9.778 1.887 1.803 4.212 4.205 6.614 5.256 1.272.557 2.73.214 3.93.735.928.403.805 1.616 1.687 2.086 1.356.723 3.232.323 4.702.424 1.9.13 3.67.88 5.556 1.035v-.53c-2.625-.386-5.338-.453-7.938-.88-.773-.126-2.231-.385-2.514-1.259-.33-1.022 3.258-1.894 3.966-2.527 2.623-2.347 4.237-6.909 5.59-10.15 1.229-2.94-.298-4.613-.346-7.409-.075-4.34-.464-9.105-2.982-12.964-3.839-5.88-11.208-7.601-17.736-7.12-9.291.685-13.966 11.236-12.139 19.555.721 3.281 3.5 6.228 3.661 9.525.341 6.954-2.94 14-10.837 14.023m19.844-33.073v.265c5.203-.043 10.593-.723 15.61 1.058-1.416-1.485-3.414-.983-5.292-1.069-1.372-.062-2.606-.696-3.968-.771-2.143-.12-4.223.426-6.35.517m-2.382 2.91v.265l7.938-1.497 3.969.882 5.291.35-5.027-.804-4.498-.733zm1.853 2.381v.265c2.31-.613 4.481-1.365 6.879-.794-1.36-1.556-5.27-.07-6.88.529m12.965-.53v.265c2.108-.39 3.242-.101 5.027 1.059-1.053-1.813-3.198-2.03-5.027-1.323m-5.82 1.058.793 1.588h.265zm6.086.53v1.851h.264zm-11.526 2.124c-.86.608-.318 1.69.429 2.102.808.445 3.57.63 4.317 0 .706-.593-.117-1.419-.644-1.747-.956-.597-3.088-1.07-4.102-.355m1.472.258-.265 1.852-1.323-.794c.285-.932.619-1.143 1.588-1.058m10.583 2.38 4.233.53c0-.744.18-1.879-.424-2.446-1.436-1.349-3.693.394-3.81 1.917m-7.672-1.588h.265l.264.265v.53c-.595-.126-.825-.229-.529-.795m9.525 0v1.323l-1.323-.264v-.794zm1.852 1.323-.265.265zm-5.027 1.588 1.938 4.385-.615 2.494-1.323-.265v.265c1.576.46 2.786-.99 2.534-2.646-.249-1.632-1.905-2.412-2.005-4.233zm-3.704 6.879v-.265l-1.588-1.587 1.323-.794c-2.263.5-1.993 2.474.265 2.646m1.058-.794v.53l1.323-.265zm-13.494 2.381-.264 4.498h.264c.645-1.34.874-3.219 0-4.498m9.26 1.852 8.997 1.059c-.485-1.46-7.805-1.956-8.996-1.059m-13.23 8.996c1.485.212 3.446-2.224 4.234-3.44zm14.287-1.852 1.323 1.588v-.265zm-6.35 4.234 3.704 1.291 3.175-1.027c-1.092-1.229-1.992.614-3.161.63-1.286.018-2.49-2.275-3.718-.894" style="fill:#1c1c1c;stroke:none" transform="translate(-59.267 -100.013)"/>
+	</svg>`
+}
+
+func (wojakMeme) DataUrl() string {
+	return "data:image/svg+xml;utf8," + url.PathEscape(Wojak.SVG())
+}
+
+func (wojakMeme) Image(url ...string) string {
+	if len(url) == 0 {
+		return "![wojakMeme](" + Wojak.DataUrl() + ")"
+	}
+	return "[![wojakMeme](" + Wojak.DataUrl() + ")](" + url[0] + ")"
+}
+
+func (wojakMeme) Thumbnail() string {
+	return Wojak.Image()
+}
+
+func (wojakMeme) Content(urlPath ...string) *eve.Content {
+	url := "https://knowyourmeme.com/memes/wojak"
+	if len(urlPath) > 0 {
+		url = urlPath[0]
+	}
+	return &eve.Content{
+		Published: true, Markdown: Wojak.Image(url),
+	}
+}
+
+func (wojakMeme) Render() string {
+	return Wojak.Content().Render()
+}

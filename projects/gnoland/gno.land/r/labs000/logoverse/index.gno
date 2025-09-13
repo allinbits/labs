@@ -16,6 +16,12 @@ This is not software as service — it’s software as universe.
 
 var registry = avl.NewTree()
 
+// Projectable is a canonical interface into the category of Links.
+type Projectable interface {
+    ToPath(...interface{}) string
+    FromPath(path string) interface{}
+}
+
 type LogoGraph interface {
 	SVG() string
 	JsonLD() eve.JsonLDMap
@@ -76,8 +82,10 @@ var rows = []string{
 	Register(Atone),
 	Register(Event),
 	Register(OfficeHours),
+	Register(PepeSilvia),
 	Register(Pflow),
 	Register(Photon),
+	Register(Wojak),
 }
 
 var columns = []string{"cid", "name", "description", "committer"}

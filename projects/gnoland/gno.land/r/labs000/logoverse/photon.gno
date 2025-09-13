@@ -107,5 +107,5 @@ func (photonToken) ThumbnailDataUrl() string {
 }
 
 func (photonToken) Thumbnail() string {
-    return "![photonToken](" + Photon.ThumbnailDataUrl() + ")"
+	return "![photonToken](" + Photon.ThumbnailDataUrl() + ")"
 }

@@ -1,15 +1,16 @@
 package logoverse
 
 import (
-    "std"
-    "strings"
-    "gno.land/p/demo/avl"
+	"std"
+	"strings"
+
+	"gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
 )
 
 var cb = `
 ## Welcome to a "**small 'L' logoverse**"
-`+ AibLabs.Image() + `
+` + AibLabs.Image() + `
 This is an index of immutable objects found in this realm.
 `
 
@@ -32,7 +33,6 @@ type Record struct {
 
 // Register adds a LogoGraph object to the registry and returns its Record.
 // It panics if the object does not have a valid CID or if the CID is already registered.
-// --- register.go ---
 func Register(i interface{}) string {
 	ldg, ok := i.(LogoGraph)
 	if !ok {
@@ -43,13 +43,14 @@ func Register(i interface{}) string {
 		panic("object must have a likely CIDv1 (base32, 'baf...' style)")
 	}
 
-	// Nudge implementors to fill the full surface (no-ops ok).
 	_ = ldg.SVG()
 	_ = ldg.Thumbnail()
 
 	ld := ldg.JsonLD()
 	for _, col := range columns {
-		if col == "cid" || col == "committer" { continue }
+		if col == "cid" || col == "committer" {
+			continue
+		}
 		if _, ok := ld[col]; !ok {
 			panic("object must have " + col + " in its JSON-LD")
 		}
@@ -65,80 +66,82 @@ func Register(i interface{}) string {
 		panic("duplicate CID registered: " + rec.Cid)
 	}
 	registry.Set(rec.Cid, rec)
-	std.Emit( "GlyphRegistered", "cid", rec.Cid, "ldtype", ld.StringVal("@type"))
+	std.Emit("GlyphRegistered", "cid", rec.Cid, "ldtype", ld.StringVal("@type"))
 	return newCid
 }
 
 var rows = []string{
-    Register(AibLabs),
-    Register(AllInBits),
-    Register(Atone),
-    Register(Event),
-    Register(Pflow),
-    Register(Photon),
+	Register(AibLabs),
+	Register(AllInBits),
+	Register(Atone),
+	Register(Event),
+	Register(Pflow),
+	Register(Photon),
 }
 
 var columns = []string{"cid", "name", "description", "committer"}
 
 func (e Record) String() string {
-    return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
+	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
 }
 
 func Render(path string) string {
-    q := eve.ParseQuery(path)
-    if cid, ok := q["cid"]; ok {
-        if v, ok := registry.Get(cid[0]); ok {
-            r := v.(Record)
-            if format, ok := q["v"]; ok  {
-                switch format[0] {
-                case "committer":
-                    return r.Committer
-                case "svg":
-                    return r.Object.(LogoGraph).Thumbnail()
-                case "json":
-                    return r.Object.(LogoGraph).JsonLD().String()
-                }
-            }
-            return renderObject(r.Object)
-        }
-        return "cid not found"
-    }
-    return renderTable()
+	q := eve.ParseQuery(path)
+	if cid, ok := q["cid"]; ok {
+		if v, ok := registry.Get(cid[0]); ok {
+			r := v.(Record)
+			if format, ok := q["v"]; ok {
+				switch format[0] {
+				case "committer":
+					return r.Committer
+				case "svg":
+					return r.Object.(LogoGraph).Thumbnail()
+				case "json":
+					return r.Object.(LogoGraph).JsonLD().String()
+				}
+			}
+			return renderObject(r.Object)
+		}
+		return "cid not found"
+	}
+	return renderTable()
 }
 
 func renderObject(obj interface{}) string {
-    glyph := obj.(LogoGraph)
-    ld := glyph.JsonLD()
-    result := "### " + ld.StringVal("name") + "\n"
-    result += glyph.Thumbnail() + "\n\n"
-    result += ld.StringVal("description") + "\n\n"
-    result += "#### CID\n"
-    result += ld.Cid() + "\n"
-    result += "#### JSON-LD\n"
-    result += "```json\n" + strings.TrimSpace(ld.String()) + "\n```\n"
-    return result
+	glyph := obj.(LogoGraph)
+	ld := glyph.JsonLD()
+	var sb strings.Builder
+	sb.WriteString("### " + ld.StringVal("name") + "\n")
+	sb.WriteString(glyph.Thumbnail() + "\n\n")
+	sb.WriteString(ld.StringVal("description") + "\n\n")
+	sb.WriteString("#### CID\n")
+	sb.WriteString(ld.Cid() + "\n")
+	sb.WriteString("#### JSON-LD\n")
+	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
+	return sb.String()
 }
 
 func renderTable() string {
-	result := cb + "\n"
+	var sb strings.Builder
+	sb.WriteString(cb + "\n")
 	// Header
-	result += "|"
+	sb.WriteString("|")
 	for _, col := range columns {
-		result += " " + capitalize(col) + " |"
+		sb.WriteString(" " + capitalize(col) + " |")
 	}
-	result += "\n|"
+	sb.WriteString("\n|")
 	for range columns {
-		result += " ---- |"
+		sb.WriteString(" ---- |")
 	}
-	result += "\n"
+	sb.WriteString("\n")
 	// Rows
 	for _, cid := range rows {
-	    if v, ok := registry.Get(cid); ok {
-            r := v.(Record)
-            result += r.String()
-        }
+		if v, ok := registry.Get(cid); ok {
+			r := v.(Record)
+			sb.WriteString(r.String())
+		}
 	}
-	return result
+	return sb.String()
 }
 
 func capitalize(s string) string {
@@ -148,17 +151,17 @@ func capitalize(s string) string {
 	return string(s[0]-32) + s[1:]
 }
 
-// Lightweight CID sanity check (keeps “permissionless” ethos).
 func isLikelyCIDv1(s string) bool {
-	// CIDv1 is multibase (usually base32 'b...'), lowercase, no padding.
-	if len(s) < 10 { return false }
-	if s[0] != 'b' { return false } // multibase prefix (base32 lower)
+	if len(s) != 59 {
+		return false
+	}
 	for _, r := range s {
 		if !('a' <= r && r <= 'z' || '2' <= r && r <= '7') { // base32 alphabet
 			return false
 		}
 	}
-	// Optional beams: quick IPLD prefix sanity (not exhaustive).
-	if !strings.HasPrefix(s, "baf") { return false }
+	if !strings.HasPrefix(s, "bafkrei") {
+		return false
+	}
 	return true
 }

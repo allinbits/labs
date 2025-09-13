@@ -18,10 +18,10 @@ var Event = EventObj{
 	Status:    "EventScheduled",
 	StartDate: "2025-01-01T13:00:00Z",
 	EndDate:   "2025-01-01T13:00:00Z",
-	Settings:  map[string]string{
-        "location": "Online",
-        "description": "Immutable object used to compose event flyers in gno.land.",
-    },
+	Settings: map[string]string{
+		"location":    "Online",
+		"description": "Immutable object used to compose event flyers in gno.land.",
+	},
 }
 
 var _ LogoGraph = EventObj{}
@@ -80,22 +80,22 @@ func (EventObj) SVG() string {
 }
 
 func (EventObj) mergeOpts(obj []EventObj) EventObj {
-    e := Event
-    for _, o := range obj {
-        if o.Status != "" {
-            e.Status = o.Status
-        }
-        if o.StartDate != "" {
-            e.StartDate = o.StartDate
-        }
-        if o.EndDate != "" {
-            e.EndDate = o.EndDate
-        }
-        for k, v := range o.Settings {
-            e.Settings[k] = v
-        }
-    }
-    return e
+	e := Event
+	for _, o := range obj {
+		if o.Status != "" {
+			e.Status = o.Status
+		}
+		if o.StartDate != "" {
+			e.StartDate = o.StartDate
+		}
+		if o.EndDate != "" {
+			e.EndDate = o.EndDate
+		}
+		for k, v := range o.Settings {
+			e.Settings[k] = v
+		}
+	}
+	return e
 }
 
 func (EventObj) JsonLD() eve.JsonLDMap {
@@ -122,55 +122,55 @@ func parseEventOpts(obj EventObj) (start, end time.Time, status, location, descr
 
 // FromPath parses event options from a URL path query string and returns an EventObj with those options set.
 func (EventObj) FromPath(path string) EventObj {
-    q := eve.ParseQuery(path)
-    e := Event
-    if status, ok := q["status"]; ok && len(status) > 0 {
-        e.Status = status[0]
-    }
-    if start, ok := q["start"]; ok && len(start) > 0 {
-        e.StartDate = start[0]
-    }
-    if end, ok := q["end"]; ok && len(end) > 0 {
-        e.EndDate = end[0]
-    }
-    if location, ok := q["location"]; ok && len(location) > 0 {
-        e.Settings["location"] = location[0]
-    }
-    if descr, ok := q["description"]; ok && len(descr) > 0 {
-        e.Settings["description"] = descr[0]
-    }
-    return e
+	q := eve.ParseQuery(path)
+	e := Event
+	if status, ok := q["status"]; ok && len(status) > 0 {
+		e.Status = status[0]
+	}
+	if start, ok := q["start"]; ok && len(start) > 0 {
+		e.StartDate = start[0]
+	}
+	if end, ok := q["end"]; ok && len(end) > 0 {
+		e.EndDate = end[0]
+	}
+	if location, ok := q["location"]; ok && len(location) > 0 {
+		e.Settings["location"] = location[0]
+	}
+	if descr, ok := q["description"]; ok && len(descr) > 0 {
+		e.Settings["description"] = descr[0]
+	}
+	return e
 }
 
 func (EventObj) ToPath(obj ...EventObj) string {
-    evt := Event.mergeOpts(obj)
-    q := url.Values{}
-    q.Set("cid", evt.Cid())
-    if evt.Status != "" {
-        q.Set("status", evt.Status) // TODO: remove schem.org prefix?
-    }
-    if evt.StartDate != "" {
-        q.Set("start", evt.StartDate)
-    }
-    if evt.EndDate != "" {
-        q.Set("end", evt.EndDate)
-    }
-    if loc, ok := Event.Settings["location"]; ok && loc != "" {
-        q.Set("location", loc)
-    }
-    if descr, ok := Event.Settings["description"]; ok && descr != "" {
-        q.Set("description", descr)
-    }
-    return "?" + q.Encode()
+	evt := Event.mergeOpts(obj)
+	q := url.Values{}
+	q.Set("cid", evt.Cid())
+	if evt.Status != "" {
+		q.Set("status", evt.Status) // TODO: remove schem.org prefix?
+	}
+	if evt.StartDate != "" {
+		q.Set("start", evt.StartDate)
+	}
+	if evt.EndDate != "" {
+		q.Set("end", evt.EndDate)
+	}
+	if loc, ok := Event.Settings["location"]; ok && loc != "" {
+		q.Set("location", loc)
+	}
+	if descr, ok := Event.Settings["description"]; ok && descr != "" {
+		q.Set("description", descr)
+	}
+	return "?" + q.Encode()
 }
 
 func (EventObj) Compose(obj ...EventObj) eve.JsonLDMap {
 	start, end, status, location, descr := parseEventOpts(Event.mergeOpts(obj))
 	return eve.JsonLDMap{
-		"@context": "https://schema.org",
-		"@type":    "ImageObject",
-		"name":     "Event",
-		"description": descr,
+		"@context":             "https://schema.org",
+		"@type":                "ImageObject",
+		"name":                 "Event",
+		"description":          descr,
 		"representativeOfPage": true,
 		"about": map[string]interface{}{
 			"@type":       "Event",
@@ -199,7 +199,7 @@ func (EventObj) Flyer(obj ...EventObj) *eve.Flyer {
 		Sessions: []*eve.Session{
 			{
 				Title:       "Main Session",
-                Description: descr,
+				Description: descr,
 			},
 		},
 		Images: []string{},

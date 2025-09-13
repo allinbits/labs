@@ -66,7 +66,7 @@ func (pflowEditor) Image(url ...string) string {
 }
 
 func (pflowEditor) Thumbnail() string {
-    return Pflow.Image()
+	return Pflow.Image()
 }
 
 func (pflowEditor) Content(urlPath ...string) *eve.Content {

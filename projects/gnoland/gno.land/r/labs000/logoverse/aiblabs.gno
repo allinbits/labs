@@ -59,9 +59,13 @@ func (aibLabs) JsonLD() eve.JsonLDMap {
 }
 
 var aibLogoSvg = `<svg id="` + AibLabs.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <filter id="aib-drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
   <style>
     .aib-stroke { stroke: black; fill: none; }
-    .aib-circle { stroke-width: 3; }
     .aib-path { stroke-width: 4; }
     #censorship-resistance .aib-path { stroke: rgb(25, 108, 87); } /* gno.land + blockchain */
     #sovereignty .aib-path { stroke: #3498db; } /* freedom + decentralization */
@@ -70,8 +74,7 @@ var aibLogoSvg = `<svg id="` + AibLabs.Cid() + `" xmlns="http://www.w3.org/2000/
   <script type="application/ld+json">
   ` + AibLabs.JsonLD().String() + `
   </script>
-  <g transform="scale(1.5, 1.5) rotate(180, 60, 60) translate(19, 5)">
-    <circle cx="60" cy="66.7" r="3" class="aib-stroke aib-circle"/>
+  <g filter="url(#aib-drop-shadow)" transform="scale(1.5, 1.5) rotate(180, 60, 60) translate(19, 5)">
     <g id="censorship-resistance">
         <path d="M25.571,46.294 A35,35 0 0,1 69.429,73.706 M50.571,73.706 A35,35 0 0,1 94.429,46.294" class="aib-stroke aib-path"/>
     </g>

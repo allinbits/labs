@@ -21,7 +21,7 @@ func (allInBitsOrg) Image() string {
 }
 
 func (allInBitsOrg) Thumbnail() string {
-    return AllInBits.Image()
+	return AllInBits.Image()
 }
 
 func (allInBitsOrg) JsonLD() eve.JsonLDMap {

@@ -62,9 +62,6 @@ func (EventObj) ThumbnailDataUrl() string {
 func (EventObj) ThumbnailSvg(w, h string) string {
 	encodedSvg := url.PathEscape(Event.SVG())
 	fileIcon := `<svg id="` + Event.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
-    <script type="application/ld+json">
-    ` + Event.Compose().String() + `
-    </script>
         <g>
             <!-- Main paper body -->
             <path d="M4,0 h` + w + ` v` + h + ` h-` + w + ` z" fill="#fff" stroke="#ccc" stroke-width="1"/>

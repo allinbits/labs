@@ -1,9 +1,9 @@
 package logoverse
 
 import (
-    "net/url"
+	"net/url"
 
-    eve "gno.land/p/eve000/event/component"
+	eve "gno.land/p/eve000/event/component"
 )
 
 type pepeSilviaMeme struct{}
@@ -11,76 +11,53 @@ type pepeSilviaMeme struct{}
 var PepeSilvia pepeSilviaMeme
 
 func (pepeSilviaMeme) Cid() string {
-    return PepeSilvia.JsonLD().Cid()
+	return PepeSilvia.JsonLD().Cid()
 }
 
 var _ LogoGraph = pepeSilviaMeme{}
 
 func (pepeSilviaMeme) JsonLD() eve.JsonLDMap {
-    return eve.JsonLDMap{
-        "@context":    []string{"https://schema.org", "https://pepeSilvia.xyz/schema"},
-        "@type":       "ImageObject",
-        "name":        "Pepe Silvia",
-        "description": "Pepe Silvia is a meme from 'It's Always Sunny in Philadelphia', symbolizing frantic conspiracy theorizing.",
-        "hasPart": []interface{}{
-            eve.JsonLDMap{
-                "@type":       "CreativeWork",
-                "name":        "Pepe Silvia Meme",
-                "description": "A meme depicting Charlie's conspiracy board.",
-                "url":         "https://knowyourmeme.com/memes/pepe-silvia",
-            },
-        },
-        "author": eve.JsonLDMap{
-            "@type": "Person",
-            "name":  "Charlie Kelly (fictional)",
-            "url":   "https://knowyourmeme.com/memes/pepe-silvia",
-        },
-    }
+	return eve.JsonLDMap{
+		"@context":    []string{"https://schema.org", "https://pepeSilvia.xyz/schema"},
+		"@type":       "ImageObject",
+		"name":        "Pepe Silvia",
+		"description": "Pepe Silvia is a meme from 'It's Always Sunny in Philadelphia', symbolizing frantic conspiracy theorizing.",
+		"hasPart": []interface{}{
+			eve.JsonLDMap{
+				"@type":       "CreativeWork",
+				"name":        "Pepe Silvia Meme",
+				"description": "A meme depicting Charlie's conspiracy board.",
+				"url":         "https://knowyourmeme.com/memes/pepe-silvia",
+			},
+		},
+		"author": eve.JsonLDMap{
+			"@type": "Person",
+			"name":  "Charlie Kelly (fictional)",
+			"url":   "https://knowyourmeme.com/memes/pepe-silvia",
+		},
+	}
 }
 
 func (pepeSilviaMeme) SVG() string {
-    return `<svg id="` + PepeSilvia.Cid() +
-    `"  xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="348.489" height="329.678" viewBox="0 0 92.204 87.227">
+	return `<svg id="` + PepeSilvia.Cid() +
+		`"  xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="348.489" height="329.678" viewBox="0 0 92.204 87.227">
     ` + pepeSilviaSvgPath + `
      </svg>`
 }
 
 func (pepeSilviaMeme) DataUrl() string {
-    return "data:image/svg+xml;utf8," + url.PathEscape(PepeSilvia.SVG())
+	return "data:image/svg+xml;utf8," + url.PathEscape(PepeSilvia.SVG())
 }
 
 func (pepeSilviaMeme) Image(url ...string) string {
-    if len(url) == 0 {
-        return "![pepeSilviaMeme](" + PepeSilvia.DataUrl() + ")"
-    }
-    return "[![pepeSilviaMeme](" + PepeSilvia.DataUrl() + ")](" + url[0] + ")"
+	if len(url) == 0 {
+		return "![pepeSilviaMeme](" + PepeSilvia.DataUrl() + ")"
+	}
+	return "[![pepeSilviaMeme](" + PepeSilvia.DataUrl() + ")](" + url[0] + ")"
 }
 
 func (pepeSilviaMeme) Thumbnail() string {
-    return PepeSilvia.Image()
-}
-
-func (pepeSilviaMeme) Content(urlPath ...string) *eve.Content {
-    url := "https://knowyourmeme.com/memes/pepe-silvia"
-    if len(urlPath) > 0 {
-        url = urlPath[0]
-    }
-    return &eve.Content{
-        Published: true, Markdown: PepeSilvia.Image(url),
-    }
-}
-
-func (pepeSilviaMeme) Render() string {
-    return PepeSilvia.Content().Render()
-}
-
-func (pepeSilviaMeme) Author() *eve.Speaker {
-    return &eve.Speaker{
-        Name:        "Charlie Kelly (fictional)",
-        Address:     "",
-        Affiliation: "[knowyourmeme.com](https://knowyourmeme.com/memes/pepe-silvia)",
-        Biography:   "Pepe Silvia is a meme from 'It's Always Sunny in Philadelphia'.\n\n" + PepeSilvia.Render(),
-    }
+	return PepeSilvia.Image()
 }
 
 // REVIEW: this is a representation of a frame grab from the show

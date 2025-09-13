@@ -21,7 +21,7 @@ func (atoneToken) JsonLD() eve.JsonLDMap {
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
 		"name":        "$atone",
-		"description": "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem. Serving as a minimal fork of the Cosmos Hub, it supports IBC and ICS for scalable interchain solutions.",
+		"description": "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem.",
 		"url":         "https://atom.one",
 		"hasPart": []interface{}{
 			eve.JsonLDMap{
@@ -54,27 +54,6 @@ func (atoneToken) Image(urls ...string) string {
 		return "![atoneToken](" + Atone.DataUrl() + ")"
 	}
 	return "[![atoneToken](" + Atone.DataUrl() + ")](" + urls[0] + ")"
-}
-
-func (atoneToken) Content(urlPath ...string) *eve.Content {
-	url := "https://atone.atomone.dev"
-	if len(urlPath) > 0 {
-		url = urlPath[0]
-	}
-	return &eve.Content{
-		Published: true, Markdown: Atone.Image(url),
-	}
-}
-
-func (atoneToken) Render() string {
-	return Atone.Content().Render()
-}
-
-func (atoneToken) Author() *eve.Speaker {
-	return &eve.Speaker{
-		Affiliation: "[atomone-hub](https://github.com/atomone-hub)",
-		Biography:   Atone.Render(),
-	}
 }
 
 func (atoneToken) ThumbnailDataUrl() string {

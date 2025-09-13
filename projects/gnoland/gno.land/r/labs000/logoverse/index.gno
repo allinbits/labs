@@ -18,8 +18,8 @@ var registry = avl.NewTree()
 
 // Projectable is a canonical interface into the category of Links.
 type Projectable interface {
-    ToPath(...interface{}) string
-    FromPath(path string) interface{}
+	ToPath(...interface{}) string
+	FromPath(path string) interface{}
 }
 
 type LogoGraph interface {
@@ -81,6 +81,7 @@ var rows = []string{
 	Register(AllInBits),
 	Register(Atone),
 	Register(Event),
+	Register(Metamodel),
 	Register(OfficeHours),
 	Register(PepeSilvia),
 	Register(Pflow),

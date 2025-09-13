@@ -28,8 +28,8 @@ var _ LogoGraph = EventObj{}
 var _ EventProjection = EventObj{}
 
 type EventProjection interface {
-    ToPath(...EventObj) string
-    FromPath(path string) EventObj
+	ToPath(...EventObj) string
+	FromPath(path string) EventObj
 }
 
 func (EventObj) Cid() string {

@@ -65,27 +65,6 @@ func (photonToken) Image(urls ...string) string {
 	return "[![photonToken](" + Photon.DataUrl() + ")](" + urls[0] + ")"
 }
 
-func (photonToken) Content(urlPath ...string) *eve.Content {
-	url := "https://photon.atomone.dev"
-	if len(urlPath) > 0 {
-		url = urlPath[0]
-	}
-	return &eve.Content{
-		Published: true, Markdown: Photon.Image(url),
-	}
-}
-
-func (photonToken) Render() string {
-	return Photon.Content().Render()
-}
-
-func (photonToken) Author() *eve.Speaker {
-	return &eve.Speaker{
-		Affiliation: "[atomone-hub](https://github.com/atomone-hub)",
-		Biography:   Photon.Render(),
-	}
-}
-
 func (photonToken) ThumbnailDataUrl() string {
 	svg := `
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 1024 1024" fill="none">

@@ -1,8 +1,9 @@
 package logoverse
-import (
-    "net/url"
 
-    eve "gno.land/p/eve000/event/component"
+import (
+	"net/url"
+
+	eve "gno.land/p/eve000/event/component"
 )
 
 type wojakMeme struct{}
@@ -17,7 +18,7 @@ var _ LogoGraph = wojakMeme{}
 
 func (wojakMeme) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
-		"@context":    []string{"https://schema.org", "https://wojak.xyz/schema"},
+		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
 		"name":        "Wojak",
 		"description": "Wojak is an internet meme, often used to express emotions and reactions.",
@@ -56,18 +57,4 @@ func (wojakMeme) Image(url ...string) string {
 
 func (wojakMeme) Thumbnail() string {
 	return Wojak.Image()
-}
-
-func (wojakMeme) Content(urlPath ...string) *eve.Content {
-	url := "https://knowyourmeme.com/memes/wojak"
-	if len(urlPath) > 0 {
-		url = urlPath[0]
-	}
-	return &eve.Content{
-		Published: true, Markdown: Wojak.Image(url),
-	}
-}
-
-func (wojakMeme) Render() string {
-	return Wojak.Content().Render()
 }

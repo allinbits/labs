@@ -3,18 +3,18 @@ package logoverse
 import (
 	"net/url"
 	"time"
+
 	eve "gno.land/p/eve000/event/component"
 )
 
-// OfficeHoursObj represents the office hours flyer.
-type OfficeHoursObj struct {
+type OfficeHoursEvent struct {
 	Status    string
 	StartDate string
 	EndDate   string
 	Settings  map[string]string
 }
 
-var OfficeHours = OfficeHoursObj{
+var OfficeHours = OfficeHoursEvent{
 	Status:    "EventScheduled",
 	StartDate: "2025-01-01T10:20:00Z",
 	EndDate:   "2025-01-01T11:20:00Z",
@@ -24,33 +24,39 @@ var OfficeHours = OfficeHoursObj{
 	},
 }
 
-var _ LogoGraph = OfficeHoursObj{}
+var _ LogoGraph = OfficeHoursEvent{}
+var _ OfficeHoursProjection = OfficeHoursEvent{}
 
-func (OfficeHoursObj) Cid() string {
+type OfficeHoursProjection interface {
+	ToPath(...OfficeHoursEvent) string
+	FromPath(path string) OfficeHoursEvent
+}
+
+func (OfficeHoursEvent) Cid() string {
 	return OfficeHours.Compose().Cid()
 }
 
-func (OfficeHoursObj) renderOpts() map[string]any {
+func (OfficeHoursEvent) renderOpts() map[string]any {
 	return map[string]any{
 		"dev":      map[string]any{},
 		"labsnet1": map[string]any{},
 	}
 }
 
-func (OfficeHoursObj) Image() string {
+func (OfficeHoursEvent) Image() string {
 	return "![OfficeHours](" + OfficeHours.DataUrl() + ")"
 }
 
-func (OfficeHoursObj) DataUrl() string {
+func (OfficeHoursEvent) DataUrl() string {
 	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(OfficeHours.SVG())
 }
 
-func (OfficeHoursObj) Thumbnail() string {
-    return OfficeHours.Image()
+func (OfficeHoursEvent) Thumbnail() string {
+	return OfficeHours.Image()
 }
 
 // SVG renders a paper-shaped thumbnail with a centered clock and Office Hours text below.
-func (OfficeHoursObj) SVG() string {
+func (OfficeHoursEvent) SVG() string {
 	return `
 <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
   <!-- Paper shape with slight shadow -->
@@ -73,7 +79,7 @@ func (OfficeHoursObj) SVG() string {
 `
 }
 
-func (OfficeHoursObj) mergeOpts(obj []OfficeHoursObj) OfficeHoursObj {
+func (OfficeHoursEvent) mergeOpts(obj []OfficeHoursEvent) OfficeHoursEvent {
 	e := OfficeHours
 	for _, o := range obj {
 		if o.Status != "" {
@@ -92,11 +98,11 @@ func (OfficeHoursObj) mergeOpts(obj []OfficeHoursObj) OfficeHoursObj {
 	return e
 }
 
-func (OfficeHoursObj) JsonLD() eve.JsonLDMap {
+func (OfficeHoursEvent) JsonLD() eve.JsonLDMap {
 	return OfficeHours.Compose()
 }
 
-func parseOfficeHoursOpts(obj OfficeHoursObj) (start, end time.Time, status, location, descr string) {
+func parseOfficeHoursOpts(obj OfficeHoursEvent) (start, end time.Time, status, location, descr string) {
 	start, _ = time.Parse(time.RFC3339, obj.StartDate)
 	end, _ = time.Parse(time.RFC3339, obj.EndDate)
 	if !end.After(start) {
@@ -114,7 +120,7 @@ func parseOfficeHoursOpts(obj OfficeHoursObj) (start, end time.Time, status, loc
 	return
 }
 
-func (OfficeHoursObj) FromPath(path string) OfficeHoursObj {
+func (OfficeHoursEvent) FromPath(path string) OfficeHoursEvent {
 	q := eve.ParseQuery(path)
 	e := OfficeHours
 	if status, ok := q["status"]; ok && len(status) > 0 {
@@ -135,7 +141,7 @@ func (OfficeHoursObj) FromPath(path string) OfficeHoursObj {
 	return e
 }
 
-func (OfficeHoursObj) ToPath(obj ...OfficeHoursObj) string {
+func (OfficeHoursEvent) ToPath(obj ...OfficeHoursEvent) string {
 	evt := OfficeHours.mergeOpts(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
@@ -157,7 +163,7 @@ func (OfficeHoursObj) ToPath(obj ...OfficeHoursObj) string {
 	return "?" + q.Encode()
 }
 
-func (OfficeHoursObj) Compose(obj ...OfficeHoursObj) eve.JsonLDMap {
+func (OfficeHoursEvent) Compose(obj ...OfficeHoursEvent) eve.JsonLDMap {
 	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.mergeOpts(obj))
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
@@ -181,7 +187,7 @@ func (OfficeHoursObj) Compose(obj ...OfficeHoursObj) eve.JsonLDMap {
 	}
 }
 
-func (OfficeHoursObj) Flyer(obj ...OfficeHoursObj) *eve.Flyer {
+func (OfficeHoursEvent) Flyer(obj ...OfficeHoursEvent) *eve.Flyer {
 	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.mergeOpts(obj))
 	f := &eve.Flyer{
 		Name:      "OfficeHours",

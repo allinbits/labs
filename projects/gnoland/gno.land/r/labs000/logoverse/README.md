@@ -72,9 +72,8 @@ func Register(obj LogoGraph) string {
 // Emitted on every successful registration
 event RegisteredGlyph {
     cid      string
-    name     string
-    type     string g from @type
-    committer string
+    name     string // "name"
+    type     string // "@type"
 }
 ```
 
@@ -114,9 +113,3 @@ func Render(path string) string {
 
 
 ```
-
-------------------------------------------------------------------------
-
-✅ Immutable.
-✅ Attribution baked in.
-✅ Composable through reference and derivation.

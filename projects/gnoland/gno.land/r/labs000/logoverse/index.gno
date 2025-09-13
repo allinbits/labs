@@ -9,9 +9,9 @@ import (
 )
 
 var cb = `
-## Welcome to a "**small 'L' logoverse**"
+## Welcome to the **logoverse**.
 ` + AibLabs.Image() + `
-This is an index of immutable objects found in this realm.
+This is not software as service — it’s software as universe.
 `
 
 var registry = avl.NewTree()
@@ -75,6 +75,7 @@ var rows = []string{
 	Register(AllInBits),
 	Register(Atone),
 	Register(Event),
+	Register(OfficeHours),
 	Register(Pflow),
 	Register(Photon),
 }

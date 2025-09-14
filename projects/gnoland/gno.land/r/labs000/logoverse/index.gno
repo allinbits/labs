@@ -19,6 +19,7 @@ Immutable, composable, attributed by default.
 Stop writing services. Start minting universes.`
 
 var registry = avl.NewTree()
+var sequence int64 = 0
 
 type Projectable interface {
 	ToPath(...interface{}) string
@@ -39,6 +40,76 @@ type Record struct {
 	Cid         string
 	Object      interface{}
 	Committer   string
+}
+
+// EmitProjectionEvent does all validation but does not register the projected object.
+func EmitProjectionEvent(base, path, seal string) (cid string) {
+    if seal == "" {
+        panic("seal parameter is required")
+    }
+    if !isCIDv1(seal) {
+        panic("invalid seal: not a CIDv1")
+    }
+    v, found := registry.Get(base)
+    if !found {
+        panic("base CID not found")
+    }
+    r := v.(Record)
+    proj, isProj := r.Object.(Projectable)
+    if !isProj {
+        panic("object is not projectable")
+    }
+    r.Object = proj.FromPath(path)
+    cid = proj.Compose(r.Object).Cid()
+    if seal != cid {
+        panic("invalid seal: expected " + seal + " but got " + cid)
+    }
+    sequence += 1
+    std.Emit("ProjectionEvent", "cid", cid, "path", proj.ToPath(r.Object), "seal", seal, "seq", string(sequence))
+    return
+}
+
+// CommitProjection registers a projected LogoGraph object based on a base CID and a path.
+// It panics if the base CID is not found, if the object is not projectable,
+// if the seal does not match the computed CID, or if the projected CID is already registered.
+func CommitProjection(_ realm, base, path, seal string) (cid string) {
+    if seal == "" {
+        panic("seal parameter is required")
+    }
+    if !isCIDv1(base) {
+        panic("invalid base: not a CIDv1")
+    }
+    if !isCIDv1(seal) {
+        panic("invalid seal: not a CIDv1")
+    }
+    v, found := registry.Get(base)
+    if !found {
+        return "base CID not found"
+    }
+    r := v.(Record)
+    proj, isProj := r.Object.(Projectable)
+    if !isProj {
+        panic("object is not projectable")
+    }
+    r.Object = proj.FromPath(path)
+    cid = proj.Compose(r.Object).Cid()
+    if seal != cid {
+        panic("invalid seal: expected " + seal + " but got " + cid)
+    }
+    if _, ok := registry.Get(cid); ok {
+        panic("duplicate projected CID registered: " + cid)
+    }
+    rec := Record{
+        Name:        r.Name + " (projected)",
+        Description: r.Description + " (projected)",
+        Cid:         cid,
+        Object:      r.Object,
+        Committer:   std.PreviousRealm().Address().String(),
+    }
+    registry.Set(rec.Cid, rec)
+    sequence += 1
+    std.Emit("CommitProjection", "cid", cid, "seal", seal, "seq", string(sequence))
+    return
 }
 
 // Register adds a LogoGraph object to the registry and returns its Record.
@@ -76,7 +147,8 @@ func Register(i interface{}) string {
 		panic("duplicate CID registered: " + rec.Cid)
 	}
 	registry.Set(rec.Cid, rec)
-	std.Emit("GlyphRegistered", "cid", rec.Cid, "ldtype", ld.StringVal("@type"))
+	sequence += 1
+	std.Emit("Register", "cid", rec.Cid, "seq", string(sequence))
 	return newCid
 }
 
@@ -108,7 +180,7 @@ func Render(path string) string {
 
 	v, found := registry.Get(cid[0])
 	if !found {
-		return "cid not found"
+		return "cid not found" // TODO: incorporate form here
 	}
 
 	r := v.(Record)
@@ -138,9 +210,9 @@ func Render(path string) string {
 		if !isCIDv1(seal[0]) {
 			return "invalid seal: not a CIDv1"
 		}
-		computedCid := proj.Compose(r.Object).Cid()
-		if seal[0] != computedCid {
-			return "invalid seal: expected " + computedCid + " but got " + seal[0]
+		cid := proj.Compose(r.Object).Cid()
+		if seal[0] != cid {
+			return "invalid seal: expected " + cid + " but got " + seal[0]
 		}
 	}
 
@@ -157,12 +229,11 @@ func renderObject(obj interface{}) string {
 	sb.WriteString("#### CID\n")
     cid := ld.Cid()
 	if proj, ok := obj.(Projectable); ok {
-		path := proj.ToPath()
         if _, found := registry.Get(cid); !found {
             sb.WriteString(cid + "\n\n")
-            sb.WriteString(eve.Button("Register   " + cid[len(cid)-8:], path + "&submit=register" + "\n"))
+            sb.WriteString(eve.Button("Commit Projection:    " + cid[len(cid)-8:], proj.ToPath(obj) + "&submit=register" + "\n"))
 		} else {
-            sb.WriteString("[" + cid + "](" + path + ")\n")
+            sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
         }
 	} else {
         sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")

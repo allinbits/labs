@@ -6,17 +6,17 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-type metamodelObject struct{}
+type metamodelObj struct{}
 
-var Metamodel metamodelObject
+var Metamodel metamodelObj
 
-func (metamodelObject) Cid() string {
+func (metamodelObj) Cid() string {
 	return Metamodel.JsonLD().Cid()
 }
 
-var _ LogoGraph = metamodelObject{}
+var _ LogoGraph = metamodelObj{}
 
-func (metamodelObject) JsonLD() eve.JsonLDMap {
+func (metamodelObj) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    []string{"https://schema.org", "https://petri.net/schema"},
 		"@type":       "ImageObject",
@@ -38,7 +38,7 @@ func (metamodelObject) JsonLD() eve.JsonLDMap {
 	}
 }
 
-func (metamodelObject) SVG() string {
+func (metamodelObj) SVG() string {
 	return `<svg id="` + Metamodel.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150" role="img" fill="black">
 <title>Metamodel Petri Net Glyph</title>
 <circle cx="40" cy="75" r="18" stroke="black" stroke-width="3" fill="#f0f0f0"/>
@@ -53,18 +53,18 @@ func (metamodelObject) SVG() string {
 
 }
 
-func (metamodelObject) DataUrl() string {
+func (metamodelObj) DataUrl() string {
 	return "data:image/svg+xml;utf8," + url.PathEscape(Metamodel.SVG())
 }
 
-func (metamodelObject) Image(url ...string) string {
+func (metamodelObj) Image(url ...string) string {
 	if len(url) == 0 {
-		return "![metamodelObject](" + Metamodel.DataUrl() + ")"
+		return "![metamodelObj](" + Metamodel.DataUrl() + ")"
 	}
-	return "[![metamodelObject](" + Metamodel.DataUrl() + ")](" + url[0] + ")"
+	return "[![metamodelObj](" + Metamodel.DataUrl() + ")](" + url[0] + ")"
 }
 
-func (metamodelObject) Thumbnail() string {
+func (metamodelObj) Thumbnail() string {
 	return Metamodel.Image()
 }
 

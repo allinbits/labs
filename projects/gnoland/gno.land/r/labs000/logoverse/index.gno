@@ -155,19 +155,17 @@ func renderObject(obj interface{}) string {
 	sb.WriteString(glyph.Thumbnail() + "\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
+    cid := ld.Cid()
 	if proj, ok := obj.(Projectable); ok {
 		path := proj.ToPath()
-        if _, found := registry.Get(ld.Cid()); !found {
-            cid := ld.Cid()
+        if _, found := registry.Get(cid); !found {
             sb.WriteString(cid + "\n\n")
-            sb.WriteString(eve.Button("Register   " + cid[len(cid)-8:], path))
+            sb.WriteString(eve.Button("Register   " + cid[len(cid)-8:], path + "&submit=register" + "\n"))
 		} else {
-            sb.WriteString("[" + ld.Cid() + "](" + path + ")\n")
+            sb.WriteString("[" + cid + "](" + path + ")\n")
         }
 	} else {
-        sb.WriteString("[")
-        sb.WriteString(ld.Cid() + "](")
-        sb.WriteString("](?cid=" + ld.Cid() + ")\n")
+        sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")
 	}
 	sb.WriteString("\n#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")

@@ -49,7 +49,7 @@ func Register(i interface{}) string {
 		panic("object must implement LogoGraph interface")
 	}
 	newCid := ldg.Cid()
-	if !isLikelyCIDv1(newCid) {
+	if !isCIDv1(newCid) {
 		panic("object must have a likely CIDv1 (base32, 'baf...' style)")
 	}
 
@@ -101,39 +101,50 @@ func (e Record) String() string {
 
 func Render(path string) string {
 	q := eve.ParseQuery(path)
-	if cid, ok := q["cid"]; ok {
-		if v, ok := registry.Get(cid[0]); ok {
-			r := v.(Record)
-			proj, isProj := r.Object.(Projectable)
-			if isProj {
-				r.Object = proj.FromPath(path)
-			}
-			if format, ok := q["v"]; ok { // view format
-				switch format[0] {
-				case "committer":
-					return r.Committer
-				case "svg":
-					return r.Object.(LogoGraph).SVG()
-				case "thumbnail":
-					return r.Object.(LogoGraph).Thumbnail()
-				case "json":
-					if isProj {
-						return proj.Compose(r.Object).String()
-					}
-					return r.Object.(LogoGraph).JsonLD().String()
-				}
-			}
-			if seal, ok := q["seal"]; ok && isProj { // integrity check
-				computedCid := proj.Compose(r.Object).Cid()
-				if seal[0] != computedCid {
-					return "invalid seal: expected " + computedCid + " but got " + seal[0]
-				}
-			}
-			return renderObject(r.Object)
-		}
+	cid, hasCid := q["cid"]
+	if !hasCid {
+		return renderTable()
+	}
+
+	v, found := registry.Get(cid[0])
+	if !found {
 		return "cid not found"
 	}
-	return renderTable()
+
+	r := v.(Record)
+	proj, isProj := r.Object.(Projectable)
+	if isProj {
+		r.Object = proj.FromPath(path)
+	}
+
+	// Handle view format
+	if format, ok := q["v"]; ok {
+		switch format[0] {
+		case "committer":
+			return r.Committer
+		case "svg":
+			return r.Object.(LogoGraph).SVG()
+		case "thumbnail":
+			return r.Object.(LogoGraph).Thumbnail()
+		case "json":
+			if isProj {
+				return proj.Compose(r.Object).String()
+			}
+			return r.Object.(LogoGraph).JsonLD().String()
+		}
+	}
+
+	if seal, ok := q["seal"]; ok && isProj {
+		if !isCIDv1(seal[0]) {
+			return "invalid seal: not a CIDv1"
+		}
+		computedCid := proj.Compose(r.Object).Cid()
+		if seal[0] != computedCid {
+			return "invalid seal: expected " + computedCid + " but got " + seal[0]
+		}
+	}
+
+	return renderObject(r.Object)
 }
 
 func renderObject(obj interface{}) string {
@@ -144,10 +155,12 @@ func renderObject(obj interface{}) string {
 	sb.WriteString(glyph.Thumbnail() + "\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
+	sb.WriteString("[")
+	sb.WriteString(ld.Cid() + "](")
 	if proj, ok := obj.(Projectable); ok {
-		sb.WriteString(proj.Compose(obj).Cid() + "\n")
+		sb.WriteString(proj.ToPath() + ")\n")
 	} else {
-		sb.WriteString(ld.Cid() + "\n")
+        sb.WriteString("](?cid=" + ld.Cid() + ")\n")
 	}
 	sb.WriteString("#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
@@ -184,7 +197,7 @@ func capitalize(s string) string {
 	return string(s[0]-32) + s[1:]
 }
 
-func isLikelyCIDv1(s string) bool {
+func isCIDv1(s string) bool {
 	if len(s) != 59 {
 		return false
 	}

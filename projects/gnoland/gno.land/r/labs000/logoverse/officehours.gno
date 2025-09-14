@@ -75,12 +75,12 @@ func (OfficeHoursEvent) SVG() string {
 }
 
 func (OfficeHoursEvent) mergeOpts(objs []interface{}) OfficeHoursEvent {
-    obj := make([]OfficeHoursEvent, 0, len(objs))
-    for _, o := range objs {
-        if evt, ok := o.(OfficeHoursEvent); ok {
-            obj = append(obj, evt)
-        }
-    }
+	obj := make([]OfficeHoursEvent, 0, len(objs))
+	for _, o := range objs {
+		if evt, ok := o.(OfficeHoursEvent); ok {
+			obj = append(obj, evt)
+		}
+	}
 	e := OfficeHours
 	for _, o := range obj {
 		if o.Status != "" {

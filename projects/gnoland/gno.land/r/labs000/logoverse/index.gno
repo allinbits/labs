@@ -100,10 +100,10 @@ func Render(path string) string {
 	if cid, ok := q["cid"]; ok {
 		if v, ok := registry.Get(cid[0]); ok {
 			r := v.(Record)
-            proj, isProj := r.Object.(Projectable)
-            if isProj {
-                r.Object = proj.FromPath(path)
-            }
+			proj, isProj := r.Object.(Projectable)
+			if isProj {
+				r.Object = proj.FromPath(path)
+			}
 			if format, ok := q["v"]; ok { // view format
 				switch format[0] {
 				case "committer":
@@ -113,10 +113,16 @@ func Render(path string) string {
 				case "thumbnail":
 					return r.Object.(LogoGraph).Thumbnail()
 				case "json":
-				    if isProj {
-                        return proj.Compose(r.Object).String()
-                    }
+					if isProj {
+						return proj.Compose(r.Object).String()
+					}
 					return r.Object.(LogoGraph).JsonLD().String()
+				}
+			}
+			if seal, ok := q["seal"]; ok && isProj { // integrity check
+				computedCid := proj.Compose(r.Object).Cid()
+				if seal[0] != computedCid {
+					return "invalid seal: expected " + computedCid + " but got " + seal[0]
 				}
 			}
 			return renderObject(r.Object)
@@ -135,10 +141,10 @@ func renderObject(obj interface{}) string {
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
 	if proj, ok := obj.(Projectable); ok {
-        sb.WriteString(proj.Compose(obj).Cid() + "\n")
-    } else {
-        sb.WriteString(ld.Cid() + "\n")
-    }
+		sb.WriteString(proj.Compose(obj).Cid() + "\n")
+	} else {
+		sb.WriteString(ld.Cid() + "\n")
+	}
 	sb.WriteString("#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
 	return sb.String()

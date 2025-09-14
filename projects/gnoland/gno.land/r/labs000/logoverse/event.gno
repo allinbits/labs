@@ -78,12 +78,12 @@ func (EventObj) SVG() string {
 }
 
 func (EventObj) mergeOpts(objs []interface{}) EventObj {
-    obj := make([]EventObj, 0, len(objs))
-    for _, o := range objs {
-        if evt, ok := o.(EventObj); ok {
-            obj = append(obj, evt)
-        }
-    }
+	obj := make([]EventObj, 0, len(objs))
+	for _, o := range objs {
+		if evt, ok := o.(EventObj); ok {
+			obj = append(obj, evt)
+		}
+	}
 	e := Event
 	for _, o := range obj {
 		if o.Status != "" {

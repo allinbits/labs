@@ -24,13 +24,8 @@ var Event = EventObj{
 	},
 }
 
-var _ LogoGraph = EventObj{}
-var _ EventProjection = EventObj{}
-
-type EventProjection interface {
-	ToPath(...EventObj) string
-	FromPath(path string) EventObj
-}
+var _ LogoGraph = Event
+var _ Projectable = Event
 
 func (EventObj) Cid() string {
 	return Event.Compose().Cid()
@@ -82,7 +77,13 @@ func (EventObj) SVG() string {
 	return AibLabs.SVG()
 }
 
-func (EventObj) mergeOpts(obj []EventObj) EventObj {
+func (EventObj) mergeOpts(objs []interface{}) EventObj {
+    obj := make([]EventObj, 0, len(objs))
+    for _, o := range objs {
+        if evt, ok := o.(EventObj); ok {
+            obj = append(obj, evt)
+        }
+    }
 	e := Event
 	for _, o := range obj {
 		if o.Status != "" {
@@ -124,16 +125,16 @@ func parseEventOpts(obj EventObj) (start, end time.Time, status, location, descr
 }
 
 // FromPath parses event options from a URL path query string and returns an EventObj with those options set.
-func (EventObj) FromPath(path string) EventObj {
+func (EventObj) FromPath(path string) interface{} {
 	q := eve.ParseQuery(path)
 	e := Event
 	if status, ok := q["status"]; ok && len(status) > 0 {
 		e.Status = status[0]
 	}
-	if start, ok := q["start"]; ok && len(start) > 0 {
+	if start, ok := q["startDate"]; ok && len(start) > 0 {
 		e.StartDate = start[0]
 	}
-	if end, ok := q["end"]; ok && len(end) > 0 {
+	if end, ok := q["endDate"]; ok && len(end) > 0 {
 		e.EndDate = end[0]
 	}
 	if location, ok := q["location"]; ok && len(location) > 0 {
@@ -145,12 +146,12 @@ func (EventObj) FromPath(path string) EventObj {
 	return e
 }
 
-func (EventObj) ToPath(obj ...EventObj) string {
+func (EventObj) ToPath(obj ...interface{}) string {
 	evt := Event.mergeOpts(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
 	if evt.Status != "" {
-		q.Set("status", evt.Status) // TODO: remove schem.org prefix?
+		q.Set("status", evt.Status) // TODO: remove schema.org prefix?
 	}
 	if evt.StartDate != "" {
 		q.Set("start", evt.StartDate)
@@ -167,7 +168,7 @@ func (EventObj) ToPath(obj ...EventObj) string {
 	return "?" + q.Encode()
 }
 
-func (EventObj) Compose(obj ...EventObj) eve.JsonLDMap {
+func (EventObj) Compose(obj ...interface{}) eve.JsonLDMap {
 	start, end, status, location, descr := parseEventOpts(Event.mergeOpts(obj))
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
@@ -191,7 +192,7 @@ func (EventObj) Compose(obj ...EventObj) eve.JsonLDMap {
 	}
 }
 
-func (EventObj) Flyer(obj ...EventObj) *eve.Flyer {
+func (EventObj) Flyer(obj ...interface{}) *eve.Flyer {
 	start, end, status, location, descr := parseEventOpts(Event.mergeOpts(obj))
 	f := &eve.Flyer{
 		Name:      "Event",

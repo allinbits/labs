@@ -16,10 +16,10 @@ This is not software as service — it’s software as universe.
 
 var registry = avl.NewTree()
 
-// Projectable is a canonical interface into the category of Links.
 type Projectable interface {
 	ToPath(...interface{}) string
 	FromPath(path string) interface{}
+	Compose(...interface{}) eve.JsonLDMap
 }
 
 type LogoGraph interface {
@@ -100,13 +100,22 @@ func Render(path string) string {
 	if cid, ok := q["cid"]; ok {
 		if v, ok := registry.Get(cid[0]); ok {
 			r := v.(Record)
-			if format, ok := q["v"]; ok {
+            proj, isProj := r.Object.(Projectable)
+            if isProj {
+                r.Object = proj.FromPath(path)
+            }
+			if format, ok := q["v"]; ok { // view format
 				switch format[0] {
 				case "committer":
 					return r.Committer
 				case "svg":
+					return r.Object.(LogoGraph).SVG()
+				case "thumbnail":
 					return r.Object.(LogoGraph).Thumbnail()
 				case "json":
+				    if isProj {
+                        return proj.Compose(r.Object).String()
+                    }
 					return r.Object.(LogoGraph).JsonLD().String()
 				}
 			}
@@ -125,7 +134,11 @@ func renderObject(obj interface{}) string {
 	sb.WriteString(glyph.Thumbnail() + "\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
-	sb.WriteString(ld.Cid() + "\n")
+	if proj, ok := obj.(Projectable); ok {
+        sb.WriteString(proj.Compose(obj).Cid() + "\n")
+    } else {
+        sb.WriteString(ld.Cid() + "\n")
+    }
 	sb.WriteString("#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
 	return sb.String()

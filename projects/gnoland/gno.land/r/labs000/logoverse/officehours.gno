@@ -24,13 +24,8 @@ var OfficeHours = OfficeHoursEvent{
 	},
 }
 
-var _ LogoGraph = OfficeHoursEvent{}
-var _ OfficeHoursProjection = OfficeHoursEvent{}
-
-type OfficeHoursProjection interface {
-	ToPath(...OfficeHoursEvent) string
-	FromPath(path string) OfficeHoursEvent
-}
+var _ LogoGraph = OfficeHours
+var _ Projectable = OfficeHours
 
 func (OfficeHoursEvent) Cid() string {
 	return OfficeHours.Compose().Cid()
@@ -79,7 +74,13 @@ func (OfficeHoursEvent) SVG() string {
 `
 }
 
-func (OfficeHoursEvent) mergeOpts(obj []OfficeHoursEvent) OfficeHoursEvent {
+func (OfficeHoursEvent) mergeOpts(objs []interface{}) OfficeHoursEvent {
+    obj := make([]OfficeHoursEvent, 0, len(objs))
+    for _, o := range objs {
+        if evt, ok := o.(OfficeHoursEvent); ok {
+            obj = append(obj, evt)
+        }
+    }
 	e := OfficeHours
 	for _, o := range obj {
 		if o.Status != "" {
@@ -120,7 +121,7 @@ func parseOfficeHoursOpts(obj OfficeHoursEvent) (start, end time.Time, status, l
 	return
 }
 
-func (OfficeHoursEvent) FromPath(path string) OfficeHoursEvent {
+func (OfficeHoursEvent) FromPath(path string) interface{} {
 	q := eve.ParseQuery(path)
 	e := OfficeHours
 	if status, ok := q["status"]; ok && len(status) > 0 {
@@ -141,7 +142,7 @@ func (OfficeHoursEvent) FromPath(path string) OfficeHoursEvent {
 	return e
 }
 
-func (OfficeHoursEvent) ToPath(obj ...OfficeHoursEvent) string {
+func (OfficeHoursEvent) ToPath(obj ...interface{}) string {
 	evt := OfficeHours.mergeOpts(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
@@ -163,7 +164,7 @@ func (OfficeHoursEvent) ToPath(obj ...OfficeHoursEvent) string {
 	return "?" + q.Encode()
 }
 
-func (OfficeHoursEvent) Compose(obj ...OfficeHoursEvent) eve.JsonLDMap {
+func (OfficeHoursEvent) Compose(obj ...interface{}) eve.JsonLDMap {
 	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.mergeOpts(obj))
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
@@ -187,7 +188,7 @@ func (OfficeHoursEvent) Compose(obj ...OfficeHoursEvent) eve.JsonLDMap {
 	}
 }
 
-func (OfficeHoursEvent) Flyer(obj ...OfficeHoursEvent) *eve.Flyer {
+func (OfficeHoursEvent) Flyer(obj ...interface{}) *eve.Flyer {
 	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.mergeOpts(obj))
 	f := &eve.Flyer{
 		Name:      "OfficeHours",

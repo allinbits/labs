@@ -11,8 +11,12 @@ import (
 var cb = `
 ## Welcome to the **logoverse**.
 ` + AibLabs.Image() + `
-This is not software as service — it’s software as universe.
-`
+**Software as a Universe**.\
+Every object has a CID (base) and a sealed CID (projection).\
+Links aren’t static—they compute new objects.\
+Immutable, composable, attributed by default.
+
+Stop writing services. Start minting universes.`
 
 var registry = avl.NewTree()
 

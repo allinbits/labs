@@ -154,10 +154,10 @@ func (EventObj) ToPath(obj ...interface{}) string {
 		q.Set("status", evt.Status) // TODO: remove schema.org prefix?
 	}
 	if evt.StartDate != "" {
-		q.Set("start", evt.StartDate)
+		q.Set("startDate", evt.StartDate)
 	}
 	if evt.EndDate != "" {
-		q.Set("end", evt.EndDate)
+		q.Set("endDate", evt.EndDate)
 	}
 	if loc, ok := Event.Settings["location"]; ok && loc != "" {
 		q.Set("location", loc)

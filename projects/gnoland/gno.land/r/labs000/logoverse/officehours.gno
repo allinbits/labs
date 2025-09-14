@@ -127,10 +127,10 @@ func (OfficeHoursEvent) FromPath(path string) interface{} {
 	if status, ok := q["status"]; ok && len(status) > 0 {
 		e.Status = status[0]
 	}
-	if start, ok := q["start"]; ok && len(start) > 0 {
+	if start, ok := q["startDate"]; ok && len(start) > 0 {
 		e.StartDate = start[0]
 	}
-	if end, ok := q["end"]; ok && len(end) > 0 {
+	if end, ok := q["endDate"]; ok && len(end) > 0 {
 		e.EndDate = end[0]
 	}
 	if location, ok := q["location"]; ok && len(location) > 0 {
@@ -150,10 +150,10 @@ func (OfficeHoursEvent) ToPath(obj ...interface{}) string {
 		q.Set("status", evt.Status)
 	}
 	if evt.StartDate != "" {
-		q.Set("start", evt.StartDate)
+		q.Set("startDate", evt.StartDate)
 	}
 	if evt.EndDate != "" {
-		q.Set("end", evt.EndDate)
+		q.Set("endDate", evt.EndDate)
 	}
 	if loc, ok := OfficeHours.Settings["location"]; ok && loc != "" {
 		q.Set("location", loc)

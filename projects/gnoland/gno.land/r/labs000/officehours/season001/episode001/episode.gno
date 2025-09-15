@@ -18,7 +18,7 @@ func Render(path string) string {
 type episode struct {
     Event logo.OfficeHoursEvent
 }
-_ LogoGraph = episode{}
+var _ logo.LogoGraph = episode{}
 
 var event = episode{
     Event: logo.OfficeHoursEvent{
@@ -34,7 +34,7 @@ func(e episode) Cid() string {
 
 func(e episode) renderOpts() map[string]any {
     return map[string]any{
-        "dev":      map[string]any{},
+        "dev":      map[string]any{}, // REVIEW: chainIds are used to provide a chain-level opts namespace
         "labsnet1": map[string]any{},
     }
 }

@@ -28,7 +28,7 @@ func (c *Counter) String() string {
 var counter = Counter{Count: 0}
 
 type Editable interface {
-    RenderForm(string) string
+	RenderForm(string) string
 }
 
 type Projectable interface {
@@ -176,23 +176,23 @@ func Render(path string) string {
 		}
 		return renderTable()
 	}
-    if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
-        if base, hasBase := q["base"]; hasBase && isCIDv1(base[0]) {
-            if baseObj, ok := registry.Get(base[0]); ok {
-                if ed, isEd := baseObj.(Record).Object.(Editable); isEd {
-                    form := ed.RenderForm(path)
-                    if form != "" {
-                        return form
-                    }
-                }
-            } else {
-                //  FIXME: it seems like wrong CID is used
-                return "base cid not found: " + base[0]
-            }
-        } else {
-            return "missing or invalid base parameter"
-        }
-    }
+	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
+		if base, hasBase := q["base"]; hasBase && isCIDv1(base[0]) {
+			if baseObj, ok := registry.Get(base[0]); ok {
+				if ed, isEd := baseObj.(Record).Object.(Editable); isEd {
+					form := ed.RenderForm(path)
+					if form != "" {
+						return form
+					}
+				}
+			} else {
+				//  FIXME: it seems like wrong CID is used
+				return "base cid not found: " + base[0]
+			}
+		} else {
+			return "missing or invalid base parameter"
+		}
+	}
 
 	v, found := registry.Get(cid[0])
 	if !found {
@@ -237,7 +237,7 @@ func Render(path string) string {
 				return "[" + r.Cid + "](?cid=" + r.Cid + ")"
 			}
 		case "seq":
-		    return ufmt.Sprintf("%d", r.Seq)
+			return ufmt.Sprintf("%d", r.Seq)
 		case "committer":
 			return r.Committer
 		case "svg":
@@ -266,14 +266,14 @@ func Render(path string) string {
 }
 
 func renderObject(path string, obj interface{}) string {
-    _ = path
+	_ = path
 	glyph := obj.(LogoGraph)
 	var ld eve.JsonLDMap
 	if proj, ok := obj.(Projectable); ok {
-        ld = proj.Compose(proj.FromPath(path))
-    } else {
-        ld = glyph.JsonLD()
-    }
+		ld = proj.Compose(proj.FromPath(path))
+	} else {
+		ld = glyph.JsonLD()
+	}
 	var sb strings.Builder
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
 	sb.WriteString(glyph.Thumbnail() + "\n\n")
@@ -283,7 +283,7 @@ func renderObject(path string, obj interface{}) string {
 	if proj, ok := obj.(Projectable); ok {
 		if _, found := registry.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
-			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj) + "&base=" + glyph.Cid() + "&submit=register" + "\n"))
+			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register"+"\n"))
 		} else {
 			sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
 		}
@@ -292,9 +292,9 @@ func renderObject(path string, obj interface{}) string {
 	}
 	links := ld.MarkdownLinks()
 	if links != "" {
-        sb.WriteString("\n### Links\n")
-        sb.WriteString(links + "\n")
-    }
+		sb.WriteString("\n### Links\n")
+		sb.WriteString(links + "\n")
+	}
 	sb.WriteString("\n#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
 	return sb.String()

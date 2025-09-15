@@ -34,7 +34,8 @@ func Render(path string) string {
 
 // TODO: refactor to replace this
 func RenderStatic(path string) string {
-	var e1 = "?episode=s001e001&status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
+	//var e1 = "?episode=s001e001&status=EventScheduled&startDate=2025-06-01T00:00:00Z&endDate=2025-06-01T01:00:00Z"
+	var e1 = "/r/labs000/season001/episode001"
 	return `
 # Office Hours
 [` + logo.AibLabs.Image() + `](/r/labs000/officehours)

@@ -40,7 +40,7 @@ func (EventObj) renderOpts() map[string]any {
 }
 
 func (EventObj) RenderForm(path string) string {
-    return "FORM"
+	return "FORM"
 }
 
 func (EventObj) Image() string {

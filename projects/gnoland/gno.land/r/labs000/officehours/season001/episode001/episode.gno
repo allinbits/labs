@@ -1,56 +1,60 @@
-package s1e1
+package officehours
 
 import (
 	eve "gno.land/p/eve000/event/component"
 	logo "gno.land/r/labs000/logoverse"
-	ohr "gno.land/r/labs000/officehours"
 )
 
-const S001E001 = "s001e001"
+var cid string
 
 func init() {
-	ohr.Register(Episode.Record())
+    cid = logo.Register(event)
 }
 
 func Render(path string) string {
-	return path
+    return logo.Render("?cid=" + cid)
 }
 
-type episode struct{}
+type episode struct {
+    Event logo.OfficeHoursEvent
+}
+_ LogoGraph = episode{}
 
-var Episode = episode{}
-
-func (episode) Record() map[string]ohr.Record {
-	return map[string]ohr.Record{
-		S001E001: {
-			Episode.Event,
-			ohr.Nav("- [index](?) | [speakers](?p=speakers)"),
-			ohr.Writer(ohr.ApplyScheduleOptionsFromPath),
-			ohr.Keywords("logoverse"),
-		},
-	}
+var event = episode{
+    Event: logo.OfficeHoursEvent{
+        Status: "EventProposed",
+        StartDate: "2025-11-01T00:00:00Z",
+        EndDate: "2025-11-01T01:00:00Z",
+    },
 }
 
-func (episode) Event(opts map[string]any) *eve.Flyer {
-	evt := &eve.Flyer{
-		Name:        "Intro To Petri-nets",
-		Description: "Introducing the Logoverse",
-	}
-	evt.Sessions = append(evt.Sessions, Episode.WhatIsTheLogoverse())
-	return evt
+func(e episode) Cid() string {
+    return e.Event.Compose(e.Event).Cid()
 }
 
-func (episode) WhatIsTheLogoverse() *eve.Session {
-	return &eve.Session{
-		Title:   "What is the Logoverse?",
-		Body:    []eve.Content{*logoverseSession},
-		Speaker: logo.Pflow.Author(),
-	}
+func(e episode) renderOpts() map[string]any {
+    return map[string]any{
+        "dev":      map[string]any{},
+        "labsnet1": map[string]any{},
+    }
 }
 
-var logoverseSession = ohr.ContentBlock(`
-- What is the Logoverse?
-- Why Petri-nets?
-- How do Petri-nets work?
-- Examples of Petri-nets
-`)
+func(e episode) Image() string {
+    return e.Event.Image()
+}
+
+func(e episode) DataUrl() string {
+    return e.Event.DataUrl()
+}
+
+func(e episode) Thumbnail() string {
+    return e.Event.Thumbnail()
+}
+
+func(e episode) SVG() string {
+    return e.Event.SVG()
+}
+
+func(e episode) JsonLD() eve.JsonLDMap {
+    return e.Event.Compose(e.Event)
+}

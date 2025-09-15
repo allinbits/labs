@@ -4,6 +4,8 @@ import (
 	"std"
 	"strings"
 
+	"gno.land/p/demo/ufmt"
+
 	"gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
 )
@@ -19,7 +21,21 @@ Immutable, composable, attributed by default.
 Stop writing services. Start minting universes.`
 
 var registry = avl.NewTree()
-var sequence int64 = 0
+
+type Counter struct {
+	Count int64
+}
+
+func (c *Counter) Next() string {
+	c.Count++
+	return c.String()
+}
+
+func (c *Counter) String() string {
+	return ufmt.Sprintf("%08d", c.Count)
+}
+
+var counter = Counter{Count: 0}
 
 type Projectable interface {
 	ToPath(...interface{}) string
@@ -40,76 +56,61 @@ type Record struct {
 	Cid         string
 	Object      interface{}
 	Committer   string
+	Seq         int64
 }
 
 // EmitProjectionEvent does all validation but does not register the projected object.
 func EmitProjectionEvent(base, path, seal string) (cid string) {
-    if seal == "" {
-        panic("seal parameter is required")
-    }
-    if !isCIDv1(seal) {
-        panic("invalid seal: not a CIDv1")
-    }
-    v, found := registry.Get(base)
-    if !found {
-        panic("base CID not found")
-    }
-    r := v.(Record)
-    proj, isProj := r.Object.(Projectable)
-    if !isProj {
-        panic("object is not projectable")
-    }
-    r.Object = proj.FromPath(path)
-    cid = proj.Compose(r.Object).Cid()
-    if seal != cid {
-        panic("invalid seal: expected " + seal + " but got " + cid)
-    }
-    sequence += 1
-    std.Emit("ProjectionEvent", "cid", cid, "path", proj.ToPath(r.Object), "seal", seal, "seq", string(sequence))
-    return
+	return commitProjection(true, base, path, seal)
 }
 
 // CommitProjection registers a projected LogoGraph object based on a base CID and a path.
 // It panics if the base CID is not found, if the object is not projectable,
 // if the seal does not match the computed CID, or if the projected CID is already registered.
 func CommitProjection(_ realm, base, path, seal string) (cid string) {
-    if seal == "" {
-        panic("seal parameter is required")
-    }
-    if !isCIDv1(base) {
-        panic("invalid base: not a CIDv1")
-    }
-    if !isCIDv1(seal) {
-        panic("invalid seal: not a CIDv1")
-    }
-    v, found := registry.Get(base)
-    if !found {
-        return "base CID not found"
-    }
-    r := v.(Record)
-    proj, isProj := r.Object.(Projectable)
-    if !isProj {
-        panic("object is not projectable")
-    }
-    r.Object = proj.FromPath(path)
-    cid = proj.Compose(r.Object).Cid()
-    if seal != cid {
-        panic("invalid seal: expected " + seal + " but got " + cid)
-    }
-    if _, ok := registry.Get(cid); ok {
-        panic("duplicate projected CID registered: " + cid)
-    }
-    rec := Record{
-        Name:        r.Name + " (projected)",
-        Description: r.Description + " (projected)",
-        Cid:         cid,
-        Object:      r.Object,
-        Committer:   std.PreviousRealm().Address().String(),
-    }
-    registry.Set(rec.Cid, rec)
-    sequence += 1
-    std.Emit("CommitProjection", "cid", cid, "seal", seal, "seq", string(sequence))
-    return
+	return commitProjection(false, base, path, seal)
+}
+
+func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
+	if seal == "" {
+		panic("seal parameter is required")
+	}
+	if !isCIDv1(base) {
+		panic("invalid base: not a CIDv1")
+	}
+	if !isCIDv1(seal) {
+		panic("invalid seal: not a CIDv1")
+	}
+	v, found := registry.Get(base)
+	if !found {
+		return "base CID not found"
+	}
+	r := v.(Record)
+	proj, isProj := r.Object.(Projectable)
+	if !isProj {
+		panic("object is not projectable")
+	}
+	r.Object = proj.FromPath(path)
+	cid = proj.Compose(r.Object).Cid()
+	if seal != cid {
+		panic("invalid seal: expected " + seal + " but got " + cid)
+	}
+	if _, ok := registry.Get(cid); ok {
+		panic("duplicate projected CID registered: " + cid)
+	}
+	rec := Record{
+		Name:        r.Name + " (projected)",
+		Description: r.Description + " (projected)",
+		Cid:         cid,
+		Object:      r.Object,
+		Committer:   std.PreviousRealm().Address().String(),
+		Seq:         counter.Count + 1,
+	}
+	std.Emit("ProjectionEvent", "cid", cid, "seal", seal, "seq", counter.Next())
+	if !emitOnly {
+		registry.Set(rec.Cid, rec)
+	}
+	return
 }
 
 // Register adds a LogoGraph object to the registry and returns its Record.
@@ -142,13 +143,13 @@ func Register(i interface{}) string {
 		Cid:         newCid,
 		Object:      i,
 		Committer:   std.PreviousRealm().Address().String(),
+		Seq:         counter.Count + 1,
 	}
 	if _, ok := registry.Get(rec.Cid); ok {
 		panic("duplicate CID registered: " + rec.Cid)
 	}
 	registry.Set(rec.Cid, rec)
-	sequence += 1
-	std.Emit("Register", "cid", rec.Cid, "seq", string(sequence))
+	std.Emit("Register", "cid", rec.Cid, "seq", counter.Next())
 	return newCid
 }
 
@@ -175,6 +176,9 @@ func Render(path string) string {
 	q := eve.ParseQuery(path)
 	cid, hasCid := q["cid"]
 	if !hasCid {
+		if len(q["v"]) == 1 && q["v"][0] == "seq" {
+			return counter.String() // FIXME: remove dup below...
+		}
 		return renderTable()
 	}
 
@@ -189,9 +193,39 @@ func Render(path string) string {
 		r.Object = proj.FromPath(path)
 	}
 
-	// Handle view format
 	if format, ok := q["v"]; ok {
 		switch format[0] {
+		case "ldpath":
+			if ldpath, ok := q["ldpath"]; ok && len(ldpath) > 0 {
+				ld := r.Object.(LogoGraph).JsonLD()
+				parts := strings.Split(ldpath[0], ".")
+				val := interface{}(ld)
+				for _, p := range parts {
+					if m, ok := val.(eve.JsonLDMap); ok {
+						val = m[p]
+					} else {
+						return ""
+					}
+				}
+				switch v := val.(type) {
+				case string:
+					return v
+				default:
+					return ufmt.Sprintf("%v", v)
+				}
+			} else {
+				return r.Object.(LogoGraph).JsonLD().String()
+			}
+			return ""
+		case "cid":
+			if isProj {
+				return "[" + proj.Compose(r.Object).Cid() + "](?cid=" + proj.Compose(r.Object).Cid() + ")"
+			} else {
+				return "[" + r.Cid + "](?cid=" + r.Cid + ")"
+			}
+		case "sequence":
+			return "FIXME"
+			//return r.Seq.String()
 		case "committer":
 			return r.Committer
 		case "svg":
@@ -227,16 +261,16 @@ func renderObject(obj interface{}) string {
 	sb.WriteString(glyph.Thumbnail() + "\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
-    cid := ld.Cid()
+	cid := ld.Cid()
 	if proj, ok := obj.(Projectable); ok {
-        if _, found := registry.Get(cid); !found {
-            sb.WriteString(cid + "\n\n")
-            sb.WriteString(eve.Button("Commit Projection:    " + cid[len(cid)-8:], proj.ToPath(obj) + "&submit=register" + "\n"))
+		if _, found := registry.Get(cid); !found {
+			sb.WriteString(cid + "\n\n")
+			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&submit=register"+"\n"))
 		} else {
-            sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
-        }
+			sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
+		}
 	} else {
-        sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")
+		sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")
 	}
 	sb.WriteString("\n#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
@@ -263,6 +297,8 @@ func renderTable() string {
 			sb.WriteString(r.String())
 		}
 	}
+	sb.WriteString("\n\n---\n\n")
+	sb.WriteString("[seq:" + counter.String() + "](?v=seq)\n")
 	return sb.String()
 }
 

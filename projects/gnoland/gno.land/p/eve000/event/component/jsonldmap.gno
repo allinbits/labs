@@ -8,8 +8,16 @@ type JsonLDMap map[string]interface{}
 
 func (ld JsonLDMap) String() string {
 	s := "{\n"
+	i := 0
+	n := len(ld)
 	for k, v := range ld {
-		s += `  "` + k + `": ` + toJSONString(v) + ",\n"
+		s += `  "` + k + `": ` + toJSONString(v)
+		if i < n-1 {
+			s += ",\n"
+		} else {
+			s += "\n"
+		}
+		i++
 	}
 	s += "}"
 	return s
@@ -25,14 +33,16 @@ func (ld JsonLDMap) StringVal(key string) string {
     }
     return ""
 }
+// FIXME: nested types get string encoded - see aiblabes .about
 
- // toJSONString recursively converts values to JSON-like strings.
 func toJSONString(v interface{}) string {
 	switch val := v.(type) {
 	case string:
 		return `"` + val + `"`
 	case float64, float32, int, int64, int32, bool:
 		return ufmt.Sprintf("%v", val)
+	case JsonLDMap:
+		return val.String()
 	case map[string]interface{}:
 		return JsonLDMap(val).String()
 	case []interface{}:
@@ -46,17 +56,16 @@ func toJSONString(v interface{}) string {
 		s += "]"
 		return s
 	case []string:
-        s := "["
-        for i, elem := range val {
-            if i > 0 {
-                s += ", "
-            }
-            s += `"` + elem + `"`
-        }
-        s += "]"
-        return s
+		s := "["
+		for i, elem := range val {
+			if i > 0 {
+				s += ", "
+			}
+			s += `"` + elem + `"`
+		}
+		s += "]"
+		return s
 	default:
 		return `"` + ufmt.Sprintf("%v", val) + `"`
 	}
 }
-

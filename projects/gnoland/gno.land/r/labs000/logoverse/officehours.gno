@@ -11,17 +11,16 @@ type OfficeHoursEvent struct {
 	Status    string
 	StartDate string
 	EndDate   string
-	Settings  map[string]string
+	Location  string
+	Description string
 }
 
 var OfficeHours = OfficeHoursEvent{
 	Status:    "EventScheduled",
 	StartDate: "2025-01-01T10:20:00Z",
 	EndDate:   "2025-01-01T11:20:00Z",
-	Settings: map[string]string{
-		"location":    "Online",
-		"description": "AibLabs Office Hours: Join us for open discussion.",
-	},
+	Location:  "Online",
+	Description: "AibLabs Office Hours: Join us for open discussion.",
 }
 
 var _ LogoGraph = OfficeHours
@@ -74,7 +73,7 @@ func (OfficeHoursEvent) SVG() string {
 `
 }
 
-func (OfficeHoursEvent) mergeOpts(objs []interface{}) OfficeHoursEvent {
+func (OfficeHoursEvent) Merge(objs []interface{}) OfficeHoursEvent {
 	obj := make([]OfficeHoursEvent, 0, len(objs))
 	for _, o := range objs {
 		if evt, ok := o.(OfficeHoursEvent); ok {
@@ -92,9 +91,12 @@ func (OfficeHoursEvent) mergeOpts(objs []interface{}) OfficeHoursEvent {
 		if o.EndDate != "" {
 			e.EndDate = o.EndDate
 		}
-		for k, v := range o.Settings {
-			e.Settings[k] = v
-		}
+		if o.Location != "" {
+            e.Location = o.Location
+        }
+        if o.Description != "" {
+            e.Description = o.Description
+        }
 	}
 	return e
 }
@@ -111,12 +113,12 @@ func parseOfficeHoursOpts(obj OfficeHoursEvent) (start, end time.Time, status, l
 	}
 	status = string(obj.Status)
 	location = "Online"
-	if loc, ok := obj.Settings["location"]; ok {
-		location = loc
+	if obj.Location != "" {
+		location = obj.Location
 	}
 	descr = "AibLabs Office Hours: Join us for open discussion."
-	if d, ok := obj.Settings["description"]; ok {
-		descr = d
+	if obj.Description != "" {
+		descr = obj.Description
 	}
 	return
 }
@@ -134,16 +136,16 @@ func (OfficeHoursEvent) FromPath(path string) interface{} {
 		e.EndDate = end[0]
 	}
 	if location, ok := q["location"]; ok && len(location) > 0 {
-		e.Settings["location"] = location[0]
+		e.Location = location[0]
 	}
 	if descr, ok := q["description"]; ok && len(descr) > 0 {
-		e.Settings["description"] = descr[0]
+		e.Description = descr[0]
 	}
 	return e
 }
 
 func (OfficeHoursEvent) ToPath(obj ...interface{}) string {
-	evt := OfficeHours.mergeOpts(obj)
+	evt := OfficeHours.Merge(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
 	if evt.Status != "" {
@@ -155,17 +157,17 @@ func (OfficeHoursEvent) ToPath(obj ...interface{}) string {
 	if evt.EndDate != "" {
 		q.Set("endDate", evt.EndDate)
 	}
-	if loc, ok := OfficeHours.Settings["location"]; ok && loc != "" {
-		q.Set("location", loc)
+	if OfficeHours.Location != "" {
+		q.Set("location", OfficeHours.Location)
 	}
-	if descr, ok := OfficeHours.Settings["description"]; ok && descr != "" {
-		q.Set("description", descr)
+	if OfficeHours.Description != "" {
+		q.Set("description", OfficeHours.Description)
 	}
 	return "?" + q.Encode()
 }
 
 func (OfficeHoursEvent) Compose(obj ...interface{}) eve.JsonLDMap {
-	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.mergeOpts(obj))
+	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Merge(obj))
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
 		"@type":                "ImageObject",
@@ -190,7 +192,7 @@ func (OfficeHoursEvent) Compose(obj ...interface{}) eve.JsonLDMap {
 }
 
 func (OfficeHoursEvent) Flyer(obj ...interface{}) *eve.Flyer {
-	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.mergeOpts(obj))
+	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Merge(obj))
 	f := &eve.Flyer{
 		Name:      "OfficeHours",
 		Location:  &eve.Location{Name: location},

@@ -5,56 +5,66 @@ import (
 	logo "gno.land/r/labs000/logoverse"
 )
 
-var cid string
 
-func init() {
-    cid = logo.Register(event)
-}
+type episode struct {}
+
+var event = episode{}
+
+var _ logo.LogoGraph = episode{}
+var _ logo.Projectable = episode{}
+
+var cid = logo.Register(event)
 
 func Render(path string) string {
-    return logo.Render("?cid=" + cid)
+    if path == "" {
+        path = "?cid=" + cid
+    }
+    return logo.Render(path)
 }
 
-type episode struct {
-    Event logo.OfficeHoursEvent
-}
-var _ logo.LogoGraph = episode{}
-
-var event = episode{
-    Event: logo.OfficeHoursEvent{
+func (episode) Event() logo.OfficeHoursEvent {
+    evt := logo.OfficeHoursEvent{
         Status: "EventProposed",
         StartDate: "2025-11-01T00:00:00Z",
         EndDate: "2025-11-01T01:00:00Z",
-    },
+        Description: "This is a description of the event.",
+        Location: "Gnowhere",
+    }
+    return evt
 }
 
 func(e episode) Cid() string {
-    return e.Event.Compose(e.Event).Cid()
-}
-
-func(e episode) renderOpts() map[string]any {
-    return map[string]any{
-        "dev":      map[string]any{}, // REVIEW: chainIds are used to provide a chain-level opts namespace
-        "labsnet1": map[string]any{},
-    }
+    return logo.OfficeHours.Compose(event.Event()).Cid()
 }
 
 func(e episode) Image() string {
-    return e.Event.Image()
+    return logo.OfficeHours.Image()
 }
 
 func(e episode) DataUrl() string {
-    return e.Event.DataUrl()
+    return logo.OfficeHours.DataUrl()
 }
 
 func(e episode) Thumbnail() string {
-    return e.Event.Thumbnail()
+    return logo.OfficeHours.Thumbnail()
 }
 
 func(e episode) SVG() string {
-    return e.Event.SVG()
+    return logo.OfficeHours.SVG()
 }
 
 func(e episode) JsonLD() eve.JsonLDMap {
-    return e.Event.Compose(e.Event)
+    return logo.OfficeHours.Compose(e.Event())
+}
+
+func(e episode) FromPath(path string) interface{} {
+    return logo.OfficeHours.FromPath(path)
+}
+
+func(e episode) ToPath(obj ...interface{}) string {
+    return logo.OfficeHours.ToPath(obj...)
+}
+
+func(e episode) Compose(obj ...interface{}) eve.JsonLDMap {
+    return logo.OfficeHours.Compose(obj...)
 }

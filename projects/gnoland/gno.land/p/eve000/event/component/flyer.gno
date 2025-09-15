@@ -24,6 +24,10 @@ type Flyer struct {
 
 var _ Component = (*Flyer)(nil)
 
+func (a *Flyer) Flyer() *Flyer {
+    return a
+}
+
 func (a *Flyer) ToAnchor() string {
 	return StringToAnchor(a.Name)
 }
@@ -198,4 +202,22 @@ func (a *Flyer) ToJsonLD() string {
 
 func (a *Flyer) ToIcs() string {
 	return IcsCalendarFile("?format=ics", a)
+}
+
+func (a *Flyer) Render(path string, tpl func(path string, flyer *Flyer) string) string {
+	return tpl(path, a)
+}
+
+func (a *Flyer) RenderContent(path string, blocks []*Content) string {
+    var body []Content
+    for _, b := range blocks {
+        if b != nil {
+            body = append(body, *b)
+        }
+    }
+    return RenderPage(path, a, body...)
+}
+
+func (a *Flyer) Cid() string {
+    return ShaToCid(HashString(a.ToJsonLD()))
 }

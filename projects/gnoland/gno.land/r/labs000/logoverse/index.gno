@@ -189,16 +189,17 @@ func Render(path string) string {
 
 	r := v.(Record)
 	proj, isProj := r.Object.(Projectable)
+	obj := r.Object
 	if isProj {
-		r.Object = proj.FromPath(path)
+		obj = proj.FromPath(path)
 	}
 
 	if format, ok := q["v"]; ok {
 		switch format[0] {
-		case "ldpath":
-			if ldpath, ok := q["ldpath"]; ok && len(ldpath) > 0 {
-				ld := r.Object.(LogoGraph).JsonLD()
-				parts := strings.Split(ldpath[0], ".")
+		case "ldjson":
+			if ldjson, ok := q["ldjson"]; ok && len(ldjson) > 0 {
+				ld := obj.(LogoGraph).JsonLD()
+				parts := strings.Split(ldjson[0], ".")
 				val := interface{}(ld)
 				for _, p := range parts {
 					if m, ok := val.(eve.JsonLDMap); ok {
@@ -223,9 +224,8 @@ func Render(path string) string {
 			} else {
 				return "[" + r.Cid + "](?cid=" + r.Cid + ")"
 			}
-		case "sequence":
-			return "FIXME"
-			//return r.Seq.String()
+		case "seq":
+		    return ufmt.Sprintf("%d", r.Seq)
 		case "committer":
 			return r.Committer
 		case "svg":
@@ -244,18 +244,23 @@ func Render(path string) string {
 		if !isCIDv1(seal[0]) {
 			return "invalid seal: not a CIDv1"
 		}
-		cid := proj.Compose(r.Object).Cid()
+		cid := proj.Compose(obj).Cid()
 		if seal[0] != cid {
 			return "invalid seal: expected " + cid + " but got " + seal[0]
 		}
 	}
 
-	return renderObject(r.Object)
+	return renderObject(obj)
 }
 
 func renderObject(obj interface{}) string {
 	glyph := obj.(LogoGraph)
-	ld := glyph.JsonLD()
+	var ld eve.JsonLDMap
+	if proj, ok := obj.(Projectable); ok {
+        ld = proj.Compose(obj)
+    } else {
+        ld = glyph.JsonLD()
+    }
 	var sb strings.Builder
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
 	sb.WriteString(glyph.Thumbnail() + "\n\n")

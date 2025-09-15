@@ -26,6 +26,7 @@ var Event = EventObj{
 
 var _ LogoGraph = Event
 var _ Projectable = Event
+var _ Editable = Event
 
 func (EventObj) Cid() string {
 	return Event.Compose().Cid()
@@ -36,6 +37,10 @@ func (EventObj) renderOpts() map[string]any {
 		"dev":      map[string]any{}, // REVIEW: chainIds are used to provide a chain-level obj namespace
 		"labsnet1": map[string]any{},
 	}
+}
+
+func (EventObj) RenderForm(path string) string {
+    return "FORM"
 }
 
 func (EventObj) Image() string {
@@ -176,6 +181,7 @@ func (EventObj) Compose(obj ...interface{}) eve.JsonLDMap {
 		"name":                 "Event",
 		"description":          descr,
 		"representativeOfPage": true,
+		"url":                  "/p/eve000/event",
 		"about": map[string]interface{}{
 			"@type":       "Event",
 			"name":        "Event Flyer",

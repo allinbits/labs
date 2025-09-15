@@ -171,6 +171,7 @@ func (OfficeHoursEvent) Compose(obj ...interface{}) eve.JsonLDMap {
 		"@type":                "ImageObject",
 		"name":                 "OfficeHours",
 		"description":          descr,
+		"url":                  "/r/labs000/officehours",
 		"representativeOfPage": true,
 		"about": map[string]interface{}{
 			"@type":       "Event",

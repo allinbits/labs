@@ -1,6 +1,7 @@
 package component
 
 import (
+    "strings"
     "gno.land/p/demo/ufmt"
 )
 
@@ -68,4 +69,44 @@ func toJSONString(v interface{}) string {
 	default:
 		return `"` + ufmt.Sprintf("%v", val) + `"`
 	}
+}
+
+func (ld JsonLDMap) MarkdownLinks() string {
+    var collectUrls func(interface{}, string, map[string]string)
+    collectUrls = func(v interface{}, path string, urls map[string]string) {
+        switch val := v.(type) {
+        case map[string]interface{}:
+            for k, v2 := range val {
+                newPath := k
+                if path != "" {
+                    newPath = path + "." + k
+                }
+                if k == "url" {
+                    if urlStr, ok := v2.(string); ok {
+                        urls[newPath] = "[" + urlStr + "](" + urlStr + ")"
+                    }
+                } else if k == "license" {
+                    if licStr, ok := v2.(string); ok && (strings.HasPrefix(licStr, "http://") || strings.HasPrefix(licStr, "https://")) {
+                        urls[newPath] = "[" + licStr + "](" + licStr + ")"
+                    }
+                } else {
+                    collectUrls(v2, newPath, urls)
+                }
+            }
+        case JsonLDMap:
+            collectUrls(map[string]interface{}(val), path, urls)
+        case []interface{}:
+            for i, elem := range val {
+                idxPath := path + "[" + ufmt.Sprintf("%d", i) + "]"
+                collectUrls(elem, idxPath, urls)
+            }
+        }
+    }
+    urls := make(map[string]string)
+    collectUrls(ld, "", urls)
+    table := "| Key | Value |\n| --- | ----- |\n"
+    for k, v := range urls {
+        table += "| " + k + " | " + v + " |\n"
+    }
+    return table
 }

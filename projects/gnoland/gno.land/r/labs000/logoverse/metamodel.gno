@@ -18,7 +18,7 @@ var _ LogoGraph = metamodelObj{}
 
 func (metamodelObj) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
-		"@context":    []string{"https://schema.org", "https://petri.net/schema"},
+		"@context":    []string{"https://schema.org", "https://pflow.xyz"},
 		"@type":       "ImageObject",
 		"name":        "Metamodel",
 		"description": "Metamodel is a gno package for drawing and testing “flow” diagrams of how things move through a system—like orders through a shop, tasks through a team, or patients through a clinic.",

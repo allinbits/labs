@@ -10,16 +10,6 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-var cb = `
-## Welcome to the **logoverse**.
-` + AibLabs.Image() + `
-**Software as a Universe**.\
-Every object has a CID (base) and a sealed CID (projection).\
-Links aren’t static—they compute new objects.\
-Immutable, composable, attributed by default.
-
-Stop writing services. Start minting universes.`
-
 var registry = avl.NewTree()
 
 type Counter struct {
@@ -36,6 +26,10 @@ func (c *Counter) String() string {
 }
 
 var counter = Counter{Count: 0}
+
+type Editable interface {
+    RenderForm(string) string
+}
 
 type Projectable interface {
 	ToPath(...interface{}) string
@@ -158,6 +152,7 @@ var rows = []string{
 	Register(AllInBits),
 	Register(Atone),
 	Register(Event),
+	Register(LogoVerse),
 	Register(Metamodel),
 	Register(OfficeHours),
 	Register(PepeSilvia),
@@ -181,10 +176,27 @@ func Render(path string) string {
 		}
 		return renderTable()
 	}
+    if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
+        if base, hasBase := q["base"]; hasBase && isCIDv1(base[0]) {
+            if baseObj, ok := registry.Get(base[0]); ok {
+                if ed, isEd := baseObj.(Record).Object.(Editable); isEd {
+                    form := ed.RenderForm(path)
+                    if form != "" {
+                        return form
+                    }
+                }
+            } else {
+                //  FIXME: it seems like wrong CID is used
+                return "base cid not found: " + base[0]
+            }
+        } else {
+            return "missing or invalid base parameter"
+        }
+    }
 
 	v, found := registry.Get(cid[0])
 	if !found {
-		return "cid not found" // TODO: incorporate form here
+		return "cid not found"
 	}
 
 	r := v.(Record)
@@ -250,14 +262,15 @@ func Render(path string) string {
 		}
 	}
 
-	return renderObject(obj)
+	return renderObject(path, obj)
 }
 
-func renderObject(obj interface{}) string {
+func renderObject(path string, obj interface{}) string {
+    _ = path
 	glyph := obj.(LogoGraph)
 	var ld eve.JsonLDMap
 	if proj, ok := obj.(Projectable); ok {
-        ld = proj.Compose(obj)
+        ld = proj.Compose(proj.FromPath(path))
     } else {
         ld = glyph.JsonLD()
     }
@@ -270,13 +283,18 @@ func renderObject(obj interface{}) string {
 	if proj, ok := obj.(Projectable); ok {
 		if _, found := registry.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
-			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&submit=register"+"\n"))
+			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj) + "&base=" + glyph.Cid() + "&submit=register" + "\n"))
 		} else {
 			sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
 		}
 	} else {
 		sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")
 	}
+	links := ld.MarkdownLinks()
+	if links != "" {
+        sb.WriteString("\n### Links\n")
+        sb.WriteString(links + "\n")
+    }
 	sb.WriteString("\n#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
 	return sb.String()
@@ -284,7 +302,8 @@ func renderObject(obj interface{}) string {
 
 func renderTable() string {
 	var sb strings.Builder
-	sb.WriteString(cb + "\n")
+	sb.WriteString("## Logoverse Registry\n\n")
+	sb.WriteString(LogoVerse.Introduction() + "\n")
 	// Header
 	sb.WriteString("|")
 	for _, col := range columns {

@@ -154,7 +154,6 @@ var rows = []string{
 	Register(Event),
 	Register(LogoVerse),
 	Register(Metamodel),
-	Register(OfficeHours),
 	Register(PepeSilvia),
 	Register(Pflow),
 	Register(Photon),

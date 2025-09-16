@@ -1,3 +1,0 @@
- - [ ] update form to expect only a single date (maybe duration?)
- - [ ] allow anyone to registry - only allow owner to modify
- - [ ] write out stored CID's at index

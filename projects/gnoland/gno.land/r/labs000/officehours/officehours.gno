@@ -1,4 +1,4 @@
-package logoverse
+package officehours
 
 import (
 	"net/url"
@@ -8,18 +8,18 @@ import (
 )
 
 type OfficeHoursEvent struct {
-	Status    string
-	StartDate string
-	EndDate   string
-	Location  string
+	Status      string
+	StartDate   string
+	EndDate     string
+	Location    string
 	Description string
 }
 
 var OfficeHours = OfficeHoursEvent{
-	Status:    "EventScheduled",
-	StartDate: "2025-01-01T10:20:00Z",
-	EndDate:   "2025-01-01T11:20:00Z",
-	Location:  "Online",
+	Status:      "EventScheduled",
+	StartDate:   "2025-01-01T10:20:00Z",
+	EndDate:     "2025-01-01T11:20:00Z",
+	Location:    "Online",
 	Description: "AibLabs Office Hours: Join us for open discussion.",
 }
 
@@ -92,11 +92,11 @@ func (OfficeHoursEvent) Merge(objs []interface{}) OfficeHoursEvent {
 			e.EndDate = o.EndDate
 		}
 		if o.Location != "" {
-            e.Location = o.Location
-        }
-        if o.Description != "" {
-            e.Description = o.Description
-        }
+			e.Location = o.Location
+		}
+		if o.Description != "" {
+			e.Description = o.Description
+		}
 	}
 	return e
 }

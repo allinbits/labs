@@ -116,8 +116,7 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 // ---- Register ----
 
 // Register adds a LogoGraph object to the registry and returns its CID.
-// BUGFIX: previous version returned early and never stored the record.
-func Register(i interface{}) string {
+func Register(i interface{}, callback ...func(rec Record)) string {
 	lg, ok := i.(LogoGraph)
 	if !ok {
 		panic("object must implement LogoGraph interface")
@@ -156,11 +155,10 @@ func Register(i interface{}) string {
 	}
 	registry.Set(rec.Cid, rec)
 	std.Emit("Register", "cid", rec.Cid, "seq", counter.Next())
+	for _, cb := range callback {
+        cb(rec)
+    }
 	return newCid
-}
-
-var rows = []string{
-	// Register(OfficeHours),
 }
 
 var columns = []string{"cid", "name", "description", "committer"}
@@ -178,7 +176,7 @@ func Render(path string) string {
 		if len(q["v"]) == 1 && q["v"][0] == "seq" {
 			return counter.String()
 		}
-		return renderTable()
+        return eventCalendar.RenderTable()
 	}
 
 	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
@@ -308,30 +306,4 @@ func renderObject(path string, obj interface{}) string {
 
 	sb.WriteString("\n#### JSON-LD\n```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
 	return sb.String()
-}
-
-func renderTable() string {
-	var sb strings.Builder
-	sb.WriteString("## OfficeHour Events \n\n")
-	// Header
-	sb.WriteString("|")
-	for _, col := range columns { sb.WriteString(" " + capitalize(col) + " |") }
-	sb.WriteString("\n|")
-	for range columns { sb.WriteString(" ---- |") }
-	sb.WriteString("\n")
-	// Rows
-	for _, cid := range rows {
-		if v, ok := registry.Get(cid); ok {
-			sb.WriteString(v.(Record).String())
-		}
-	}
-	sb.WriteString("\n\n---\n\n")
-	sb.WriteString("[seq:" + counter.String() + "](?v=seq)\n")
-	return sb.String()
-}
-
-func capitalize(s string) string {
-	if len(s) == 0 { return s }
-	// ASCII only; fine for our column names
-	return string(s[0]-32) + s[1:]
 }

@@ -8,7 +8,7 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-type OfficeHoursObj struct {
+type Schedule struct {
 	Status      string
 	StartDate   string
 	EndDate     string
@@ -16,15 +16,15 @@ type OfficeHoursObj struct {
 	Description string
 }
 
-func (o OfficeHoursObj) String() string {
-	return "OfficeHoursObj{Status: " + o.Status +
+func (o Schedule) String() string {
+	return "Schedule{Status: " + o.Status +
 		", StartDate: " + o.StartDate +
 		", EndDate: " + o.EndDate +
 		", Location: " + o.Location +
 		", Description: " + o.Description + "}"
 }
 
-var OfficeHours = OfficeHoursObj{
+var OfficeHours = Schedule{
 	Status:      "EventScheduled",
 	StartDate:   "2025-01-01T10:20:00Z",
 	EndDate:     "2025-01-01T11:20:00Z",
@@ -36,31 +36,31 @@ var _ LogoGraph   = OfficeHours
 var _ Projectable = OfficeHours
 
 // BUGFIX: avoid infinite recursion. Compute CID from JsonLD, not Compose→Cid→Compose...
-func (o OfficeHoursObj) Cid(path ...string) string {
+func (o Schedule) Cid(path ...string) string {
 	return o.JsonLD(path...).Cid()
 }
 
-func (OfficeHoursObj) renderOpts() map[string]any {
+func (Schedule) renderOpts() map[string]any {
 	return map[string]any{
 		"dev":      map[string]any{},
 		"labsnet1": map[string]any{},
 	}
 }
 
-func (o OfficeHoursObj) Image(path ...string) string {
+func (o Schedule) Image(path ...string) string {
 	return "![OfficeHours](" + o.DataUrl(path...) + ")"
 }
 
-func (o OfficeHoursObj) DataUrl(path ...string) string {
+func (o Schedule) DataUrl(path ...string) string {
 	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG(path...))
 }
 
-func (o OfficeHoursObj) Thumbnail(path ...string) string {
+func (o Schedule) Thumbnail(path ...string) string {
 	return o.Image(path...)
 }
 
 // SVG renders a paper-shaped thumbnail with a centered clock and Office Hours text below.
-func (OfficeHoursObj) SVG(path ...string) string {
+func (Schedule) SVG(path ...string) string {
 	_ = path // future: alter rendering based on path args
 	return `
 <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
@@ -82,22 +82,22 @@ func (OfficeHoursObj) SVG(path ...string) string {
 
 // ---- Composition helpers ----
 
-func (OfficeHoursObj) Coalesce(objs ...interface{}) OfficeHoursObj {
-	var merged OfficeHoursObj
+func (Schedule) Coalesce(objs ...interface{}) Schedule {
+	var merged Schedule
 	for _, o := range objs {
 		switch v := o.(type) {
-		case []OfficeHoursObj:
+		case []Schedule:
 			for _, evt := range v {
 				merged = mergeOfficeHours(merged, evt)
 			}
-		case OfficeHoursObj:
+		case Schedule:
 			merged = mergeOfficeHours(merged, v)
 		}
 	}
 	return merged
 }
 
-func mergeOfficeHours(base, update OfficeHoursObj) OfficeHoursObj {
+func mergeOfficeHours(base, update Schedule) Schedule {
 	if update.Status != "" { base.Status = update.Status }
 	if update.StartDate != "" { base.StartDate = update.StartDate }
 	if update.EndDate != "" { base.EndDate = update.EndDate }
@@ -107,8 +107,8 @@ func mergeOfficeHours(base, update OfficeHoursObj) OfficeHoursObj {
 }
 
 // BUGFIX: removed panic; produce proper JSON-LD every time.
-func (OfficeHoursObj) JsonLD(path ...string) eve.JsonLDMap {
-	obj := OfficeHours.FromPath(path...).(OfficeHoursObj)
+func (Schedule) JsonLD(path ...string) eve.JsonLDMap {
+	obj := OfficeHours.FromPath(path...).(Schedule)
 	start, end, status, location, descr := parseOfficeHoursOpts(obj)
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
@@ -133,7 +133,7 @@ func (OfficeHoursObj) JsonLD(path ...string) eve.JsonLDMap {
 	}
 }
 
-func parseOfficeHoursOpts(obj OfficeHoursObj) (start, end time.Time, status, location, descr string) {
+func parseOfficeHoursOpts(obj Schedule) (start, end time.Time, status, location, descr string) {
 	start, err := time.Parse(time.RFC3339, obj.StartDate)
 	if err != nil { start = time.Time{} }
 
@@ -151,7 +151,7 @@ func parseOfficeHoursOpts(obj OfficeHoursObj) (start, end time.Time, status, loc
 }
 
 // FromPath parses a query-style path (e.g., "?status=...&startDate=...").
-func (OfficeHoursObj) FromPath(path ...string) interface{} {
+func (Schedule) FromPath(path ...string) interface{} {
 	q := eve.ParseQuery(strings.Join(path, ""))
 	e := OfficeHours
 	if status, ok := q["status"]; ok && len(status) > 0 { e.Status = status[0] }
@@ -162,7 +162,7 @@ func (OfficeHoursObj) FromPath(path ...string) interface{} {
 	return e
 }
 
-func (OfficeHoursObj) ToPath(obj ...interface{}) string {
+func (Schedule) ToPath(obj ...interface{}) string {
 	evt := OfficeHours.Coalesce(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
@@ -174,13 +174,13 @@ func (OfficeHoursObj) ToPath(obj ...interface{}) string {
 	return "?" + q.Encode()
 }
 
-func (OfficeHoursObj) Compose(obj ...interface{}) interface{} {
-	// Returns a concrete OfficeHoursObj (which implements LogoGraph)
+func (Schedule) Compose(obj ...interface{}) interface{} {
+	// Returns a concrete Schedule (which implements LogoGraph)
 	return OfficeHours.Coalesce(obj)
 }
 
 // Convenience flyer builder (unchanged semantics)
-func (OfficeHoursObj) Flyer(path string, obj ...interface{}) *eve.Flyer {
+func (Schedule) Flyer(path string, obj ...interface{}) *eve.Flyer {
 	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Coalesce(obj))
 	f := &eve.Flyer{
 		Name:      "OfficeHours",
@@ -193,4 +193,28 @@ func (OfficeHoursObj) Flyer(path string, obj ...interface{}) *eve.Flyer {
 	}
 	f.SetRenderOpts(OfficeHours.renderOpts())
 	return f
+}
+
+func (Schedule) Heading() string {
+    return "| CID | Status | Start Date | End Date | Location | Description |\n" +
+        "| ---- | ------ | ---------- | -------- | -------- | ----------- |\n"
+}
+
+func (Schedule) Row(obj ...interface{}) string {
+    evt := OfficeHours.Coalesce(obj)
+    return "| [" + evt.Cid()[:8] + "](?cid=" + evt.Cid() + ") | " +
+        evt.Status + " | " +
+        evt.StartDate + " | " +
+        evt.EndDate + " | " +
+        evt.Location + " | " +
+        evt.Description + " |\n"
+}
+
+func (Schedule) Date(obj ...interface{}) string {
+    evt := OfficeHours.Coalesce(obj)
+    start, _, _, _, _ := parseOfficeHoursOpts(evt)
+    if start.IsZero() {
+        return ""
+    }
+    return start.Format("2006-01-02")
 }

@@ -1,13 +1,14 @@
 package officehours
 
 import (
+    "strings"
 	"gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
 )
 
 type calendar struct {
 	Title string
-	Dates avl.Tree // key: date string, value: OfficeHoursObj
+	Dates avl.Tree // key: date string, value: Schedule
 }
 
 var eventCalendar = calendar{
@@ -18,16 +19,16 @@ var eventCalendar = calendar{
 var _ LogoGraph   = eventCalendar
 var _ Projectable = eventCalendar
 
-var cid = ""
-
 func init() {
-    cid = Register(eventCalendar)
-    // TODO: populate dates when children are added
-    //eventCalendar.Dates.Set(cid, counter.Count)
+    Register(eventCalendar, func(rec Record) {
+        date := eventCalendar.Event().Date()
+        eventCalendar.Dates.Set(date, eventCalendar.Event())
+    })
 }
 
-func (c calendar) Event(path ...string) OfficeHoursObj {
-	return OfficeHoursObj{
+func (c calendar) Event(path ...string) Schedule {
+    // FIXME read from c.Dates based on path or current date
+	return Schedule{
 		Status:      "EventPlanned",
 		StartDate:   "2025-11-01T00:00:00Z",
 		EndDate:     "2025-11-01T01:00:00Z",
@@ -52,3 +53,17 @@ func (calendar) JsonLD(path ...string) eve.JsonLDMap { return OfficeHours.JsonLD
 func (calendar) FromPath(path ...string) interface{}   { return OfficeHours.FromPath(path...) }
 func (calendar) ToPath(obj ...interface{}) string      { return OfficeHours.ToPath(obj...) }
 func (calendar) Compose(obj ...interface{}) interface{} { return OfficeHours.Coalesce(eventCalendar.Event(), obj) }
+
+func (calendar) RenderTable() string {
+    var sb strings.Builder
+    sb.WriteString(OfficeHours.Heading())
+
+    eventCalendar.Dates.IterateByOffset(0, eventCalendar.Dates.Size(), func(key string, value interface{}) bool {
+        if schedule, ok := value.(Schedule); ok {
+            sb.WriteString(OfficeHours.Row(schedule))
+        }
+        return false
+    })
+
+    return sb.String()
+}

@@ -60,7 +60,7 @@ func (calendar) RenderTable() string {
 
     eventCalendar.Dates.IterateByOffset(0, eventCalendar.Dates.Size(), func(key string, value interface{}) bool {
         if schedule, ok := value.(Schedule); ok {
-            sb.WriteString(OfficeHours.Row(schedule))
+            sb.WriteString(OfficeHours.Row(schedule)) // FIXME: CID is only populated in Events - pull data from Registry
         }
         return false
     })

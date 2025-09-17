@@ -35,7 +35,6 @@ var OfficeHours = Schedule{
 var _ LogoGraph   = OfficeHours
 var _ Projectable = OfficeHours
 
-// BUGFIX: avoid infinite recursion. Compute CID from JsonLD, not Compose→Cid→Compose...
 func (o Schedule) Cid(path ...string) string {
 	return o.JsonLD(path...).Cid()
 }
@@ -196,8 +195,8 @@ func (Schedule) Flyer(path string, obj ...interface{}) *eve.Flyer {
 }
 
 func (Schedule) Heading() string {
-    return "| CID | Status | Start Date | End Date | Location | Description |\n" +
-        "| ---- | ------ | ---------- | -------- | -------- | ----------- |\n"
+    return "| CID | Status | Date  | Description |\n" +
+        "| ---- | ------ |  -------- | ----------- |\n"
 }
 
 func (Schedule) Row(obj ...interface{}) string {
@@ -205,8 +204,6 @@ func (Schedule) Row(obj ...interface{}) string {
     return "| [" + evt.Cid()[:8] + "](?cid=" + evt.Cid() + ") | " +
         evt.Status + " | " +
         evt.StartDate + " | " +
-        evt.EndDate + " | " +
-        evt.Location + " | " +
         evt.Description + " |\n"
 }
 

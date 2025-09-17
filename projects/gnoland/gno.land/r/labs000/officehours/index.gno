@@ -11,16 +11,27 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
+// -----------------------------------------------------------------------------
+// Registry & sequencing
+// -----------------------------------------------------------------------------
+
 var calendarRegistry = avl.NewTree()
 
 type Counter struct{ Count int64 }
 
-func (c *Counter) Next() string   { c.Count++; return c.String() }
+// Bump increments and returns the new count.
+func (c *Counter) Bump() int64 { c.Count++; return c.Count }
+
+// Next returns the next sequence as zero-padded string (kept for compatibility).
+func (c *Counter) Next() string { c.Bump(); return c.String() }
+
 func (c *Counter) String() string { return ufmt.Sprintf("%08d", c.Count) }
 
 var counter = Counter{Count: 0}
 
-// ---- Interfaces ----
+// -----------------------------------------------------------------------------
+// Interfaces
+// -----------------------------------------------------------------------------
 
 type Editable interface {
 	RenderForm(...string) string
@@ -29,7 +40,8 @@ type Editable interface {
 type Projectable interface {
 	ToPath(...interface{}) string
 	FromPath(...string) interface{}
-	Compose(...interface{}) interface{} // should return a value implementing LogoGraph
+	// Compose MUST return a value that implements LogoGraph.
+	Compose(...interface{}) LogoGraph
 }
 
 type LogoGraph interface {
@@ -39,7 +51,9 @@ type LogoGraph interface {
 	Thumbnail(...string) string
 }
 
-// ---- Records ----
+// -----------------------------------------------------------------------------
+// Records
+// -----------------------------------------------------------------------------
 
 type Record struct {
 	Name        string
@@ -50,19 +64,37 @@ type Record struct {
 	Seq         int64
 }
 
-// ---- Projection plumbing ----
+var columns = []string{"cid", "name", "description", "committer"}
+
+// tail returns the last n characters of s (or the whole string if shorter).
+func tail(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[len(s)-n:]
+}
+
+func (e Record) String() string {
+	return "| [" + tail(e.Cid, 8) + "](?cid=" + e.Cid + ") | " +
+		e.Name + " | " + e.Description + " | " +
+		"[" + tail(e.Committer, 8) + "](/u/" + e.Committer + ") |\n"
+}
+
+// -----------------------------------------------------------------------------
+// Projection plumbing
+// -----------------------------------------------------------------------------
 
 // EmitProjectionEvent validates + emits, but does not register the projection.
-func EmitProjectionEvent(base, path, seal string) (cid string) {
+func EmitProjectionEvent(base, path, seal string) (cid string, err error) {
 	return commitProjection(true, base, path, seal)
 }
 
 // CommitProjection validates + registers a projected object derived from base+path.
-func CommitProjection(_ realm, base, path, seal string) (cid string) {
+func CommitProjection(base, path, seal string) (cid string, err error) {
 	return commitProjection(false, base, path, seal)
 }
 
-func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
+func commitProjection(emitOnly bool, base, path, seal string) (cid string, err error) {
 	if seal == "" {
 		panic("seal parameter is required")
 	}
@@ -74,50 +106,57 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 	}
 	v, found := calendarRegistry.Get(base)
 	if !found {
-		return "base CID not found"
+		panic("base CID not found")
 	}
-	r := v.(Record)
+	r, ok := v.(Record)
+	if !ok {
+		panic("registry corruption: value is not a Record")
+	}
 
 	proj, isProj := r.Object.(Projectable)
 	if !isProj {
 		panic("object is not projectable")
 	}
 
-	// Build the projected object
+	// Build the projected object & compose to a LogoGraph
 	projected := proj.FromPath(path)
-	// Compose to a LogoGraph (your Compose returns OhrScheduleObj, which implements LogoGraph)
-	lg, ok := proj.Compose(projected).(LogoGraph)
-	if !ok {
-		panic("Compose(...) must return an object implementing LogoGraph")
-	}
+	lg := proj.Compose(projected)
 	cid = lg.JsonLD().Cid()
 
 	if seal != cid {
-		panic("invalid seal: expected " + cid + " but got " + seal)
+		panic("invalid seal: expected " + cid + "but got" + seal)
 	}
 	if _, ok := calendarRegistry.Get(cid); ok {
 		panic("duplicate projected CID registered: " + cid)
 	}
 
+	seq := counter.Bump()
 	rec := Record{
 		Name:        r.Name + " (projected)",
 		Description: r.Description + " (projected)",
 		Cid:         cid,
 		Object:      projected,
 		Committer:   std.PreviousRealm().Address().String(),
-		Seq:         counter.Count + 1,
+		Seq:         seq,
 	}
 
-	std.Emit("ProjectionEvent", "cid", cid, "seal", seal, "seq", counter.Next())
+	std.Emit("ProjectionEvent",
+		"cid", cid,
+		"seal", seal,
+		"seq", ufmt.Sprintf("%08d", seq),
+	)
+
 	if !emitOnly {
 		calendarRegistry.Set(rec.Cid, rec)
 	}
-	return
+	return cid, nil
 }
 
-// ---- Register ----
+// -----------------------------------------------------------------------------
+// Register
+// -----------------------------------------------------------------------------
 
-// Register adds a LogoGraph object to the calendarRegistry and returns its CID.
+// Register adds a LogoGraph object to the registry and returns its CID.
 func Register(i interface{}, callback ...func(rec Record)) string {
 	lg, ok := i.(LogoGraph)
 	if !ok {
@@ -128,7 +167,7 @@ func Register(i interface{}, callback ...func(rec Record)) string {
 		panic("object must have a likely CIDv1 (base32, 'baf...' style)")
 	}
 
-	// Touch media to smoke-test
+	// Smoke-test media
 	_ = lg.SVG()
 	_ = lg.Thumbnail()
 
@@ -144,73 +183,72 @@ func Register(i interface{}, callback ...func(rec Record)) string {
 		}
 	}
 
+	if _, ok := calendarRegistry.Get(newCid); ok {
+		panic("duplicate CID registered: " + newCid)
+	}
+
+	seq := counter.Bump()
 	rec := Record{
 		Name:        ld.StringVal(columns[1]),
 		Description: ld.StringVal(columns[2]),
 		Cid:         newCid,
 		Object:      i,
 		Committer:   std.PreviousRealm().Address().String(),
-		Seq:         counter.Count + 1,
+		Seq:         seq,
 	}
-	if _, ok := calendarRegistry.Get(rec.Cid); ok {
-		panic("duplicate CID registered: " + rec.Cid)
-	}
+
 	calendarRegistry.Set(rec.Cid, rec)
-	std.Emit("Register", "cid", rec.Cid, "seq", counter.Next())
+	std.Emit("Register", "cid", rec.Cid, "seq", ufmt.Sprintf("%08d", seq))
+
 	for _, cb := range callback {
 		cb(rec)
 	}
 	return newCid
 }
 
-var columns = []string{"cid", "name", "description", "committer"}
-
-func (e Record) String() string {
-	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
-}
-
-// ---- Render router ----
+// -----------------------------------------------------------------------------
+// Render router
+// -----------------------------------------------------------------------------
 
 func Render(path string) string {
 	q := eve.ParseQuery(path)
 
-	cal, hasCal := q["cal"]
-	if hasCal {
+	// Calendar route: ?cal=<calendarCid>[&evt=<eventCid>]
+	if cal, hasCal := q["cal"]; hasCal {
 		if calObj, ok := calendarRegistry.Get(cal[0]); ok {
-			if rec, ok := calObj.(Record); ok {
-				if c, ok := rec.Object.(calendar); ok {
-					if event, hasEvent := q["evt"]; hasEvent {
-						if evtObj, ok := c.Dates.Get(event[0]); ok {
-							return renderEvent(path, evtObj)
-						} else {
-							return "event cid not found: " + event[0]
-						}
-					}
-				}
-				return renderCalendar(path, rec.Object)
-			} else {
+			rec, ok := calObj.(Record)
+			if !ok {
 				return "invalid calendar record"
 			}
-		} else {
-			return "cal cid not found: " + cal[0]
+			if c, ok := rec.Object.(calendar); ok {
+				if event, hasEvent := q["evt"]; hasEvent {
+					if evtObj, ok := c.Dates.Get(event[0]); ok {
+						return renderEvent(path, evtObj)
+					}
+					return "event cid not found: " + event[0]
+				}
+				return renderCalendar(path, rec.Object)
+			}
+			return "invalid calendar record"
 		}
+		return "cal cid not found: " + cal[0]
 	}
 
-	cid, hasCid := q["cid"]
-	if !hasCid {
-		if len(q["v"]) == 1 && q["v"][0] == "seq" {
+	// Global routes
+	if _, hasCid := q["cid"]; !hasCid {
+		if v, ok := q["v"]; ok && len(v) == 1 && v[0] == "seq" {
 			return counter.String()
 		}
 		return eventCalendar.RenderTable()
 	}
 
+	// Optional: projection registration form
 	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
 		if base, hasBase := q["base"]; hasBase && eve.IsCIDv1(base[0]) {
 			if v, ok := calendarRegistry.Get(base[0]); ok {
 				r := v.(Record)
 				if ed, isEd := r.Object.(Editable); isEd {
-					form := ed.RenderForm(path)
-					if form != "" {
+					if form := ed.RenderForm(path); form != "" {
 						return form
 					}
 				}
@@ -222,22 +260,36 @@ func Render(path string) string {
 		}
 	}
 
-	v, found := calendarRegistry.Get(cid[0])
+	// Resolve CID & possibly project it from the path
+	cid := q["cid"][0]
+	v, found := calendarRegistry.Get(cid)
 	if !found {
 		return "cid not found"
 	}
 
 	r := v.(Record)
+	baseCid := r.Cid
+
 	obj := r.Object
-	proj, isProj := r.Object.(Projectable)
-	if isProj {
-		obj = proj.FromPath(path)
+	if proj, isProj := r.Object.(Projectable); isProj {
+		obj = proj.FromPath(path) // may return a different instance (e.g., Schedule)
 	}
 
+	// Prepare a LogoGraph view (robustly, without panics)
+	var lg LogoGraph
+	if v, ok := obj.(LogoGraph); ok {
+		lg = v
+	} else if p, ok := r.Object.(Projectable); ok {
+		lg = p.Compose(obj)
+	} else {
+		return "object is not renderable (no LogoGraph)"
+	}
+
+	// Structured views via v={ldjson|cid|seq|committer|svg|thumbnail|json}
 	if format, ok := q["v"]; ok {
 		switch format[0] {
 		case "ldjson":
-			ld := obj.(LogoGraph).JsonLD()
+			ld := lg.JsonLD()
 			if ldjson, ok := q["ldjson"]; ok && len(ldjson) > 0 {
 				parts := strings.Split(ldjson[0], ".")
 				val := interface{}(ld)
@@ -258,10 +310,7 @@ func Render(path string) string {
 			return ld.String()
 
 		case "cid":
-			if isProj {
-				return "[" + proj.Compose(obj).(LogoGraph).JsonLD().Cid() + "](?cid=" + proj.Compose(obj).(LogoGraph).JsonLD().Cid() + ")"
-			}
-			return "[" + r.Cid + "](?cid=" + r.Cid + ")"
+			return "[" + lg.JsonLD().Cid() + "](?cid=" + lg.JsonLD().Cid() + ")"
 
 		case "seq":
 			return ufmt.Sprintf("%d", r.Seq)
@@ -270,34 +319,35 @@ func Render(path string) string {
 			return r.Committer
 
 		case "svg":
-			return obj.(LogoGraph).SVG()
+			return lg.SVG()
 
 		case "thumbnail":
-			return obj.(LogoGraph).Thumbnail()
+			return lg.Thumbnail()
 
 		case "json":
-			if isProj {
-				return proj.Compose(obj).(LogoGraph).JsonLD().String()
-			}
-			return obj.(LogoGraph).JsonLD().String()
+			return lg.JsonLD().String()
 		}
 	}
 
 	// Optional seal verification
-	if seal, ok := q["seal"]; ok && isProj {
+	if seal, ok := q["seal"]; ok && len(seal) > 0 {
 		if !eve.IsCIDv1(seal[0]) {
 			return "invalid seal: not a CIDv1"
 		}
-		calc := proj.Compose(obj).(LogoGraph).JsonLD().Cid()
+		calc := lg.JsonLD().Cid()
 		if seal[0] != calc {
 			return "invalid seal: expected " + calc + " but got " + seal[0]
 		}
 	}
 
-	return renderObject(path, obj)
+	return renderObject(path, obj, baseCid)
 }
 
-func renderEvent(path string, obj interface{}) string {
+// -----------------------------------------------------------------------------
+// Render helpers
+// -----------------------------------------------------------------------------
+
+func renderEvent(_ string, obj interface{}) string {
 	event, ok := obj.(Schedule)
 	if !ok {
 		return "object is not an event"
@@ -312,7 +362,7 @@ func renderEvent(path string, obj interface{}) string {
 	return sb.String()
 }
 
-func renderCalendar(path string, obj interface{}) string {
+func renderCalendar(_ string, obj interface{}) string {
 	calendar, ok := obj.(calendar)
 	if !ok {
 		return "object is not a calendar"
@@ -320,13 +370,12 @@ func renderCalendar(path string, obj interface{}) string {
 	var sb strings.Builder
 	sb.WriteString("### " + calendar.Title + "\n")
 	sb.WriteString(calendar.Thumbnail() + "\n\n")
-	// add a table of events
+	// table of events keyed by CID
 	sb.WriteString("| Date | Description |\n")
 	sb.WriteString("| ---- | ----------- |\n")
 
 	calendar.Dates.IterateByOffset(0, calendar.Dates.Size(), func(_ string, value any) bool {
 		evt := value.(Schedule)
-		// REVIEW: consider using ?event={cid} for event links
 		sb.WriteString("| " + evt.StartDate[:10] + " | [" + evt.Description + "](?evt=" + evt.Cid() + "&cal=" + calendar.Cid() + ") |\n")
 		return false
 	})
@@ -334,27 +383,38 @@ func renderCalendar(path string, obj interface{}) string {
 	return sb.String()
 }
 
-func renderObject(path string, obj interface{}) string {
-	glyph := obj.(LogoGraph)
-
-	var ld eve.JsonLDMap
-	if proj, ok := obj.(Projectable); ok {
-		ld = proj.Compose(proj.FromPath(path)).(LogoGraph).JsonLD()
-	} else {
-		ld = glyph.JsonLD()
+func renderObject(path string, obj interface{}, baseCid string) string {
+	// Normalize to a LogoGraph
+	var lg LogoGraph
+	switch v := obj.(type) {
+	case LogoGraph:
+		lg = v
+	case Projectable:
+		lg = v.Compose(v.FromPath(path))
+	default:
+		return "object is not renderable (no LogoGraph)"
 	}
+
+	ld := lg.JsonLD()
 
 	var sb strings.Builder
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
-	sb.WriteString(glyph.Thumbnail() + "\n\n")
+	sb.WriteString(lg.Thumbnail() + "\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 
+	// CID block (with correct baseCid for commit)
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
+
+	// If a projection, offer commit button using the base CID
 	if proj, ok := obj.(Projectable); ok {
 		if _, found := calendarRegistry.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
-			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register"+"\n"))
+			// Use baseCid (registered origin), not the projected object's CID.
+			sb.WriteString(
+				eve.Button("Commit Projection:    "+tail(cid, 8),
+					proj.ToPath(obj)+"&base="+baseCid+"&submit=register"+"\n"),
+			)
 		} else {
 			sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
 		}
@@ -369,6 +429,10 @@ func renderObject(path string, obj interface{}) string {
 	sb.WriteString("\n#### JSON-LD\n```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
 	return sb.String()
 }
+
+// -----------------------------------------------------------------------------
+// Schedule (LogoGraph + Projectable)
+// -----------------------------------------------------------------------------
 
 type Schedule struct {
 	Status      string
@@ -473,6 +537,9 @@ func mergeOhrSchedule(base, update Schedule) Schedule {
 	if update.Location != "" {
 		base.Location = update.Location
 	}
+	if update.Title != "" {
+		base.Title = update.Title
+	}
 	if update.Description != "" {
 		base.Description = update.Description
 	}
@@ -546,6 +613,9 @@ func (Schedule) FromPath(path ...string) interface{} {
 	if location, ok := q["location"]; ok && len(location) > 0 {
 		e.Location = location[0]
 	}
+	if title, ok := q["title"]; ok && len(title) > 0 {
+		e.Title = title[0]
+	}
 	if descr, ok := q["description"]; ok && len(descr) > 0 {
 		e.Description = descr[0]
 	}
@@ -568,19 +638,22 @@ func (Schedule) ToPath(obj ...interface{}) string {
 	if evt.Location != "" {
 		q.Set("location", evt.Location)
 	}
+	if evt.Title != "" {
+		q.Set("title", evt.Title)
+	}
 	if evt.Description != "" {
 		q.Set("description", evt.Description)
 	}
 	return "?" + q.Encode()
 }
 
-func (Schedule) Compose(obj ...interface{}) interface{} {
+func (Schedule) Compose(obj ...interface{}) LogoGraph {
 	// Returns a concrete Schedule (which implements LogoGraph)
 	return OhrSchedule.Coalesce(obj)
 }
 
 // Convenience flyer builder (unchanged semantics)
-func (Schedule) Flyer(path string, obj ...interface{}) *eve.Flyer {
+func (Schedule) Flyer(_ string, obj ...interface{}) *eve.Flyer {
 	start, end, status, location, descr := parseOhrScheduleOpts(OhrSchedule.Coalesce(obj))
 	f := &eve.Flyer{
 		Name:      "Office Hours Schedule",
@@ -612,10 +685,13 @@ func (Schedule) Date(obj ...interface{}) string {
 	return start.Format("2006-01-02")
 }
 
-// TODO: this should have a list of Dates
+// -----------------------------------------------------------------------------
+// calendar (LogoGraph + Projectable passthrough)
+// -----------------------------------------------------------------------------
+
 type calendar struct {
 	Title string
-	Dates *avl.Tree // key: date string, value: Schedule
+	Dates *avl.Tree // key: event CID, value: Schedule
 }
 
 var eventCalendar = calendar{
@@ -629,11 +705,12 @@ var _ Projectable = eventCalendar
 func init() {
 	Register(eventCalendar, func(rec Record) {
 		cal := rec.Object.(calendar)
+		// Seed with one event under the calendar's CID.
 		cal.Dates.Set(rec.Cid, cal.Event())
 	})
 }
 
-func (c calendar) Event(path ...string) Schedule {
+func (c calendar) Event(_ ...string) Schedule {
 	return Schedule{
 		Status:      "EventPlanned",
 		StartDate:   OhrSchedule.StartDate,
@@ -644,6 +721,7 @@ func (c calendar) Event(path ...string) Schedule {
 	}
 }
 
+// LogoGraph forwards to schedule visuals (placeholder)
 func (calendar) Cid(path ...string) string           { return eventCalendar.JsonLD(path...).Cid() }
 func (calendar) Image(path ...string) string         { return OhrSchedule.Image(path...) }
 func (calendar) DataUrl(path ...string) string       { return OhrSchedule.DataUrl(path...) }
@@ -651,51 +729,29 @@ func (calendar) Thumbnail(path ...string) string     { return OhrSchedule.Thumbn
 func (calendar) SVG(path ...string) string           { return OhrSchedule.SVG(path...) }
 func (calendar) JsonLD(path ...string) eve.JsonLDMap { return OhrSchedule.JsonLD(path...) }
 
-// ---- Projectable passthrough ----
-
-func (calendar) FromPath(path ...string) interface{} { return OhrSchedule.FromPath(path...) }
-func (calendar) ToPath(obj ...interface{}) string    { return OhrSchedule.ToPath(obj...) }
-func (calendar) Compose(obj ...interface{}) interface{} {
-	return OhrSchedule.Coalesce(eventCalendar.Event(), obj)
-}
-
+// Projectable passthrough
+func (calendar) FromPath(path ...string) interface{}      { return OhrSchedule.FromPath(path...) }
+func (calendar) ToPath(obj ...interface{}) string         { return OhrSchedule.ToPath(obj...) }
+func (calendar) Compose(obj ...interface{}) LogoGraph     { return OhrSchedule.Coalesce(eventCalendar.Event(), obj) }
+func (calendar) Coalesce(obj ...interface{}) calendar     { if len(obj) == 0 || obj[0] == nil { return eventCalendar }; if c, ok := obj[0].(calendar); ok { return c }; panic("invalid calendar object") }
+func (calendar) Heading() string                          { return "| Calendar |\n| -------- |\n" }
+func (calendar) Row(obj calendar) string                  { return "| [" + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | " }
 func (calendar) RenderTable() string {
 	if calendarRegistry.Size() == 0 {
 		return "No calendars registered."
 	}
-
 	var sb strings.Builder
 	sb.WriteString(eventCalendar.Heading())
 
-	calendarRegistry.IterateByOffset(0, calendarRegistry.Size(), func(key string, value any) bool {
+	calendarRegistry.IterateByOffset(0, calendarRegistry.Size(), func(_ string, value any) bool {
 		rec, ok := value.(Record)
 		if !ok {
-			return false // skip non-Record entries
+			return false
 		}
-
 		if cal, isCalendar := rec.Object.(calendar); isCalendar {
 			sb.WriteString(eventCalendar.Row(cal))
 		}
 		return false
 	})
-
 	return sb.String()
-}
-
-func (calendar) Coalesce(obj ...interface{}) calendar {
-	if len(obj) == 0 || obj[0] == nil {
-		return eventCalendar
-	}
-	if c, ok := obj[0].(calendar); ok {
-		return c
-	}
-	panic("invalid calendar object")
-}
-
-func (calendar) Heading() string {
-	return "| Calendar | \n" + "| ------------- |\n"
-}
-
-func (calendar) Row(obj calendar) string {
-	return "| [" + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | "
 }

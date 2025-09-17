@@ -83,7 +83,7 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 
 	// Build the projected object
 	projected := proj.FromPath(path)
-	// Compose to a LogoGraph (your Compose returns OfficeHoursObj, which implements LogoGraph)
+	// Compose to a LogoGraph (your Compose returns OhrScheduleObj, which implements LogoGraph)
 	lg, ok := proj.Compose(projected).(LogoGraph)
 	if !ok {
 		panic("Compose(...) must return an object implementing LogoGraph")
@@ -171,6 +171,20 @@ func (e Record) String() string {
 
 func Render(path string) string {
 	q := eve.ParseQuery(path)
+
+	cal, hasCal := q["cal"]
+	if hasCal {
+	    if calObj, ok := registry.Get(cal[0]); ok {
+            if calendar, isCalendar := calObj.(Record); isCalendar {
+                return renderCalendar(path, calendar.Object)
+            } else {
+                return "cal cid does not refer to a calendar"
+            }
+        } else {
+            return "cal cid not found: " + cal[0]
+        }
+	}
+
 	cid, hasCid := q["cid"]
 	if !hasCid {
 		if len(q["v"]) == 1 && q["v"][0] == "seq" {
@@ -270,6 +284,32 @@ func Render(path string) string {
 	}
 
 	return renderObject(path, obj)
+}
+
+func renderCalendar(path string, obj interface{}) string {
+    calendar, ok := obj.(calendar)
+    if !ok {
+        return "object is not a calendar"
+    }
+    var sb strings.Builder
+    sb.WriteString("### " + calendar.Title + "\n")
+    sb.WriteString(calendar.Thumbnail() + "\n\n")
+    sb.WriteString("View the [full calendar](" + calendar.ToPath(calendar) + ").\n\n")
+    sb.WriteString("#### CID\n")
+    cid := calendar.Cid()
+    if _, found := registry.Get(cid); !found {
+        sb.WriteString(cid + "\n\n")
+        sb.WriteString(eve.Button("Commit Calendar:    "+cid[len(cid)-8:], calendar.ToPath(calendar)+"&base="+calendar.Cid()+"&submit=register"+"\n"))
+    } else {
+        sb.WriteString("[" + cid + "](" + calendar.ToPath(calendar) + ")\n")
+    }
+
+    if links := calendar.JsonLD().MarkdownLinks(); links != "" {
+        sb.WriteString("\n### Links\n" + links + "\n")
+    }
+
+    sb.WriteString("\n#### JSON-LD\n```json\n" + strings.TrimSpace(calendar.JsonLD().String()) + "\n```\n")
+    return sb.String()
 }
 
 func renderObject(path string, obj interface{}) string {

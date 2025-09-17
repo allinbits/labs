@@ -24,16 +24,16 @@ func (o Schedule) String() string {
 		", Description: " + o.Description + "}"
 }
 
-var OfficeHours = Schedule{
+var OhrSchedule = Schedule{
 	Status:      "EventScheduled",
 	StartDate:   "2025-01-01T10:20:00Z",
 	EndDate:     "2025-01-01T11:20:00Z",
 	Location:    "Online",
-	Description: "AibLabs Office Hours: Join us for open discussion.",
+	Description: "AibLabs Event Calendar: Join us for open discussion.",
 }
 
-var _ LogoGraph   = OfficeHours
-var _ Projectable = OfficeHours
+var _ LogoGraph   = OhrSchedule
+var _ Projectable = OhrSchedule
 
 func (o Schedule) Cid(path ...string) string {
 	return o.JsonLD(path...).Cid()
@@ -47,7 +47,7 @@ func (Schedule) renderOpts() map[string]any {
 }
 
 func (o Schedule) Image(path ...string) string {
-	return "![OfficeHours](" + o.DataUrl(path...) + ")"
+	return "![OhrSchedule](" + o.DataUrl(path...) + ")"
 }
 
 func (o Schedule) DataUrl(path ...string) string {
@@ -87,16 +87,16 @@ func (Schedule) Coalesce(objs ...interface{}) Schedule {
 		switch v := o.(type) {
 		case []Schedule:
 			for _, evt := range v {
-				merged = mergeOfficeHours(merged, evt)
+				merged = mergeOhrSchedule(merged, evt)
 			}
 		case Schedule:
-			merged = mergeOfficeHours(merged, v)
+			merged = mergeOhrSchedule(merged, v)
 		}
 	}
 	return merged
 }
 
-func mergeOfficeHours(base, update Schedule) Schedule {
+func mergeOhrSchedule(base, update Schedule) Schedule {
 	if update.Status != "" { base.Status = update.Status }
 	if update.StartDate != "" { base.StartDate = update.StartDate }
 	if update.EndDate != "" { base.EndDate = update.EndDate }
@@ -105,14 +105,13 @@ func mergeOfficeHours(base, update Schedule) Schedule {
 	return base
 }
 
-// BUGFIX: removed panic; produce proper JSON-LD every time.
 func (Schedule) JsonLD(path ...string) eve.JsonLDMap {
-	obj := OfficeHours.FromPath(path...).(Schedule)
-	start, end, status, location, descr := parseOfficeHoursOpts(obj)
+	obj := OhrSchedule.FromPath(path...).(Schedule)
+	start, end, status, location, descr := parseOhrScheduleOpts(obj)
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
 		"@type":                "ImageObject",
-		"name":                 "OfficeHours",
+		"name":                 "Calendar",
 		"description":          descr,
 		"url":                  "/r/labs000/officehours",
 		"representativeOfPage": true,
@@ -132,7 +131,7 @@ func (Schedule) JsonLD(path ...string) eve.JsonLDMap {
 	}
 }
 
-func parseOfficeHoursOpts(obj Schedule) (start, end time.Time, status, location, descr string) {
+func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, location, descr string) {
 	start, err := time.Parse(time.RFC3339, obj.StartDate)
 	if err != nil { start = time.Time{} }
 
@@ -144,7 +143,7 @@ func parseOfficeHoursOpts(obj Schedule) (start, end time.Time, status, location,
 	if location == "" { location = "Online" }
 
 	descr = obj.Description
-	if descr == "" { descr = "AibLabs Office Hours: Join us for open discussion." }
+	if descr == "" { descr = "AibLabs Event Calendar: Join us for open discussion." }
 
 	return
 }
@@ -152,7 +151,7 @@ func parseOfficeHoursOpts(obj Schedule) (start, end time.Time, status, location,
 // FromPath parses a query-style path (e.g., "?status=...&startDate=...").
 func (Schedule) FromPath(path ...string) interface{} {
 	q := eve.ParseQuery(strings.Join(path, ""))
-	e := OfficeHours
+	e := OhrSchedule
 	if status, ok := q["status"]; ok && len(status) > 0 { e.Status = status[0] }
 	if start, ok := q["startDate"]; ok && len(start) > 0 { e.StartDate = start[0] }
 	if end, ok := q["endDate"]; ok && len(end) > 0 { e.EndDate = end[0] }
@@ -162,7 +161,7 @@ func (Schedule) FromPath(path ...string) interface{} {
 }
 
 func (Schedule) ToPath(obj ...interface{}) string {
-	evt := OfficeHours.Coalesce(obj)
+	evt := OhrSchedule.Coalesce(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
 	if evt.Status != "" { q.Set("status", evt.Status) }
@@ -175,14 +174,14 @@ func (Schedule) ToPath(obj ...interface{}) string {
 
 func (Schedule) Compose(obj ...interface{}) interface{} {
 	// Returns a concrete Schedule (which implements LogoGraph)
-	return OfficeHours.Coalesce(obj)
+	return OhrSchedule.Coalesce(obj)
 }
 
 // Convenience flyer builder (unchanged semantics)
 func (Schedule) Flyer(path string, obj ...interface{}) *eve.Flyer {
-	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Coalesce(obj))
+	start, end, status, location, descr := parseOhrScheduleOpts(OhrSchedule.Coalesce(obj))
 	f := &eve.Flyer{
-		Name:      "OfficeHours",
+		Name:      "Office Hours Schedule",
 		Location:  &eve.Location{Name: location},
 		StartDate: start,
 		EndDate:   end,
@@ -190,28 +189,25 @@ func (Schedule) Flyer(path string, obj ...interface{}) *eve.Flyer {
 		Sessions: []*eve.Session{{ Title: "Main Session", Description: descr }},
 		Images:   []string{},
 	}
-	f.SetRenderOpts(OfficeHours.renderOpts())
+	f.SetRenderOpts(OhrSchedule.renderOpts())
 	return f
 }
 
 func (Schedule) Heading() string {
-    return "| CID | Status | Date  | Description |\n" +
-        "| ---- | ------ |  -------- | ----------- |\n"
+    return "| CID | Description |\n| --- | ----------- |\n"
 }
 
-func (Schedule) Row(obj ...interface{}) string {
-    evt := OfficeHours.Coalesce(obj)
-    return "| [" + evt.Cid()[:8] + "](?cid=" + evt.Cid() + ") | " +
-        evt.Status + " | " +
-        evt.StartDate + " | " +
-        evt.Description + " |\n"
+func (Schedule) Row(obj Schedule) string {
+    return "| [" + obj.Cid() + "](?cid=" + obj.Cid() + ") | " + obj.Description + " |\n"
 }
 
 func (Schedule) Date(obj ...interface{}) string {
-    evt := OfficeHours.Coalesce(obj)
-    start, _, _, _, _ := parseOfficeHoursOpts(evt)
+    evt := OhrSchedule.Coalesce(obj)
+    start, _, _, _, _ := parseOhrScheduleOpts(evt)
     if start.IsZero() {
         return ""
     }
     return start.Format("2006-01-02")
 }
+
+// TODO: this should have a list of Dates

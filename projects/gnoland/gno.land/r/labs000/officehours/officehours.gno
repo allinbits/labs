@@ -3,11 +3,12 @@ package officehours
 import (
 	"net/url"
 	"time"
+	"strings"
 
 	eve "gno.land/p/eve000/event/component"
 )
 
-type OfficeHoursEvent struct {
+type OfficeHoursObj struct {
 	Status      string
 	StartDate   string
 	EndDate     string
@@ -15,7 +16,7 @@ type OfficeHoursEvent struct {
 	Description string
 }
 
-var OfficeHours = OfficeHoursEvent{
+var OfficeHours = OfficeHoursObj{
 	Status:      "EventScheduled",
 	StartDate:   "2025-01-01T10:20:00Z",
 	EndDate:     "2025-01-01T11:20:00Z",
@@ -26,31 +27,32 @@ var OfficeHours = OfficeHoursEvent{
 var _ LogoGraph = OfficeHours
 var _ Projectable = OfficeHours
 
-func (OfficeHoursEvent) Cid() string {
-	return OfficeHours.Compose().Cid()
+func (OfficeHoursObj) Cid(_ ...string) string {
+    // FIXME: pass in string
+	return OfficeHours.Compose().(LogoGraph).Cid()
 }
 
-func (OfficeHoursEvent) renderOpts() map[string]any {
+func (OfficeHoursObj) renderOpts() map[string]any {
 	return map[string]any{
 		"dev":      map[string]any{},
 		"labsnet1": map[string]any{},
 	}
 }
 
-func (OfficeHoursEvent) Image() string {
+func (OfficeHoursObj) Image(_ ...string) string {
 	return "![OfficeHours](" + OfficeHours.DataUrl() + ")"
 }
 
-func (OfficeHoursEvent) DataUrl() string {
+func (OfficeHoursObj) DataUrl(_ ...string) string {
 	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(OfficeHours.SVG())
 }
 
-func (OfficeHoursEvent) Thumbnail() string {
+func (OfficeHoursObj) Thumbnail(_ ...string) string {
 	return OfficeHours.Image()
 }
 
 // SVG renders a paper-shaped thumbnail with a centered clock and Office Hours text below.
-func (OfficeHoursEvent) SVG() string {
+func (OfficeHoursObj) SVG(_ ...string) string {
 	return `
 <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
   <!-- Paper shape with slight shadow -->
@@ -73,10 +75,13 @@ func (OfficeHoursEvent) SVG() string {
 `
 }
 
-func (OfficeHoursEvent) Merge(objs []interface{}) OfficeHoursEvent {
-	obj := make([]OfficeHoursEvent, 0, len(objs))
+// TODO: add to interface? - no it returns a struct and not an interface
+func (OfficeHoursObj) Coalesce(objs ...interface{}) OfficeHoursObj {
+	obj := make([]OfficeHoursObj, 0, len(objs))
 	for _, o := range objs {
-		if evt, ok := o.(OfficeHoursEvent); ok {
+	    if evtList, ok := o.([]OfficeHoursObj); ok {
+	                obj = append(obj, evtList...)
+	    } else if evt, ok := o.(OfficeHoursObj); ok {
 			obj = append(obj, evt)
 		}
 	}
@@ -101,73 +106,9 @@ func (OfficeHoursEvent) Merge(objs []interface{}) OfficeHoursEvent {
 	return e
 }
 
-func (OfficeHoursEvent) JsonLD() eve.JsonLDMap {
-	return OfficeHours.Compose()
-}
-
-func parseOfficeHoursOpts(obj OfficeHoursEvent) (start, end time.Time, status, location, descr string) {
-	start, _ = time.Parse(time.RFC3339, obj.StartDate)
-	end, _ = time.Parse(time.RFC3339, obj.EndDate)
-	if !end.After(start) {
-		end = start
-	}
-	status = string(obj.Status)
-	location = "Online"
-	if obj.Location != "" {
-		location = obj.Location
-	}
-	descr = "AibLabs Office Hours: Join us for open discussion."
-	if obj.Description != "" {
-		descr = obj.Description
-	}
-	return
-}
-
-func (OfficeHoursEvent) FromPath(path string) interface{} {
-	q := eve.ParseQuery(path)
-	e := OfficeHours
-	if status, ok := q["status"]; ok && len(status) > 0 {
-		e.Status = status[0]
-	}
-	if start, ok := q["startDate"]; ok && len(start) > 0 {
-		e.StartDate = start[0]
-	}
-	if end, ok := q["endDate"]; ok && len(end) > 0 {
-		e.EndDate = end[0]
-	}
-	if location, ok := q["location"]; ok && len(location) > 0 {
-		e.Location = location[0]
-	}
-	if descr, ok := q["description"]; ok && len(descr) > 0 {
-		e.Description = descr[0]
-	}
-	return e
-}
-
-func (OfficeHoursEvent) ToPath(obj ...interface{}) string {
-	evt := OfficeHours.Merge(obj)
-	q := url.Values{}
-	q.Set("cid", evt.Cid())
-	if evt.Status != "" {
-		q.Set("status", evt.Status)
-	}
-	if evt.StartDate != "" {
-		q.Set("startDate", evt.StartDate)
-	}
-	if evt.EndDate != "" {
-		q.Set("endDate", evt.EndDate)
-	}
-	if OfficeHours.Location != "" {
-		q.Set("location", OfficeHours.Location)
-	}
-	if OfficeHours.Description != "" {
-		q.Set("description", OfficeHours.Description)
-	}
-	return "?" + q.Encode()
-}
-
-func (OfficeHoursEvent) Compose(obj ...interface{}) eve.JsonLDMap {
-	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Merge(obj))
+func (OfficeHoursObj) JsonLD(path ...string) eve.JsonLDMap {
+    obj := OfficeHours.FromPath(path...).(OfficeHoursObj)
+	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Coalesce(obj))
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
 		"@type":                "ImageObject",
@@ -191,8 +132,75 @@ func (OfficeHoursEvent) Compose(obj ...interface{}) eve.JsonLDMap {
 	}
 }
 
-func (OfficeHoursEvent) Flyer(obj ...interface{}) *eve.Flyer {
-	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Merge(obj))
+func parseOfficeHoursOpts(obj OfficeHoursObj) (start, end time.Time, status, location, descr string) {
+	start, _ = time.Parse(time.RFC3339, obj.StartDate)
+	end, _ = time.Parse(time.RFC3339, obj.EndDate)
+	if !end.After(start) {
+		end = start
+	}
+	status = string(obj.Status)
+	location = "Online"
+	if obj.Location != "" {
+		location = obj.Location
+	}
+	descr = "AibLabs Office Hours: Join us for open discussion."
+	if obj.Description != "" {
+		descr = obj.Description
+	}
+	return
+}
+
+func (OfficeHoursObj) FromPath(path ...string) interface{} {
+	q := eve.ParseQuery(strings.Join(path, ""))
+	e := OfficeHours
+	if status, ok := q["status"]; ok && len(status) > 0 {
+		e.Status = status[0]
+	}
+	if start, ok := q["startDate"]; ok && len(start) > 0 {
+		e.StartDate = start[0]
+	}
+	if end, ok := q["endDate"]; ok && len(end) > 0 {
+		e.EndDate = end[0]
+	}
+	if location, ok := q["location"]; ok && len(location) > 0 {
+		e.Location = location[0]
+	}
+	if descr, ok := q["description"]; ok && len(descr) > 0 {
+		e.Description = descr[0]
+	}
+	return e
+}
+
+func (OfficeHoursObj) ToPath(obj ...interface{}) string {
+	evt := OfficeHours.Coalesce(obj)
+	q := url.Values{}
+	q.Set("cid", evt.Cid())
+	if evt.Status != "" {
+		q.Set("status", evt.Status)
+	}
+	if evt.StartDate != "" {
+		q.Set("startDate", evt.StartDate)
+	}
+	if evt.EndDate != "" {
+		q.Set("endDate", evt.EndDate)
+	}
+	if OfficeHours.Location != "" {
+		q.Set("location", OfficeHours.Location)
+	}
+	if OfficeHours.Description != "" {
+		q.Set("description", OfficeHours.Description)
+	}
+	return "?" + q.Encode()
+}
+
+func (OfficeHoursObj) Compose(obj ...interface{}) interface{} {
+    return OfficeHours.Coalesce(obj)
+}
+
+func (OfficeHoursObj) Flyer(path string, obj ...interface{}) *eve.Flyer {
+    _ = path // FIXME
+    // TODO: support copy from eve.Event if passed in
+	start, end, status, location, descr := parseOfficeHoursOpts(OfficeHours.Coalesce(obj))
 	f := &eve.Flyer{
 		Name:      "OfficeHours",
 		Location:  &eve.Location{Name: location},

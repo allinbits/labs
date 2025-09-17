@@ -28,21 +28,31 @@ func (c *Counter) String() string {
 var counter = Counter{Count: 0}
 
 type Editable interface {
-	RenderForm(string) string
+	RenderForm(...string) string
 }
 
 type Projectable interface {
 	ToPath(...interface{}) string
-	FromPath(path string) interface{}
-	Compose(...interface{}) eve.JsonLDMap
+	FromPath(...string) interface{}
+	Compose(...interface{}) interface{}
 }
 
 type LogoGraph interface {
-	SVG() string
-	JsonLD() eve.JsonLDMap
-	Cid() string
-	Thumbnail() string
+	SVG(...string) string
+	JsonLD(...string) eve.JsonLDMap
+	Cid(...string) string
+	Thumbnail(...string) string
 }
+
+/*
+Potential 'Full Object' def
+
+type LogoObject interface {
+    LogoGraph
+    Editable
+    Projectable
+}
+*/
 
 type Record struct {
 	Name        string
@@ -85,7 +95,7 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 		panic("object is not projectable")
 	}
 	r.Object = proj.FromPath(path)
-	cid = proj.Compose(r.Object).Cid()
+	cid = proj.Compose(r.Object).(LogoGraph).JsonLD().Cid()
 	if seal != cid {
 		panic("invalid seal: expected " + seal + " but got " + cid)
 	}
@@ -222,7 +232,7 @@ func Render(path string) string {
 			return ""
 		case "cid":
 			if isProj {
-				return "[" + proj.Compose(r.Object).Cid() + "](?cid=" + proj.Compose(r.Object).Cid() + ")"
+				return "[" + proj.Compose(r.Object).(LogoGraph).JsonLD().Cid() + "](?cid=" + proj.Compose(r.Object).(LogoGraph).JsonLD().Cid() + ")"
 			} else {
 				return "[" + r.Cid + "](?cid=" + r.Cid + ")"
 			}
@@ -236,7 +246,7 @@ func Render(path string) string {
 			return r.Object.(LogoGraph).Thumbnail()
 		case "json":
 			if isProj {
-				return proj.Compose(r.Object).String()
+				return proj.Compose(r.Object).(LogoGraph).JsonLD().String()
 			}
 			return r.Object.(LogoGraph).JsonLD().String()
 		}
@@ -246,7 +256,7 @@ func Render(path string) string {
 		if !isCIDv1(seal[0]) {
 			return "invalid seal: not a CIDv1"
 		}
-		cid := proj.Compose(obj).Cid()
+		cid := proj.Compose(obj).(LogoGraph).JsonLD().Cid()
 		if seal[0] != cid {
 			return "invalid seal: expected " + cid + " but got " + seal[0]
 		}
@@ -260,7 +270,7 @@ func renderObject(path string, obj interface{}) string {
 	glyph := obj.(LogoGraph)
 	var ld eve.JsonLDMap
 	if proj, ok := obj.(Projectable); ok {
-		ld = proj.Compose(proj.FromPath(path))
+		ld = proj.Compose(proj.FromPath(path)).(LogoGraph).JsonLD()
 	} else {
 		ld = glyph.JsonLD()
 	}

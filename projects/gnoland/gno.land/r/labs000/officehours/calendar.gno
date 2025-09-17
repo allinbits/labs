@@ -8,12 +8,12 @@ import (
 
 type calendar struct {
 	Title string
-	Dates avl.Tree // key: date string, value: Schedule
+	Dates *avl.Tree // key: date string, value: Schedule
 }
 
 var eventCalendar = calendar{
 	Title: "Gno.land Office Hours Calendar",
-	Dates: *avl.NewTree(),
+	Dates: avl.NewTree(),
 }
 
 var _ LogoGraph   = eventCalendar
@@ -21,18 +21,18 @@ var _ Projectable = eventCalendar
 
 func init() {
     Register(eventCalendar, func(rec Record) {
-        date := eventCalendar.Event().Date()
-        eventCalendar.Dates.Set(date, eventCalendar.Event()) // add a default event
+        cal := rec.Object.(calendar)
+        cal.Dates.Set(rec.Cid, cal.Event())
     })
 }
 
 func (c calendar) Event(path ...string) Schedule {
-    // FIXME read from c.Dates based on path or current date
 	return Schedule{
 		Status:      "EventPlanned",
-		StartDate:   "2025-11-01T00:00:00Z",
-		EndDate:     "2025-11-01T01:00:00Z",
-		Description: c.Title,
+		StartDate:   OhrSchedule.StartDate,
+		EndDate:     OhrSchedule.EndDate,
+		Title:       OhrSchedule.Title,
+		Description: OhrSchedule.Description,
 		Location:    "Gnowhere",
 	}
 }
@@ -51,14 +51,14 @@ func (calendar) ToPath(obj ...interface{}) string      { return OhrSchedule.ToPa
 func (calendar) Compose(obj ...interface{}) interface{} { return OhrSchedule.Coalesce(eventCalendar.Event(), obj) }
 
 func (calendar) RenderTable() string {
-    if registry.Size() == 0 {
+    if calendarRegistry.Size() == 0 {
         return "No calendars registered."
     }
 
     var sb strings.Builder
     sb.WriteString(eventCalendar.Heading())
 
-    registry.IterateByOffset(0, registry.Size(), func(key string, value any) bool {
+    calendarRegistry.IterateByOffset(0, calendarRegistry.Size(), func(key string, value any) bool {
         rec, ok := value.(Record)
         if !ok {
             return false // skip non-Record entries
@@ -84,8 +84,7 @@ func (calendar) Coalesce(obj ...interface{}) calendar {
 }
 
 func (calendar) Heading() string {
-    return "| Calendar | \n" +
-        "| ------------- |\n"
+    return "| Calendar | \n" + "| ------------- |\n"
 }
 
 func (calendar) Row(obj calendar) string {

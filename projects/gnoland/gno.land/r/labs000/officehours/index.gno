@@ -9,7 +9,7 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
-var registry = avl.NewTree()
+var calendarRegistry = avl.NewTree()
 
 type Counter struct{ Count int64 }
 
@@ -70,7 +70,7 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 	if !eve.IsCIDv1(seal) {
 		panic("invalid seal: not a CIDv1")
 	}
-	v, found := registry.Get(base)
+	v, found := calendarRegistry.Get(base)
 	if !found {
 		return "base CID not found"
 	}
@@ -93,7 +93,7 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 	if seal != cid {
 		panic("invalid seal: expected " + cid + " but got " + seal)
 	}
-	if _, ok := registry.Get(cid); ok {
+	if _, ok := calendarRegistry.Get(cid); ok {
 		panic("duplicate projected CID registered: " + cid)
 	}
 
@@ -108,14 +108,14 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 
 	std.Emit("ProjectionEvent", "cid", cid, "seal", seal, "seq", counter.Next())
 	if !emitOnly {
-		registry.Set(rec.Cid, rec)
+		calendarRegistry.Set(rec.Cid, rec)
 	}
 	return
 }
 
 // ---- Register ----
 
-// Register adds a LogoGraph object to the registry and returns its CID.
+// Register adds a LogoGraph object to the calendarRegistry and returns its CID.
 func Register(i interface{}, callback ...func(rec Record)) string {
 	lg, ok := i.(LogoGraph)
 	if !ok {
@@ -150,10 +150,10 @@ func Register(i interface{}, callback ...func(rec Record)) string {
 		Committer:   std.PreviousRealm().Address().String(),
 		Seq:         counter.Count + 1,
 	}
-	if _, ok := registry.Get(rec.Cid); ok {
+	if _, ok := calendarRegistry.Get(rec.Cid); ok {
 		panic("duplicate CID registered: " + rec.Cid)
 	}
-	registry.Set(rec.Cid, rec)
+	calendarRegistry.Set(rec.Cid, rec)
 	std.Emit("Register", "cid", rec.Cid, "seq", counter.Next())
 	for _, cb := range callback {
         cb(rec)
@@ -174,11 +174,20 @@ func Render(path string) string {
 
 	cal, hasCal := q["cal"]
 	if hasCal {
-	    if calObj, ok := registry.Get(cal[0]); ok {
-            if calendar, isCalendar := calObj.(Record); isCalendar {
-                return renderCalendar(path, calendar.Object)
+	    if calObj, ok := calendarRegistry.Get(cal[0]); ok {
+            if rec, ok := calObj.(Record); ok {
+                if c, ok := rec.Object.(calendar); ok {
+                    if event, hasEvent := q["evt"]; hasEvent {
+                        if evtObj, ok := c.Dates.Get(event[0]); ok {
+                            return renderEvent(path, evtObj)
+                        } else {
+                            return "event cid not found: " + event[0]
+                        }
+                    }
+                }
+                return renderCalendar(path, rec.Object)
             } else {
-                return "cal cid does not refer to a calendar"
+                return "invalid calendar record"
             }
         } else {
             return "cal cid not found: " + cal[0]
@@ -195,7 +204,7 @@ func Render(path string) string {
 
 	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
 		if base, hasBase := q["base"]; hasBase && eve.IsCIDv1(base[0]) {
-			if v, ok := registry.Get(base[0]); ok {
+			if v, ok := calendarRegistry.Get(base[0]); ok {
 				r := v.(Record)
 				if ed, isEd := r.Object.(Editable); isEd {
 					form := ed.RenderForm(path)
@@ -211,7 +220,7 @@ func Render(path string) string {
 		}
 	}
 
-	v, found := registry.Get(cid[0])
+	v, found := calendarRegistry.Get(cid[0])
 	if !found {
 		return "cid not found"
 	}
@@ -286,6 +295,21 @@ func Render(path string) string {
 	return renderObject(path, obj)
 }
 
+func renderEvent(path string, obj interface{}) string {
+    event, ok := obj.(Schedule)
+    if !ok {
+        return "object is not an event"
+    }
+    var sb strings.Builder
+    sb.WriteString("### " + event.Title + "\n")
+    sb.WriteString(event.Thumbnail() + "\n\n")
+    sb.WriteString(event.Description + "\n\n")
+    sb.WriteString("**Status:** " + event.Status + "\n\n")
+    sb.WriteString("**Date:** " + event.StartDate[:10] + "\n\n")
+    sb.WriteString("**Location:** " + event.Location + "\n\n")
+    return sb.String()
+}
+
 func renderCalendar(path string, obj interface{}) string {
     calendar, ok := obj.(calendar)
     if !ok {
@@ -294,21 +318,17 @@ func renderCalendar(path string, obj interface{}) string {
     var sb strings.Builder
     sb.WriteString("### " + calendar.Title + "\n")
     sb.WriteString(calendar.Thumbnail() + "\n\n")
-    sb.WriteString("View the [full calendar](" + calendar.ToPath(calendar) + ").\n\n")
-    sb.WriteString("#### CID\n")
-    cid := calendar.Cid()
-    if _, found := registry.Get(cid); !found {
-        sb.WriteString(cid + "\n\n")
-        sb.WriteString(eve.Button("Commit Calendar:    "+cid[len(cid)-8:], calendar.ToPath(calendar)+"&base="+calendar.Cid()+"&submit=register"+"\n"))
-    } else {
-        sb.WriteString("[" + cid + "](" + calendar.ToPath(calendar) + ")\n")
-    }
+    // add a table of events
+    sb.WriteString("| Date | Description |\n")
+    sb.WriteString("| ---- | ----------- |\n")
 
-    if links := calendar.JsonLD().MarkdownLinks(); links != "" {
-        sb.WriteString("\n### Links\n" + links + "\n")
-    }
+    calendar.Dates.IterateByOffset(0,  calendar.Dates.Size(), func(_ string, value any) bool {
+        evt := value.(Schedule)
+        // REVIEW: consider using ?event={cid} for event links
+        sb.WriteString("| " + evt.StartDate[:10] + " | [" + evt.Description + "](?evt=" + evt.Cid() + "&cal=" + calendar.Cid() + ") |\n")
+        return false
+    })
 
-    sb.WriteString("\n#### JSON-LD\n```json\n" + strings.TrimSpace(calendar.JsonLD().String()) + "\n```\n")
     return sb.String()
 }
 
@@ -330,7 +350,7 @@ func renderObject(path string, obj interface{}) string {
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
 	if proj, ok := obj.(Projectable); ok {
-		if _, found := registry.Get(cid); !found {
+		if _, found := calendarRegistry.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
 			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register"+"\n"))
 		} else {

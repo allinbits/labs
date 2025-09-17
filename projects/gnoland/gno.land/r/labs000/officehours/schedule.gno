@@ -13,6 +13,7 @@ type Schedule struct {
 	StartDate   string
 	EndDate     string
 	Location    string
+	Title       string
 	Description string
 }
 
@@ -29,6 +30,7 @@ var OhrSchedule = Schedule{
 	StartDate:   "2025-01-01T10:20:00Z",
 	EndDate:     "2025-01-01T11:20:00Z",
 	Location:    "Online",
+	Title:       "AibLabs Office Hours",
 	Description: "AibLabs Event Calendar: Join us for open discussion.",
 }
 
@@ -198,7 +200,7 @@ func (Schedule) Heading() string {
 }
 
 func (Schedule) Row(obj Schedule) string {
-    return "| [" + obj.Cid() + "](?cid=" + obj.Cid() + ") | " + obj.Description + " |\n"
+    return "| [" + obj.Cid() + "](?evt=" + obj.Cid() + ") | " + obj.Description + " |\n"
 }
 
 func (Schedule) Date(obj ...interface{}) string {

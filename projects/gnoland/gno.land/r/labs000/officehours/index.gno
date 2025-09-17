@@ -441,6 +441,7 @@ type Schedule struct {
 	Location    string
 	Title       string
 	Description string
+	CalendarCid string
 }
 
 func (o Schedule) String() string {
@@ -458,6 +459,7 @@ var OhrSchedule = Schedule{
 	Location:    "Online",
 	Title:       "AibLabs Office Hours",
 	Description: "AibLabs Event Calendar: Join us for open discussion.",
+	CalendarCid: "UNSET-CID",
 }
 
 var _ LogoGraph = OhrSchedule
@@ -556,6 +558,11 @@ func (Schedule) JsonLD(path ...string) eve.JsonLDMap {
 		"description":          descr,
 		"url":                  "/r/labs000/officehours",
 		"representativeOfPage": true,
+		"partOf": map[string]interface{}{
+            "@type": "WebPage",
+            "name":  "AibLabs Office Hours",
+            "url":   "/r/labs000/officehours?cal=" + obj.CalendarCid,
+        },
 		"about": map[string]interface{}{
 			"@type":       "Event",
 			"name":        "AibLabs Office Hours",
@@ -705,12 +712,11 @@ var _ Projectable = eventCalendar
 func init() {
 	Register(eventCalendar, func(rec Record) {
 		cal := rec.Object.(calendar)
-		// Seed with one event under the calendar's CID.
-		cal.Dates.Set(rec.Cid, cal.Event())
+		cal.Dates.Set(rec.Cid, cal.Event(rec.Cid))
 	})
 }
 
-func (c calendar) Event(_ ...string) Schedule {
+func (c calendar) Event(calendarCid string, _ ...string) Schedule {
 	return Schedule{
 		Status:      "EventPlanned",
 		StartDate:   OhrSchedule.StartDate,
@@ -718,6 +724,7 @@ func (c calendar) Event(_ ...string) Schedule {
 		Title:       OhrSchedule.Title,
 		Description: OhrSchedule.Description,
 		Location:    "Gnowhere",
+		CalendarCid: calendarCid,
 	}
 }
 
@@ -732,7 +739,7 @@ func (calendar) JsonLD(path ...string) eve.JsonLDMap { return OhrSchedule.JsonLD
 // Projectable passthrough
 func (calendar) FromPath(path ...string) interface{}      { return OhrSchedule.FromPath(path...) }
 func (calendar) ToPath(obj ...interface{}) string         { return OhrSchedule.ToPath(obj...) }
-func (calendar) Compose(obj ...interface{}) LogoGraph     { return OhrSchedule.Coalesce(eventCalendar.Event(), obj) }
+func (calendar) Compose(obj ...interface{}) LogoGraph     { return OhrSchedule.Coalesce(eventCalendar.Event(""), obj) }
 func (calendar) Coalesce(obj ...interface{}) calendar     { if len(obj) == 0 || obj[0] == nil { return eventCalendar }; if c, ok := obj[0].(calendar); ok { return c }; panic("invalid calendar object") }
 func (calendar) Heading() string                          { return "| Calendar |\n| -------- |\n" }
 func (calendar) Row(obj calendar) string                  { return "| [" + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | " }

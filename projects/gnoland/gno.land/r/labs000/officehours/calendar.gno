@@ -5,17 +5,17 @@ import (
 )
 
 type calendar struct {
-    title string
+	title string
 }
 
 var evt = calendar{}
 
 // FIXME:
-//var cid = Register(evt)
+// var cid = Register(evt)
 var cid string = "bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku" // TODO: replace with real cid
 
 func (calendar) Event(path ...string) OfficeHoursObj {
-    // FIXME build from path
+	// FIXME build from path
 	return OfficeHoursObj{
 		Status:      "EventPlanned",
 		StartDate:   "2025-11-01T00:00:00Z",
@@ -38,7 +38,7 @@ func (calendar) DataUrl(path ...string) string {
 }
 
 func (calendar) Thumbnail(path ...string) string {
-    // REVIEW: thumbnail should be the SVG version of the flyer
+	// REVIEW: thumbnail should be the SVG version of the flyer
 	return OfficeHours.Thumbnail(path...)
 }
 

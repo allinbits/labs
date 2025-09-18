@@ -79,3 +79,19 @@ func ShaToCid(sha string) string {
 	enc := base32.StdEncoding.WithPadding(base32.NoPadding)
 	return "b" + strings.ToLower(enc.EncodeToString(buf))
 }
+
+// IsCIDv1 checks if the given string is a valid CIDv1 in base32 format.
+func IsCIDv1(s string) bool {
+	if len(s) != 59 {
+		return false
+	}
+	for _, r := range s {
+		if !('a' <= r && r <= 'z' || '2' <= r && r <= '7') { // base32 alphabet
+			return false
+		}
+	}
+	if !strings.HasPrefix(s, "bafkrei") {
+		return false
+	}
+	return true
+}

@@ -4,16 +4,16 @@ package officehours
 // This system is an instance of applied categorical programming:
 //
 // Interfaces implement categorical structure.
-//   (objects, morphisms, functors)
+//  - (objects, morphisms, functors)
 //
 // Runtime checks enforce laws.
-//   (identity, composition, naturality)
+//  - (identity, composition, naturality)
 //
 // Registries serve as skeletal categories with presheaf indices.
 //
-// Projection commits are pushouts;
-// Calendar–Event membership is a span;
-// Rendering is a natural transformation.
+// - Projection commits are pushouts;
+// - Calendar–Event membership is a span;
+// - Rendering is a natural transformation.
 //
 // The result is a falsifiable, compositional substrate for on-chain objects.
 // -----------------------------------------------------------------------------
@@ -218,18 +218,8 @@ func Register(obj interface{}, cb ...func(rec Record)) string {
 	newCid := lg.Cid()
 	mustCIDv1("object CID", newCid)
 
-	// Verify projection round-trip if projectable
-	if proj, isProj := obj.(Projectable); isProj {
-		path := proj.ToPath(obj)
-		if fromObj := proj.FromPath(path); fromObj == nil {
-			panic("FromPath returned nil")
-		} else if lgFrom, ok := fromObj.(LogoGraph); !ok {
-			_ = lgFrom
-			panic("FromPath did not return a LogoGraph")
-		} else if lgFrom.Cid() != lg.Cid() {
-		    panic("FromPath round-trip CID mismatch: " + lgFrom.Cid() + " != " + lg.Cid())
-		}
-	}
+	// Law check: projection round-trip
+	AssertProjectionRoundTrip(obj, lg)
 
 	// Smoke-test media	// Smoke-test media
 	_ = lg.SVG()
@@ -286,6 +276,11 @@ func Render(path string) string {
 		if cid, hasCid := q["cid"]; hasCid && len(cid) == 1 {
 			rec, ok := getRecord(cid[0])
 			if !ok {
+			    // TODO: if full event is in the the URL
+			    // build the event from the path
+			    // and render it directly.
+			    // maybe have a redirect to an edit form
+
 				return "cid not found"
 			}
 			// FIXME this projection doesn't populate calendarCid in Schedule
@@ -404,6 +399,11 @@ func Render(path string) string {
 	return renderObject(rec, lg, projected)
 }
 
+func RenderCalendar(path string) string {
+    // FIXME load calendar from path and convert to eve.Flyer
+    return ""
+}
+
 // -----------------------------------------------------------------------------
 // Render helpers
 // -----------------------------------------------------------------------------
@@ -420,11 +420,45 @@ func renderEvent(obj interface{}) string {
 	sb.WriteString("### " + event.Title + "\n")
 	sb.WriteString(event.Thumbnail() + "\n\n")
 	sb.WriteString(event.Description + "\n\n")
-	sb.WriteString("[" + eventCid + "](?cid=" + eventCid + "&cal=" + event.CalendarCid + ")\n\n")
+
+	sb.WriteString("**CID:** [" + eventCid[len(eventCid)-8:] + "](?cid=" + eventCid + "&cal=" + event.CalendarCid + ")\n\n")
 	sb.WriteString("**Status:** " + event.Status + "\n\n")
 	sb.WriteString("**Date:** " + event.StartDate[:10] + "\n\n")
-	sb.WriteString("#### JSON-LD\n```json\n" + strings.TrimSpace(event.JsonLD().String()) + "\n```\n")
+	sb.WriteString("**Time:** " + event.StartDate[11:16] + " to " + event.EndDate[11:16] + " UTC\n\n")
+	if event.CalendarCid != "" {
+	    sb.WriteString("[<- Calendar" + "](?cal=" + event.CalendarCid + ")\n\n")
+    }
+    sb.WriteString(proposalForm(eventCid, event) + "\n")
+	//sb.WriteString("#### JSON-LD\n```json\n" + strings.TrimSpace(event.JsonLD().String()) + "\n```\n")
 	return sb.String()
+}
+
+func parseTime(timestr string) time.Time {
+    t, err := time.Parse(time.RFC3339, timestr)
+    if err != nil {
+        return time.Time{}
+    }
+    return t
+}
+
+func proposalForm(cid string, event Schedule) string {
+    if time.Now().After(parseTime(event.StartDate).Add(-1 * time.Hour)) {
+        return ""
+    }
+
+    var sb strings.Builder
+    sb.WriteString(`### Propose Topic
+<gno-columns>
+<gno-form>
+    <gno-textarea name="description" label="Description" rows="3" required placeholder="Describe your topic proposal here..."/>
+    <gno-input name="topic" type="radio" value="` + cid + `" checked="true" description="Submit for this Session" />
+    </gno-form>
+
+|||
+
+</gno-columns>
+`)
+    return sb.String()
 }
 
 func renderCalendar(c calendar) string {
@@ -452,7 +486,7 @@ func renderObject(rec Record, lg LogoGraph, projected interface{}) string {
 	sb.WriteString(lg.Thumbnail() + "\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 
-	sb.WriteString("#### CID\n")
+	sb.WriteString("**CID:** ")
 	cid := ld.Cid()
 
 	// REVIEW: viewing an event as a CID obj - doesn't show the calendar it belongs to
@@ -503,6 +537,8 @@ func (o Schedule) JsonLD() eve.JsonLDMap { return scheduleLD(o) }
 func (Schedule) ToPath(obj interface{}) string {
 	return "?" + scheduleToValues(coalesceSchedule(obj)).Encode()
 }
+
+// TODO: support time zones in the query params
 func (Schedule) FromPath(path string) interface{} {
 	q := eve.ParseQuery(path)
 	s := defaultSchedule
@@ -530,8 +566,8 @@ func (Schedule) Compose(obj interface{}) LogoGraph { return coalesceSchedule(obj
 
 var defaultSchedule = Schedule{
 	Status:      "EventScheduled",
-	StartDate:   "2025-01-01T10:20:00Z",
-	EndDate:     "2025-01-01T11:20:00Z",
+	StartDate:   "2025-11-01T10:20:00Z",
+	EndDate:     "2025-11-01T11:20:00Z",
 	Title:       "AibLabs Office Hours",
 	Description: "AibLabs Event Calendar: Join us for open discussion.",
 }
@@ -563,26 +599,21 @@ func coalesceSchedule(obj interface{}) Schedule {
 }
 
 func scheduleLD(s Schedule) eve.JsonLDMap {
-	start, end, status, descr := parseOhrScheduleOpts(s)
-	refURL := "/r/labs000/officehours"
+	start, end, status, descr, title := parseOhrScheduleOpts(s)
+	refURL := ""
 	if s.CalendarCid != "" {
 		refURL += "?cal=" + s.CalendarCid
 	}
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
 		"@type":                "Event",
-		"name":                 "AibLabs Office Hours",
+		"name":                 title,
 		"description":          descr,
 		"url":                  refURL,
 		"eventStatus":          status,
 		"startDate":            start,
 		"endDate":              end,
 		"representativeOfPage": true,
-		"partOf": map[string]interface{}{
-			"@type": "WebPage",
-			"name":  "AibLabs Office Hours",
-			"url":   refURL,
-		},
 	}
 }
 
@@ -609,8 +640,7 @@ func scheduleToValues(s Schedule) url.Values {
     }
 	return q
 }
-
-func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr string) {
+func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr, title string) {
 	start, _ = time.Parse(time.RFC3339, obj.StartDate)
 	end, _ = time.Parse(time.RFC3339, obj.EndDate)
 	if end.IsZero() || !end.After(start) {
@@ -621,6 +651,7 @@ func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr str
 	if descr == "" {
 		descr = "AibLabs Event Calendar: Join us for open discussion."
 	}
+	title = obj.Title
 	return
 }
 
@@ -656,10 +687,8 @@ var eventCalendar = calendar{
 }
 
 var _ LogoGraph = eventCalendar
-var _ Projectable = eventCalendar
 
-//var ignoreEvent = "bafkreigpj5d2bjazbrdryu2ktbob2nrehhtu2h4cruhfjwluqk6kcgrh3i"
-var ignoreEvent = "" // alter to allow default event to register itself
+var defaultEventCid = "bafkreiahrweqjyvavfzhzk3geadfdzy4yr4kttabyy7yfvocp6unu5pbzm"
 
 func init() {
 	// Register the calendar and seed a single example event.
@@ -669,8 +698,8 @@ func init() {
 		evt := cal.Event(rec.Cid)
 		evtCid := Register(evt) // indexes into eventIndex; stored once in objectStore
 
-		if evtCid == ignoreEvent {
-            return // skip the example event
+		if evtCid != defaultEventCid {
+		    panic("default event CID has changed; update defaultEventCid: "+ evtCid)
         }
 
 		// Calendar tracks only the event CID (no duplication of Schedule).
@@ -684,6 +713,46 @@ func init() {
 			Seq:         rec.Seq,
 		})
 	})
+}
+
+// -----------------------------------------------------------------------------
+// Law checks (runtime categorical invariants)
+// -----------------------------------------------------------------------------
+
+// AssertProjectionRoundTrip verifies that for a Projectable object `obj`,
+// the round-trip ToPath(obj) -> FromPath(path) -> (Compose if needed) yields
+// a LogoGraph with the SAME CID as `lg` (the canonical view of obj).
+//
+// Panics with descriptive messages on violation.
+func AssertProjectionRoundTrip(obj interface{}, lg LogoGraph) {
+	proj, ok := obj.(Projectable)
+	if !ok {
+		// Not projectable → nothing to assert for this law.
+		return
+	}
+
+	path := proj.ToPath(obj)
+	fromObj := proj.FromPath(path)
+	if fromObj == nil {
+		panic("ProjectionRoundTrip: FromPath returned nil")
+	}
+
+	// If FromPath returned a LogoGraph directly, use it; otherwise Compose.
+	var fromLG LogoGraph
+	if v, ok := fromObj.(LogoGraph); ok {
+		fromLG = v
+	} else {
+		fromLG = proj.Compose(fromObj)
+		if fromLG == nil {
+			panic("ProjectionRoundTrip: Compose(fromObj) returned nil LogoGraph")
+		}
+	}
+
+	got := fromLG.Cid()
+	want := lg.Cid()
+	if got != want {
+		panic("ProjectionRoundTrip: CID mismatch: " + got + " != " + want)
+	}
 }
 
 func (c calendar) Event(calendarCid string, path ...string) Schedule {
@@ -709,13 +778,6 @@ func (calendar) Cid() string           { return eventCalendar.JsonLD().Cid() }
 func (calendar) Thumbnail() string     { return defaultSchedule.Thumbnail() }
 func (calendar) SVG() string           { return defaultSchedule.SVG() }
 func (calendar) JsonLD() eve.JsonLDMap { return defaultSchedule.JsonLD() }
-
-// Projectable passthrough
-func (calendar) FromPath(path string) interface{} { return defaultSchedule.FromPath(path) }
-func (calendar) ToPath(obj interface{}) string    { return defaultSchedule.ToPath(obj) }
-func (calendar) Compose(obj interface{}) LogoGraph {
-	return coalesceSchedule(obj)
-}
 
 func (calendar) Heading() string { return "| Calendar |\n| -------- |\n" }
 func (calendar) Row(obj calendar) string {

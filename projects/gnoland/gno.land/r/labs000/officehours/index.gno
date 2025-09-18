@@ -1,5 +1,18 @@
 package officehours
 
+// -----------------------------------------------------------------------------
+// This system is an instance of applied categorical programming: interfaces implement
+// categorical structure (objects, morphisms, functors), runtime checks enforce
+// laws (identity, composition, naturality),
+// and registries serve as skeletal categories with presheaf indices.
+//
+// Projection commits are pushouts; calendar–event membership is a span;
+// rendering is a natural transformation.
+//
+// The result is a falsifiable, compositional substrate for on-chain objects.
+// -----------------------------------------------------------------------------
+//
+
 import (
 	"net/url"
 	"std"
@@ -12,14 +25,19 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// Registry & sequencing
+// Registries & sequencing
 // -----------------------------------------------------------------------------
 
-var calendarRegistry = avl.NewTree()
+// Single source of truth for all objects (stored once).
+var objectStore = avl.NewTree() // key: cid -> value: Record
+
+// Lightweight indices (store only CIDs).
+var calendarIndex = avl.NewTree() // key: cid -> value: cid
+var eventIndex = avl.NewTree()    // key: cid -> value: cid
 
 type Counter struct{ Count int64 }
 
-func (c *Counter) bump() int64   { c.Count++; return c.Count }
+func (c *Counter) bump() int64    { c.Count++; return c.Count }
 func (c *Counter) String() string { return ufmt.Sprintf("%08d", c.Count) }
 
 var counter = Counter{}
@@ -91,7 +109,7 @@ func seqNext() (n int64, s string) {
 }
 
 func getRecord(cid string) (Record, bool) {
-	if v, ok := calendarRegistry.Get(cid); ok {
+	if v, ok := objectStore.Get(cid); ok {
 		if r, ok2 := v.(Record); ok2 {
 			return r, true
 		}
@@ -102,11 +120,11 @@ func getRecord(cid string) (Record, bool) {
 // Resolve an arbitrary object (possibly projectable) into a LogoGraph view.
 func asLogoGraph(baseObj interface{}, path string) (lg LogoGraph, projected interface{}, ok bool) {
 	switch v := baseObj.(type) {
-	case LogoGraph:
-		return v, v, true
 	case Projectable:
 		projected = v.FromPath(path)
 		return v.Compose(projected), projected, true
+	case LogoGraph:
+		return v, v, true
 	default:
 		return nil, nil, false
 	}
@@ -141,25 +159,35 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string, err e
 	if seal != cid {
 		panic("invalid seal: expected " + cid + " but got " + seal)
 	}
-	if _, exists := calendarRegistry.Get(cid); exists {
-		panic("duplicate projected CID registered: " + cid)
+
+	// Only store if not already present.
+	if _, exists := objectStore.Get(cid); !exists && !emitOnly {
+		seq, seqStr := seqNext()
+		rec := Record{
+			Name:        parent.Name + " (projected)",
+			Description: parent.Description + " (projected)",
+			Cid:         cid,
+			Object:      projected,
+			Committer:   std.PreviousRealm().Address().String(),
+			Seq:         seq,
+		}
+		objectStore.Set(rec.Cid, rec)
+
+		// Index by kind.
+		switch projected.(type) {
+		case calendar:
+			calendarIndex.Set(rec.Cid, rec.Cid)
+		case Schedule:
+			eventIndex.Set(rec.Cid, rec.Cid)
+		}
+
+		std.Emit("ProjectionCommitted", "cid", cid, "seal", seal, "seq", seqStr)
 	}
 
-	seq, seqStr := seqNext()
-	rec := Record{
-		Name:        parent.Name + " (projected)",
-		Description: parent.Description + " (projected)",
-		Cid:         cid,
-		Object:      projected,
-		Committer:   std.PreviousRealm().Address().String(),
-		Seq:         seq,
-	}
-
+	// Always emit the event
+	_, seqStr := seqNext()
 	std.Emit("ProjectionEvent", "cid", cid, "seal", seal, "seq", seqStr)
 
-	if !emitOnly {
-		calendarRegistry.Set(rec.Cid, rec)
-	}
 	return cid, nil
 }
 
@@ -167,7 +195,7 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string, err e
 // Register
 // -----------------------------------------------------------------------------
 
-// Register adds a LogoGraph object to the registry and returns its CID.
+// Register adds a LogoGraph object to the object store and indexes it by type.
 func Register(obj interface{}, cb ...func(rec Record)) string {
 	lg, ok := obj.(LogoGraph)
 	if !ok {
@@ -188,7 +216,7 @@ func Register(obj interface{}, cb ...func(rec Record)) string {
 		}
 	}
 
-	if _, exists := calendarRegistry.Get(newCid); exists {
+	if _, exists := objectStore.Get(newCid); exists {
 		panic("duplicate CID registered: " + newCid)
 	}
 
@@ -202,8 +230,17 @@ func Register(obj interface{}, cb ...func(rec Record)) string {
 		Seq:         seq,
 	}
 
-	calendarRegistry.Set(rec.Cid, rec)
+	// Store exactly once.
+	objectStore.Set(rec.Cid, rec)
 	std.Emit("Register", "cid", rec.Cid, "seq", seqStr)
+
+	// Index by kind (CIDs only).
+	switch obj.(type) {
+	case calendar:
+		calendarIndex.Set(rec.Cid, rec.Cid)
+	case Schedule:
+		eventIndex.Set(rec.Cid, rec.Cid)
+	}
 
 	for _, f := range cb {
 		f(rec)
@@ -223,10 +260,13 @@ func Render(path string) string {
 		if rec, ok := getRecord(cal[0]); ok {
 			if c, ok := rec.Object.(calendar); ok {
 				if event, hasEvt := q["evt"]; hasEvt && len(event) == 1 {
-					if evtObj, ok := c.Events.Get(event[0]); ok {
-						return renderEvent(evtObj)
+					if _, ok := c.Events.Get(event[0]); ok {
+						if evtRec, ok := getRecord(event[0]); ok {
+							return renderEvent(evtRec.Object)
+						}
+						return "event (cid) not found in object store: " + event[0]
 					}
-					return "event cid not found: " + event[0]
+					return "event cid not found in calendar: " + event[0]
 				}
 				return renderCalendar(c)
 			}
@@ -349,8 +389,12 @@ func renderCalendar(c calendar) string {
 	sb.WriteString(c.Thumbnail() + "\n\n")
 	sb.WriteString("| Date | Description |\n| ---- | ----------- |\n")
 	c.Events.IterateByOffset(0, c.Events.Size(), func(_ string, value any) bool {
-		evt := value.(Schedule)
-		sb.WriteString("| " + evt.StartDate[:10] + " | [" + evt.Description + "](?evt=" + evt.Cid() + "&cal=" + c.Cid() + ") |\n")
+		evtCid := value.(string)
+		if evtRec, ok := getRecord(evtCid); ok {
+			if evt, ok := evtRec.Object.(Schedule); ok {
+				sb.WriteString("| " + evt.StartDate[:10] + " | [" + evt.Description + "](?evt=" + evtCid + "&cal=" + c.Cid() + ") |\n")
+			}
+		}
 		return false
 	})
 	return sb.String()
@@ -367,9 +411,9 @@ func renderObject(rec Record, lg LogoGraph, projected interface{}) string {
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
 
-	// If render derived from a projectable view, offer commit button if not yet in registry
+	// If render derived from a projectable view, offer commit button if not yet stored.
 	if projBase, isProj := rec.Object.(Projectable); isProj && projected != nil {
-		if _, found := calendarRegistry.Get(cid); !found {
+		if _, found := objectStore.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
 			sb.WriteString(eve.Button("Commit Projection:    "+tail(cid, 8),
 				projBase.ToPath(projected)+"&base="+rec.Cid+"&submit=register"+"\n"))
@@ -405,7 +449,7 @@ func (o Schedule) Cid() string                 { return o.JsonLD().Cid() }
 func (o Schedule) Thumbnail() string           { return "![OhrSchedule](" + o.DataUrl() + ")" }
 func (o Schedule) DataUrl() string             { return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG()) }
 func (Schedule) SVG() string                   { return scheduleSVG }
-func (o Schedule) String() string                { return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}" }
+func (o Schedule) String() string              { return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}" }
 func (o Schedule) JsonLD() eve.JsonLDMap       { return scheduleLD(o) }
 func (Schedule) ToPath(obj interface{}) string { return "?" + scheduleToValues(coalesceSchedule(obj)).Encode() }
 func (Schedule) FromPath(path string) interface{} {
@@ -570,7 +614,7 @@ const scheduleSVG = `
 
 type calendar struct {
 	Title  string
-	Events *avl.Tree // key: event CID, value: Schedule
+	Events *avl.Tree // key: event CID, value: event CID (string)
 }
 
 var eventCalendar = calendar{
@@ -582,16 +626,32 @@ var _ LogoGraph = eventCalendar
 var _ Projectable = eventCalendar
 
 func init() {
+	// Register the calendar and seed a single example event.
 	Register(eventCalendar, func(rec Record) {
 		cal := rec.Object.(calendar)
+
+		// Create a planned event for this calendar and register it once.
 		evt := cal.Event(rec.Cid)
-		cal.Events.Set(evt.Cid(), evt) // REVIEW: consider just storing event CIDs
-		Register(evt)
+		evtCid := Register(evt) // indexes into eventIndex; stored once in objectStore
+
+		// Calendar tracks only the event CID (no duplication of Schedule).
+		cal.Events.Set(evtCid, evtCid)
+
+        // REVIEW would it be better to have a mutable calendar object??
+		// Persist updated calendar back into objectStore under the same CID.
+		objectStore.Set(rec.Cid, Record{
+			Name:        rec.Name,
+			Description: rec.Description,
+			Cid:         rec.Cid,
+			Object:      cal,
+			Committer:   rec.Committer,
+			Seq:         rec.Seq,
+		})
 	})
 }
 
-// REVIEW: can we avoid passing in calendarCid separately??
-func (c calendar) Event(calendarCid string, _ ...string) Schedule {
+func (c calendar) Event(calendarCid string, path ...string) Schedule {
+    // TODO: lookup event by path if given
 	s := defaultSchedule
 	s.Status = "EventPlanned"
 	s.Location = "Gnowhere"
@@ -617,13 +677,14 @@ func (calendar) Row(obj calendar) string {
 	return "| [" + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | "
 }
 func (calendar) RenderTable() string {
-	if calendarRegistry.Size() == 0 {
+	if calendarIndex.Size() == 0 {
 		return "No calendars registered."
 	}
 	var sb strings.Builder
 	sb.WriteString(eventCalendar.Heading())
-	calendarRegistry.IterateByOffset(0, calendarRegistry.Size(), func(_ string, value any) bool {
-		if rec, ok := value.(Record); ok {
+	calendarIndex.IterateByOffset(0, calendarIndex.Size(), func(_ string, value any) bool {
+		cid := value.(string)
+		if rec, ok := getRecord(cid); ok {
 			if cal, isCalendar := rec.Object.(calendar); isCalendar {
 				sb.WriteString(eventCalendar.Row(cal))
 			}

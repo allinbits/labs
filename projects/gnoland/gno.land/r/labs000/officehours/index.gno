@@ -283,6 +283,23 @@ func Register(obj interface{}, cb ...func(rec Record)) string {
 func Render(path string) string {
 	q := eve.ParseQuery(path)
 
+	// Object route: ?cal=<calendarCid>&cid=<objectCid>
+	if cal, hasCal := q["cal"]; hasCal && len(cal) == 1 {
+		if cid, hasCid := q["cid"]; hasCid && len(cid) == 1 {
+			rec, ok := getRecord(cid[0])
+			if !ok {
+				return "cid not found"
+			}
+			// FIXME this projection doesn't populate calendarCid in Schedule
+			// so the event view doesn't link back to the calendar.
+			lg, projected, ok := asLogoGraph(rec.Object, path)
+			if !ok {
+				return "object is not renderable (no LogoGraph)"
+			}
+			return renderObject(rec, lg, projected)
+		}
+	}
+
 	// Calendar route: ?cal=<calendarCid>[&evt=<eventCid>]
 	if cal, hasCal := q["cal"]; hasCal && len(cal) == 1 {
 		if rec, ok := getRecord(cal[0]); ok {
@@ -399,12 +416,13 @@ func renderEvent(obj interface{}) string {
 	if !ok {
 		return "object is not a scheduled event"
 	}
+	eventCid := event.Cid()
 
 	var sb strings.Builder
 	sb.WriteString("### " + event.Title + "\n")
 	sb.WriteString(event.Thumbnail() + "\n\n")
 	sb.WriteString(event.Description + "\n\n")
-	sb.WriteString("[" + event.Cid() + "](?evt=" + event.Cid() + "&cal=" + event.CalendarCid + ")\n\n")
+	sb.WriteString("[" + eventCid + "](?cid=" + eventCid + "&cal=" + event.CalendarCid + ")\n\n")
 	sb.WriteString("**Status:** " + event.Status + "\n\n")
 	sb.WriteString("**Date:** " + event.StartDate[:10] + "\n\n")
 	sb.WriteString("**Location:** " + event.Location + "\n\n")
@@ -439,6 +457,8 @@ func renderObject(rec Record, lg LogoGraph, projected interface{}) string {
 
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
+
+	// REVIEW: viewing an event as a CID obj - doesn't show the calendar it belongs to
 
 	// If render derived from a projectable view, offer commit button if not yet stored.
 	if projBase, isProj := rec.Object.(Projectable); isProj && projected != nil {
@@ -505,6 +525,9 @@ func (Schedule) FromPath(path string) interface{} {
 	if v := q.Get("description"); v != "" {
 		s.Description = v
 	}
+	if v := q.Get("cal"); v != "" {
+		s.CalendarCid = v
+	}
 	return s
 }
 func (Schedule) Compose(obj interface{}) LogoGraph { return coalesceSchedule(obj) }
@@ -554,14 +577,14 @@ func scheduleLD(s Schedule) eve.JsonLDMap {
 		refURL += "?cal=" + s.CalendarCid
 	}
 	return eve.JsonLDMap{
-		"@context":    "https://schema.org",
-		"@type":       "Event",
-		"name":        "AibLabs Office Hours",
-		"description": descr,
-		"url":         refURL,
-		"eventStatus": status,
-		"startDate":   start,
-		"endDate":     end,
+		"@context":             "https://schema.org",
+		"@type":                "Event",
+		"name":                 "AibLabs Office Hours",
+		"description":          descr,
+		"url":                  refURL,
+		"eventStatus":          status,
+		"startDate":            start,
+		"endDate":              end,
 		"representativeOfPage": true,
 		"partOf": map[string]interface{}{
 			"@type": "WebPage",
@@ -645,15 +668,11 @@ func init() {
 	Register(eventCalendar, func(rec Record) {
 		cal := rec.Object.(calendar)
 
-		// Create a planned event for this calendar and register it once.
 		evt := cal.Event(rec.Cid)
 		evtCid := Register(evt) // indexes into eventIndex; stored once in objectStore
 
 		// Calendar tracks only the event CID (no duplication of Schedule).
 		cal.Events.Set(evtCid, evtCid)
-
-		// REVIEW would it be better to have a mutable calendar object??
-		// Persist updated calendar back into objectStore under the same CID.
 		objectStore.Set(rec.Cid, Record{
 			Name:        rec.Name,
 			Description: rec.Description,

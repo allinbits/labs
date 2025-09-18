@@ -226,11 +226,9 @@ func Register(obj interface{}, cb ...func(rec Record)) string {
 		} else if lgFrom, ok := fromObj.(LogoGraph); !ok {
 			_ = lgFrom
 			panic("FromPath did not return a LogoGraph")
+		} else if lgFrom.Cid() != lg.Cid() {
+		    panic("FromPath round-trip CID mismatch: " + lgFrom.Cid() + " != " + lg.Cid())
 		}
-		// FIXME ideally this should pass
-		// else if lgFrom.Cid() != lg.Cid() {
-		//     panic("FromPath round-trip CID mismatch: " + lgFrom.Cid() + " != " + lg.Cid())
-		// }
 	}
 
 	// Smoke-test media	// Smoke-test media
@@ -425,7 +423,6 @@ func renderEvent(obj interface{}) string {
 	sb.WriteString("[" + eventCid + "](?cid=" + eventCid + "&cal=" + event.CalendarCid + ")\n\n")
 	sb.WriteString("**Status:** " + event.Status + "\n\n")
 	sb.WriteString("**Date:** " + event.StartDate[:10] + "\n\n")
-	sb.WriteString("**Location:** " + event.Location + "\n\n")
 	sb.WriteString("#### JSON-LD\n```json\n" + strings.TrimSpace(event.JsonLD().String()) + "\n```\n")
 	return sb.String()
 }
@@ -488,7 +485,6 @@ type Schedule struct {
 	Status      string
 	StartDate   string
 	EndDate     string
-	Location    string
 	Title       string
 	Description string
 	CalendarCid string
@@ -536,7 +532,6 @@ var defaultSchedule = Schedule{
 	Status:      "EventScheduled",
 	StartDate:   "2025-01-01T10:20:00Z",
 	EndDate:     "2025-01-01T11:20:00Z",
-	Location:    "Online",
 	Title:       "AibLabs Office Hours",
 	Description: "AibLabs Event Calendar: Join us for open discussion.",
 }
@@ -553,9 +548,6 @@ func coalesceSchedule(obj interface{}) Schedule {
 		}
 		if v.EndDate != "" {
 			merged.EndDate = v.EndDate
-		}
-		if v.Location != "" {
-			merged.Location = v.Location
 		}
 		if v.Title != "" {
 			merged.Title = v.Title
@@ -612,6 +604,9 @@ func scheduleToValues(s Schedule) url.Values {
 	if s.Description != "" {
 		q.Set("description", s.Description)
 	}
+	if s.CalendarCid != "" {
+        q.Set("cal", s.CalendarCid)
+    }
 	return q
 }
 
@@ -663,6 +658,9 @@ var eventCalendar = calendar{
 var _ LogoGraph = eventCalendar
 var _ Projectable = eventCalendar
 
+//var ignoreEvent = "bafkreigpj5d2bjazbrdryu2ktbob2nrehhtu2h4cruhfjwluqk6kcgrh3i"
+var ignoreEvent = "" // alter to allow default event to register itself
+
 func init() {
 	// Register the calendar and seed a single example event.
 	Register(eventCalendar, func(rec Record) {
@@ -670,6 +668,10 @@ func init() {
 
 		evt := cal.Event(rec.Cid)
 		evtCid := Register(evt) // indexes into eventIndex; stored once in objectStore
+
+		if evtCid == ignoreEvent {
+            return // skip the example event
+        }
 
 		// Calendar tracks only the event CID (no duplication of Schedule).
 		cal.Events.Set(evtCid, evtCid)
@@ -685,10 +687,19 @@ func init() {
 }
 
 func (c calendar) Event(calendarCid string, path ...string) Schedule {
-	// TODO: lookup event by path if given
-	s := defaultSchedule
-	s.Status = "EventPlanned"
-	s.Location = "Gnowhere"
+	var s Schedule
+	if len(path) > 0 && path[0] != "" {
+		// Build Schedule from path using FromPath
+		sched := defaultSchedule.FromPath(path[0])
+		if ss, ok := sched.(Schedule); ok {
+			s = ss
+		} else {
+			s = defaultSchedule
+		}
+	} else {
+		s = defaultSchedule
+	}
+	s.Status = defaultSchedule.Status
 	s.CalendarCid = calendarCid
 	return s
 }

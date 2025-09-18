@@ -1,17 +1,22 @@
 package officehours
 
 // -----------------------------------------------------------------------------
-// This system is an instance of applied categorical programming: interfaces implement
-// categorical structure (objects, morphisms, functors), runtime checks enforce
-// laws (identity, composition, naturality),
-// and registries serve as skeletal categories with presheaf indices.
+// This system is an instance of applied categorical programming:
 //
-// Projection commits are pushouts; calendar–event membership is a span;
-// rendering is a natural transformation.
+// Interfaces implement categorical structure.
+//   (objects, morphisms, functors)
+//
+// Runtime checks enforce laws.
+//   (identity, composition, naturality)
+//
+// Registries serve as skeletal categories with presheaf indices.
+//
+// Projection commits are pushouts;
+// Calendar–Event membership is a span;
+// Rendering is a natural transformation.
 //
 // The result is a falsifiable, compositional substrate for on-chain objects.
 // -----------------------------------------------------------------------------
-//
 
 import (
 	"net/url"
@@ -135,10 +140,14 @@ func asLogoGraph(baseObj interface{}, path string) (lg LogoGraph, projected inte
 // -----------------------------------------------------------------------------
 
 // EmitProjectionEvent validates + emits, but does not register the projection.
-func EmitProjectionEvent(base, path, seal string) (string, error) { return commitProjection(true, base, path, seal) }
+func EmitProjectionEvent(base, path, seal string) (string, error) {
+	return commitProjection(true, base, path, seal)
+}
 
 // CommitProjection validates + registers a projected object derived from base+path.
-func CommitProjection(base, path, seal string) (string, error) { return commitProjection(false, base, path, seal) }
+func CommitProjection(base, path, seal string) (string, error) {
+	return commitProjection(false, base, path, seal)
+}
 
 func commitProjection(emitOnly bool, base, path, seal string) (cid string, err error) {
 	mustCIDv1("seal", seal)
@@ -160,8 +169,12 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string, err e
 		panic("invalid seal: expected " + cid + " but got " + seal)
 	}
 
-	// Only store if not already present.
-	if _, exists := objectStore.Get(cid); !exists && !emitOnly {
+	// Panic if already present.
+	if _, exists := objectStore.Get(cid); exists {
+		panic("projection already exists: " + cid)
+	}
+
+	if !emitOnly {
 		seq, seqStr := seqNext()
 		rec := Record{
 			Name:        parent.Name + " (projected)",
@@ -205,7 +218,22 @@ func Register(obj interface{}, cb ...func(rec Record)) string {
 	newCid := lg.Cid()
 	mustCIDv1("object CID", newCid)
 
-	// Smoke-test media
+	// Verify projection round-trip if projectable
+	if proj, isProj := obj.(Projectable); isProj {
+		path := proj.ToPath(obj)
+		if fromObj := proj.FromPath(path); fromObj == nil {
+			panic("FromPath returned nil")
+		} else if lgFrom, ok := fromObj.(LogoGraph); !ok {
+			_ = lgFrom
+			panic("FromPath did not return a LogoGraph")
+		}
+		// FIXME ideally this should pass
+		// else if lgFrom.Cid() != lg.Cid() {
+		//     panic("FromPath round-trip CID mismatch: " + lgFrom.Cid() + " != " + lg.Cid())
+		// }
+	}
+
+	// Smoke-test media	// Smoke-test media
 	_ = lg.SVG()
 	_ = lg.Thumbnail()
 
@@ -365,6 +393,7 @@ func Render(path string) string {
 // Render helpers
 // -----------------------------------------------------------------------------
 
+// TODO: update to use eve.Flyer layout for events
 func renderEvent(obj interface{}) string {
 	event, ok := obj.(Schedule)
 	if !ok {
@@ -445,13 +474,19 @@ type Schedule struct {
 	CalendarCid string
 }
 
-func (o Schedule) Cid() string                 { return o.JsonLD().Cid() }
-func (o Schedule) Thumbnail() string           { return "![OhrSchedule](" + o.DataUrl() + ")" }
-func (o Schedule) DataUrl() string             { return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG()) }
-func (Schedule) SVG() string                   { return scheduleSVG }
-func (o Schedule) String() string              { return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}" }
-func (o Schedule) JsonLD() eve.JsonLDMap       { return scheduleLD(o) }
-func (Schedule) ToPath(obj interface{}) string { return "?" + scheduleToValues(coalesceSchedule(obj)).Encode() }
+func (o Schedule) Cid() string       { return o.JsonLD().Cid() }
+func (o Schedule) Thumbnail() string { return "![OhrSchedule](" + o.DataUrl() + ")" }
+func (o Schedule) DataUrl() string {
+	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG())
+}
+func (Schedule) SVG() string { return scheduleSVG }
+func (o Schedule) String() string {
+	return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}"
+}
+func (o Schedule) JsonLD() eve.JsonLDMap { return scheduleLD(o) }
+func (Schedule) ToPath(obj interface{}) string {
+	return "?" + scheduleToValues(coalesceSchedule(obj)).Encode()
+}
 func (Schedule) FromPath(path string) interface{} {
 	q := eve.ParseQuery(path)
 	s := defaultSchedule
@@ -463,9 +498,6 @@ func (Schedule) FromPath(path string) interface{} {
 	}
 	if v := q.Get("endDate"); v != "" {
 		s.EndDate = v
-	}
-	if v := q.Get("location"); v != "" {
-		s.Location = v
 	}
 	if v := q.Get("title"); v != "" {
 		s.Title = v
@@ -516,35 +548,25 @@ func coalesceSchedule(obj interface{}) Schedule {
 }
 
 func scheduleLD(s Schedule) eve.JsonLDMap {
-	start, end, status, location, descr := parseOhrScheduleOpts(s)
+	start, end, status, descr := parseOhrScheduleOpts(s)
 	refURL := "/r/labs000/officehours"
 	if s.CalendarCid != "" {
 		refURL += "?cal=" + s.CalendarCid
 	}
 	return eve.JsonLDMap{
-		"@context":             "https://schema.org",
-		"@type":                "ImageObject",
-		"name":                 "Calendar",
-		"description":          descr,
-		"url":                  "/r/labs000/officehours",
+		"@context":    "https://schema.org",
+		"@type":       "Event",
+		"name":        "AibLabs Office Hours",
+		"description": descr,
+		"url":         refURL,
+		"eventStatus": status,
+		"startDate":   start,
+		"endDate":     end,
 		"representativeOfPage": true,
 		"partOf": map[string]interface{}{
 			"@type": "WebPage",
 			"name":  "AibLabs Office Hours",
 			"url":   refURL,
-		},
-		"about": map[string]interface{}{
-			"@type":       "Event",
-			"name":        "AibLabs Office Hours",
-			"description": descr,
-			"eventStatus": status,
-			"startDate":   start,
-			"endDate":     end,
-			"location": map[string]interface{}{
-				"@type":   "Place",
-				"name":    location,
-				"address": location,
-			},
 		},
 	}
 }
@@ -561,9 +583,6 @@ func scheduleToValues(s Schedule) url.Values {
 	if s.EndDate != "" {
 		q.Set("endDate", s.EndDate)
 	}
-	if s.Location != "" {
-		q.Set("location", s.Location)
-	}
 	if s.Title != "" {
 		q.Set("title", s.Title)
 	}
@@ -573,17 +592,13 @@ func scheduleToValues(s Schedule) url.Values {
 	return q
 }
 
-func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, location, descr string) {
+func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr string) {
 	start, _ = time.Parse(time.RFC3339, obj.StartDate)
 	end, _ = time.Parse(time.RFC3339, obj.EndDate)
 	if end.IsZero() || !end.After(start) {
 		end = start
 	}
 	status = obj.Status
-	location = obj.Location
-	if location == "" {
-		location = "Online"
-	}
 	descr = obj.Description
 	if descr == "" {
 		descr = "AibLabs Event Calendar: Join us for open discussion."
@@ -637,7 +652,7 @@ func init() {
 		// Calendar tracks only the event CID (no duplication of Schedule).
 		cal.Events.Set(evtCid, evtCid)
 
-        // REVIEW would it be better to have a mutable calendar object??
+		// REVIEW would it be better to have a mutable calendar object??
 		// Persist updated calendar back into objectStore under the same CID.
 		objectStore.Set(rec.Cid, Record{
 			Name:        rec.Name,
@@ -651,7 +666,7 @@ func init() {
 }
 
 func (c calendar) Event(calendarCid string, path ...string) Schedule {
-    // TODO: lookup event by path if given
+	// TODO: lookup event by path if given
 	s := defaultSchedule
 	s.Status = "EventPlanned"
 	s.Location = "Gnowhere"

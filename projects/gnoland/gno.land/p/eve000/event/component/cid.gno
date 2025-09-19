@@ -95,3 +95,9 @@ func IsCIDv1(s string) bool {
 	}
 	return true
 }
+
+func MustCIDv1(label, s string) {
+	if !IsCIDv1(s) {
+		panic("invalid " + label + ": not a CIDv1")
+	}
+}

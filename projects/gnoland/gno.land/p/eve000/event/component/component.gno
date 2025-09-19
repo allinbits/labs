@@ -59,22 +59,21 @@ type Content struct {
 const DtFmt = "Mon Jan 2"
 
 const (
-	EventScheduled   EventStatus = "https://schema.org/EventScheduled"
-	EventCancelled   EventStatus = "https://schema.org/EventCancelled"
-	EventMovedOnline EventStatus = "https://schema.org/EventMovedOnline"
-	EventPostponed   EventStatus = "https://schema.org/EventPostponed"
-	EventRescheduled EventStatus = "https://schema.org/EventRescheduled"
+	EventScheduled   EventStatus = "EventScheduled"
+	EventCancelled   EventStatus = "EventCancelled"
+	EventMovedOnline EventStatus = "EventMovedOnline"
+	EventPostponed   EventStatus = "EventPostponed"
+	EventRescheduled EventStatus = "EventRescheduled"
 )
 
 const (
-	OfflineEventAttendanceMode EventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode"
-	OnlineEventAttendanceMode  EventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode"
-	MixedEventAttendanceMode   EventAttendanceMode = "https://schema.org/MixedEventAttendanceMode"
+	OfflineEventAttendanceMode EventAttendanceMode = "OfflineEventAttendanceMode"
+	OnlineEventAttendanceMode  EventAttendanceMode = "OnlineEventAttendanceMode"
+	MixedEventAttendanceMode   EventAttendanceMode = "MixedEventAttendanceMode"
 )
 
-// prepend schem.org
 func Status(name string) EventStatus {
-	return EventStatus("https://schema.org/" + name)
+	return EventStatus(name)
 }
 
 // Content Methods

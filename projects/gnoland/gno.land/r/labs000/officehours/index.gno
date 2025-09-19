@@ -1,23 +1,5 @@
 package officehours
 
-// -----------------------------------------------------------------------------
-// This system is an instance of applied categorical programming:
-//
-// Interfaces implement categorical structure.
-//  - (objects, morphisms, functors)
-//
-// Runtime checks enforce laws.
-//  - (identity, composition, naturality)
-//
-// Registries serve as skeletal categories with presheaf indices.
-//
-// - Projection commits are pushouts;
-// - Calendar–Event membership is a span;
-// - Rendering is a natural transformation.
-//
-// The result is a falsifiable, compositional substrate for on-chain objects.
-// -----------------------------------------------------------------------------
-
 import (
 	"net/url"
 	"std"
@@ -34,106 +16,35 @@ import (
 // -----------------------------------------------------------------------------
 
 // Single source of truth for all objects (stored once).
-var objectStore = avl.NewTree() // key: cid -> value: Record
+var objectStore = avl.NewTree() // key: cid -> value: eve.Record
 
 // Lightweight indices (store only CIDs).
 var calendarIndex = avl.NewTree() // key: cid -> value: cid
 var eventIndex = avl.NewTree()    // key: cid -> value: cid
-
-type Counter struct{ Count int64 }
-
-func (c *Counter) bump() int64    { c.Count++; return c.Count }
-func (c *Counter) String() string { return ufmt.Sprintf("%08d", c.Count) }
-
-var counter = Counter{}
-
-// -----------------------------------------------------------------------------
-// Interfaces
-// -----------------------------------------------------------------------------
-
-type Editable interface {
-	RenderForm(path string) string
-}
-
-type Projectable interface {
-	ToPath(obj interface{}) string
-	FromPath(path string) interface{}
-	// Compose must return a value that implements LogoGraph.
-	Compose(obj interface{}) LogoGraph
-}
-
-type LogoGraph interface {
-	SVG() string
-	JsonLD() eve.JsonLDMap
-	Cid() string
-	Thumbnail() string
-}
-
-// -----------------------------------------------------------------------------
-// Records
-// -----------------------------------------------------------------------------
-
-type Record struct {
-	Name        string
-	Description string
-	Cid         string
-	Object      interface{}
-	Committer   string
-	Seq         int64
-}
+var counter = eve.Counter{}
 
 var requiredLDCols = []string{"name", "description"} // cid/committer derived, not required in JSON-LD
 
-// tail returns the last n characters of s (or the whole string if shorter).
-func tail(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[len(s)-n:]
-}
-
-func (e Record) String() string {
-	return "| [" + tail(e.Cid, 8) + "](?cid=" + e.Cid + ") | " +
-		e.Name + " | " + e.Description + " | " +
-		"[" + tail(e.Committer, 8) + "](/u/" + e.Committer + ") |\n"
-}
 
 // -----------------------------------------------------------------------------
 // Small helpers
 // -----------------------------------------------------------------------------
 
-func mustCIDv1(label, s string) {
-	if !eve.IsCIDv1(s) {
-		panic("invalid " + label + ": not a CIDv1")
-	}
-}
 
 func seqNext() (n int64, s string) {
-	n = counter.bump()
+	n = counter.Bump()
 	return n, ufmt.Sprintf("%08d", n)
 }
 
-func getRecord(cid string) (Record, bool) {
+func getRecord(cid string) (eve.Record, bool) {
 	if v, ok := objectStore.Get(cid); ok {
-		if r, ok2 := v.(Record); ok2 {
+		if r, ok2 := v.(eve.Record); ok2 {
 			return r, true
 		}
 	}
-	return Record{}, false
+	return eve.Record{}, false
 }
 
-// Resolve an arbitrary object (possibly projectable) into a LogoGraph view.
-func asLogoGraph(baseObj interface{}, path string) (lg LogoGraph, projected interface{}, ok bool) {
-	switch v := baseObj.(type) {
-	case Projectable:
-		projected = v.FromPath(path)
-		return v.Compose(projected), projected, true
-	case LogoGraph:
-		return v, v, true
-	default:
-		return nil, nil, false
-	}
-}
 
 // -----------------------------------------------------------------------------
 // Projection plumbing
@@ -150,14 +61,14 @@ func CommitProjection(base, path, seal string) (string, error) {
 }
 
 func commitProjection(emitOnly bool, base, path, seal string) (cid string, err error) {
-	mustCIDv1("seal", seal)
-	mustCIDv1("base", base)
+	eve.MustCIDv1("seal", seal)
+	eve.MustCIDv1("base", base)
 
 	parent, ok := getRecord(base)
 	if !ok {
 		panic("base CID not found")
 	}
-	proj, ok := parent.Object.(Projectable)
+	proj, ok := parent.Object.(eve.Projectable)
 	if !ok {
 		panic("object is not projectable")
 	}
@@ -176,7 +87,7 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string, err e
 
 	if !emitOnly {
 		seq, seqStr := seqNext()
-		rec := Record{
+		rec := eve.Record{
 			Name:        parent.Name + " (projected)",
 			Description: parent.Description + " (projected)",
 			Cid:         cid,
@@ -209,17 +120,17 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string, err e
 // -----------------------------------------------------------------------------
 
 // Register adds a LogoGraph object to the object store and indexes it by type.
-func Register(obj interface{}, cb ...func(rec Record)) string {
-	lg, ok := obj.(LogoGraph)
+func Register(obj interface{}, cb ...func(rec eve.Record)) string {
+	lg, ok := obj.(eve.LogoGraph)
 	if !ok {
-		panic("object must implement LogoGraph interface")
+		panic("object must implement eve.LogoGraph interface")
 	}
 
 	newCid := lg.Cid()
-	mustCIDv1("object CID", newCid)
+	eve.MustCIDv1("object CID", newCid)
 
 	// Law check: projection round-trip
-	AssertProjectionRoundTrip(obj, lg)
+	eve.AssertProjectionRoundTrip(obj, lg)
 
 	// Smoke-test media	// Smoke-test media
 	_ = lg.SVG()
@@ -237,7 +148,7 @@ func Register(obj interface{}, cb ...func(rec Record)) string {
 	}
 
 	seq, seqStr := seqNext()
-	rec := Record{
+	rec := eve.Record{
 		Name:        ld.StringVal("name"),
 		Description: ld.StringVal("description"),
 		Cid:         newCid,
@@ -285,9 +196,9 @@ func Render(path string) string {
 			}
 			// FIXME this projection doesn't populate calendarCid in Schedule
 			// so the event view doesn't link back to the calendar.
-			lg, projected, ok := asLogoGraph(rec.Object, path)
+			lg, projected, ok := eve.AsLogoGraph(rec.Object, path)
 			if !ok {
-				return "object is not renderable (no LogoGraph)"
+				return "object is not renderable (no eve.LogoGraph)"
 			}
 			return renderObject(rec, lg, projected)
 		}
@@ -325,7 +236,7 @@ func Render(path string) string {
 	if submit, ok := q["submit"]; ok && len(submit) > 0 && submit[0] == "register" {
 		if base, ok := q["base"]; ok && len(base) > 0 && eve.IsCIDv1(base[0]) {
 			if r, ok := getRecord(base[0]); ok {
-				if ed, isEd := r.Object.(Editable); isEd {
+				if ed, isEd := r.Object.(eve.Editable); isEd {
 					if form := ed.RenderForm(path); form != "" {
 						return form
 					}
@@ -345,7 +256,7 @@ func Render(path string) string {
 		return "cid not found"
 	}
 
-	lg, projected, ok := asLogoGraph(rec.Object, path)
+	lg, projected, ok := eve.AsLogoGraph(rec.Object, path)
 	if !ok {
 		return "object is not renderable (no LogoGraph)"
 	}
@@ -389,7 +300,7 @@ func Render(path string) string {
 
 	// Optional seal verification
 	if seal, ok := q["seal"]; ok && len(seal) == 1 {
-		mustCIDv1("seal", seal[0])
+		eve.MustCIDv1("seal", seal[0])
 		calc := lg.JsonLD().Cid()
 		if seal[0] != calc {
 			return "invalid seal: expected " + calc + " but got " + seal[0]
@@ -426,15 +337,15 @@ func renderEvent(obj interface{}) string {
 	sb.WriteString("**Date:** " + event.StartDate[:10] + "\n\n")
 	sb.WriteString("**Time:** " + event.StartDate[11:16] + " to " + event.EndDate[11:16] + " UTC\n\n")
 	if event.CalendarCid != "" {
-	    sb.WriteString("[<- Calendar" + "](?cal=" + event.CalendarCid + ")\n\n")
+	    sb.WriteString("[← Calendar" + "](?cal=" + event.CalendarCid + ")\n\n")
     }
     sb.WriteString(proposalForm(eventCid, event) + "\n")
 	//sb.WriteString("#### JSON-LD\n```json\n" + strings.TrimSpace(event.JsonLD().String()) + "\n```\n")
 	return sb.String()
 }
 
-func parseTime(timestr string) time.Time {
-    t, err := time.Parse(time.RFC3339, timestr)
+func parseTime(timeStr string) time.Time {
+    t, err := time.Parse(time.RFC3339, timeStr)
     if err != nil {
         return time.Time{}
     }
@@ -442,7 +353,7 @@ func parseTime(timestr string) time.Time {
 }
 
 func proposalForm(cid string, event Schedule) string {
-    if time.Now().After(parseTime(event.StartDate).Add(-1 * time.Hour)) {
+    if time.Now().After(parseTime(event.EndDate).Add(48 * time.Hour)) {
         return ""
     }
 
@@ -450,7 +361,7 @@ func proposalForm(cid string, event Schedule) string {
     sb.WriteString(`### Propose Topic
 <gno-columns>
 <gno-form>
-    <gno-textarea name="description" label="Description" rows="3" required placeholder="Describe your topic proposal here..."/>
+    <gno-textarea name="description" label="Description" rows="3" required placeholder="Describe your topic proposal, Or leave a comment here..."/>
     <gno-input name="topic" type="radio" value="` + cid + `" checked="true" description="Submit for this Session" />
     </gno-form>
 
@@ -478,7 +389,7 @@ func renderCalendar(c calendar) string {
 	return sb.String()
 }
 
-func renderObject(rec Record, lg LogoGraph, projected interface{}) string {
+func renderObject(rec eve.Record, lg eve.LogoGraph, projected interface{}) string {
 	ld := lg.JsonLD()
 	var sb strings.Builder
 
@@ -492,10 +403,10 @@ func renderObject(rec Record, lg LogoGraph, projected interface{}) string {
 	// REVIEW: viewing an event as a CID obj - doesn't show the calendar it belongs to
 
 	// If render derived from a projectable view, offer commit button if not yet stored.
-	if projBase, isProj := rec.Object.(Projectable); isProj && projected != nil {
+	if projBase, isProj := rec.Object.(eve.Projectable); isProj && projected != nil {
 		if _, found := objectStore.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
-			sb.WriteString(eve.Button("Commit Projection:    "+tail(cid, 8),
+			sb.WriteString(eve.Button("Commit Projection:    "+eve.Tail(cid, 8),
 				projBase.ToPath(projected)+"&base="+rec.Cid+"&submit=register"+"\n"))
 		} else {
 			sb.WriteString("[" + cid + "](" + projBase.ToPath(projected) + ")\n")
@@ -562,14 +473,14 @@ func (Schedule) FromPath(path string) interface{} {
 	}
 	return s
 }
-func (Schedule) Compose(obj interface{}) LogoGraph { return coalesceSchedule(obj) }
+func (Schedule) Compose(obj interface{}) eve.LogoGraph { return coalesceSchedule(obj) }
 
 var defaultSchedule = Schedule{
 	Status:      "EventScheduled",
 	StartDate:   "2025-11-01T10:20:00Z",
 	EndDate:     "2025-11-01T11:20:00Z",
 	Title:       "AibLabs Office Hours",
-	Description: "AibLabs Event Calendar: Join us for open discussion.",
+	Description: "AibLabs Office Hours: Join us for open discussion.",
 }
 
 func coalesceSchedule(obj interface{}) Schedule {
@@ -657,12 +568,7 @@ func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr, ti
 
 const scheduleSVG = `
 <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
-  <rect x="20" y="20" width="260" height="160" rx="18" ry="18" fill="#fff" stroke="#bbb" stroke-width="3" filter="url(#shadow)"/>
-  <defs>
-    <filter id="shadow" x="0" y="0" width="200%" height="200%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#888" flood-opacity="0.18"/>
-    </filter>
-  </defs>
+  <rect x="20" y="20" width="260" height="160" rx="18" ry="18" fill="#fff" stroke="#bbb" stroke-width="3" />
   <g transform="translate(150,90)">
     <circle cx="0" cy="0" r="48" fill="#fff" stroke="#222" stroke-width="4"/>
     <line x1="0" y1="0" x2="-32" y2="-26" stroke="#222" stroke-width="6" stroke-linecap="round"/>
@@ -682,29 +588,23 @@ type calendar struct {
 }
 
 var eventCalendar = calendar{
-	Title:  "Gno.land Office Hours Calendar",
+	Title:  "AibLabs.net Calendar",
 	Events: avl.NewTree(),
 }
 
-var _ LogoGraph = eventCalendar
+var _ eve.LogoGraph = eventCalendar
 
-var defaultEventCid = "bafkreiahrweqjyvavfzhzk3geadfdzy4yr4kttabyy7yfvocp6unu5pbzm"
+var defaultEventCid = ""
 
 func init() {
 	// Register the calendar and seed a single example event.
-	Register(eventCalendar, func(rec Record) {
+	Register(eventCalendar, func(rec eve.Record) {
 		cal := rec.Object.(calendar)
-
-		evt := cal.Event(rec.Cid)
-		evtCid := Register(evt) // indexes into eventIndex; stored once in objectStore
-
-		if evtCid != defaultEventCid {
-		    panic("default event CID has changed; update defaultEventCid: "+ evtCid)
-        }
+		defaultEventCid = Register(cal.Event(rec.Cid))
 
 		// Calendar tracks only the event CID (no duplication of Schedule).
-		cal.Events.Set(evtCid, evtCid)
-		objectStore.Set(rec.Cid, Record{
+		cal.Events.Set(defaultEventCid, defaultEventCid)
+		objectStore.Set(rec.Cid, eve.Record{
 			Name:        rec.Name,
 			Description: rec.Description,
 			Cid:         rec.Cid,
@@ -718,42 +618,6 @@ func init() {
 // -----------------------------------------------------------------------------
 // Law checks (runtime categorical invariants)
 // -----------------------------------------------------------------------------
-
-// AssertProjectionRoundTrip verifies that for a Projectable object `obj`,
-// the round-trip ToPath(obj) -> FromPath(path) -> (Compose if needed) yields
-// a LogoGraph with the SAME CID as `lg` (the canonical view of obj).
-//
-// Panics with descriptive messages on violation.
-func AssertProjectionRoundTrip(obj interface{}, lg LogoGraph) {
-	proj, ok := obj.(Projectable)
-	if !ok {
-		// Not projectable → nothing to assert for this law.
-		return
-	}
-
-	path := proj.ToPath(obj)
-	fromObj := proj.FromPath(path)
-	if fromObj == nil {
-		panic("ProjectionRoundTrip: FromPath returned nil")
-	}
-
-	// If FromPath returned a LogoGraph directly, use it; otherwise Compose.
-	var fromLG LogoGraph
-	if v, ok := fromObj.(LogoGraph); ok {
-		fromLG = v
-	} else {
-		fromLG = proj.Compose(fromObj)
-		if fromLG == nil {
-			panic("ProjectionRoundTrip: Compose(fromObj) returned nil LogoGraph")
-		}
-	}
-
-	got := fromLG.Cid()
-	want := lg.Cid()
-	if got != want {
-		panic("ProjectionRoundTrip: CID mismatch: " + got + " != " + want)
-	}
-}
 
 func (c calendar) Event(calendarCid string, path ...string) Schedule {
 	var s Schedule
@@ -779,9 +643,9 @@ func (calendar) Thumbnail() string     { return defaultSchedule.Thumbnail() }
 func (calendar) SVG() string           { return defaultSchedule.SVG() }
 func (calendar) JsonLD() eve.JsonLDMap { return defaultSchedule.JsonLD() }
 
-func (calendar) Heading() string { return "| Calendar |\n| -------- |\n" }
+func (calendar) Heading() string { return "|          |\n| -------- |\n" }
 func (calendar) Row(obj calendar) string {
-	return "| [" + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | "
+	return "| [" + obj.Thumbnail() + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | "
 }
 func (calendar) RenderTable() string {
 	if calendarIndex.Size() == 0 {

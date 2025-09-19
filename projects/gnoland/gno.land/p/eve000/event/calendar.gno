@@ -12,15 +12,15 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// App (the main application state)
+// CalendarApp (the main application state)
 // -----------------------------------------------------------------------------
 
-type App struct {
+type CalendarApp struct {
 	// Storage (single source of truth)
-	objectStore   *avl.Tree // key: cid -> value: eve.Record
+	objectStore *avl.Tree // key: cid -> value: eve.Record
 	// Lightweight indices (CIDs only)
-	CalendarIndex *avl.Tree // key: cid -> value: cid
-	eventIndex    *avl.Tree // key: cid -> value: cid
+	EventCalendarIndex *avl.Tree // key: cid -> value: cid
+	eventIndex         *avl.Tree // key: cid -> value: cid
 
 	// Sequencing
 	counter eve.Counter
@@ -30,18 +30,43 @@ type App struct {
 
 	// Defaults / seeds
 	defaultSchedule Schedule
-	eventCalendar   Calendar
+	eventCalendar   EventCalendar
 	defaultEventCid string
+
+	// Injected UI hooks (optional)
+	// CommentForm renders the per-event proposal/comment form.
+	// Signature matches old free function: func(cid string, event Schedule) string
+	CommentForm func(string, Schedule) string
+
+	// EditableForm renders the "register projection" form when an object implements eve.Editable.
+	// If nil, we fall back to calling ed.RenderForm(path) when available.
+	EditableForm func(eve.Editable, string) string
 }
 
-// New builds a fresh App and seeds the Calendar + one event.
-// Accepts opts to override defaultSchedule fields.
-func NewCalendar(opts map[string]string) *App {
-	a := &App{
-		objectStore:    avl.NewTree(),
-		CalendarIndex:  avl.NewTree(),
-		eventIndex:     avl.NewTree(),
-		requiredLDCols: []string{"name", "description"},
+// -----------------------------------------------------------------------------
+// Functional options for CalendarApp
+// -----------------------------------------------------------------------------
+
+type CalendarOption func(*CalendarApp)
+
+func WithCommentForm(f func(string, Schedule) string) CalendarOption {
+	return func(a *CalendarApp) { a.CommentForm = f }
+}
+
+// -----------------------------------------------------------------------------
+// Constructor
+// -----------------------------------------------------------------------------
+
+// Calendar builds a fresh CalendarApp and seeds the EventCalendar + one event.
+// Accepts:
+//   - opts map for default schedule overrides
+//   - optFns functional options (e.g., WithCommentForm, WithEditableForm)
+func Calendar(opts map[string]string, optFns ...CalendarOption) *CalendarApp {
+	a := &CalendarApp{
+		objectStore:        avl.NewTree(),
+		EventCalendarIndex: avl.NewTree(),
+		eventIndex:         avl.NewTree(),
+		requiredLDCols:     []string{"name", "description"},
 		defaultSchedule: Schedule{
 			Status:      "EventScheduled",
 			StartDate:   "2025-01-01T10:20:00Z",
@@ -49,9 +74,12 @@ func NewCalendar(opts map[string]string) *App {
 			Title:       "",
 			Description: "",
 		},
+		// sensible defaults (can be overridden by options)
+		CommentForm: defaultCommentForm,
+		EditableForm: nil, // fallback to ed.RenderForm if not provided
 	}
 
-	// Override defaultSchedule fields with opts if present.
+	// Apply schedule field overrides via opts map
 	if opts != nil {
 		if v, ok := opts["Status"]; ok {
 			a.defaultSchedule.Status = v
@@ -70,21 +98,25 @@ func NewCalendar(opts map[string]string) *App {
 		}
 	}
 
-	// Seed a Calendar that carries its own default schedule.
-	a.eventCalendar = Calendar{
-		Title:   "AibLabs.net Calendar",
+	// Apply functional options
+	for _, fn := range optFns {
+		fn(a)
+	}
+
+	// Seed an EventCalendar that carries its own default schedule.
+	a.eventCalendar = EventCalendar{
+		Title:   a.defaultSchedule.Title,
 		Events:  avl.NewTree(),
 		Default: a.defaultSchedule,
 	}
 
-	// Register Calendar and one example event, and index them.
+	// Register EventCalendar and one example event, and index them.
 	a.Register(a.eventCalendar, func(rec eve.Record) {
-		cal := rec.Object.(Calendar)
-
+		cal := rec.Object.(EventCalendar)
 		evtCid := a.Register(cal.Event(rec.Cid))
 		a.defaultEventCid = evtCid
 
-		// Calendar tracks only the event CID (no duplication of Schedule).
+		// EventCalendar tracks only the event CID (no duplication of Schedule).
 		cal.Events.Set(evtCid, evtCid)
 	})
 
@@ -92,15 +124,15 @@ func NewCalendar(opts map[string]string) *App {
 }
 
 // -----------------------------------------------------------------------------
-// Small helpers (now methods on *App)
+// Small helpers (now methods on *CalendarApp)
 // -----------------------------------------------------------------------------
 
-func (a *App) seqNext() (n int64, s string) {
+func (a *CalendarApp) seqNext() (n int64, s string) {
 	n = a.counter.Bump()
 	return n, ufmt.Sprintf("%08d", n)
 }
 
-func (a *App) getRecord(cid string) (eve.Record, bool) {
+func (a *CalendarApp) getRecord(cid string) (eve.Record, bool) {
 	if v, ok := a.objectStore.Get(cid); ok {
 		if r, ok2 := v.(eve.Record); ok2 {
 			return r, true
@@ -109,13 +141,12 @@ func (a *App) getRecord(cid string) (eve.Record, bool) {
 	return eve.Record{}, false
 }
 
-
 // -----------------------------------------------------------------------------
 // Register (method)
 // -----------------------------------------------------------------------------
 
 // Register adds a LogoGraph object to the store and indexes it by type.
-func (a *App) Register(obj interface{}, cb ...func(rec eve.Record)) string {
+func (a *CalendarApp) Register(obj interface{}, cb ...func(rec eve.Record)) string {
 	lg, ok := obj.(eve.LogoGraph)
 	if !ok {
 		panic("object must implement eve.LogoGraph interface")
@@ -157,8 +188,8 @@ func (a *App) Register(obj interface{}, cb ...func(rec eve.Record)) string {
 	std.Emit("Register", "cid", rec.Cid, "seq", seqStr)
 
 	switch obj.(type) {
-	case Calendar:
-		a.CalendarIndex.Set(rec.Cid, rec.Cid)
+	case EventCalendar:
+		a.EventCalendarIndex.Set(rec.Cid, rec.Cid)
 	case Schedule:
 		a.eventIndex.Set(rec.Cid, rec.Cid)
 	}
@@ -173,16 +204,15 @@ func (a *App) Register(obj interface{}, cb ...func(rec eve.Record)) string {
 // Render router (method)
 // -----------------------------------------------------------------------------
 
-func (a *App) Render(path string) string {
+func (a *CalendarApp) Render(path string) string {
 	q := eve.ParseQuery(path)
 
-	// Object route: ?cal=<CalendarCid>&cid=<objectCid>
+	// Object route: ?cal=<EventCalendarCid>&obj=<objectCid>
 	if cal, hasCal := q["cal"]; hasCal && len(cal) == 1 {
-		if cid, hasCid := q["cid"]; hasCid && len(cid) == 1 {
-			rec, ok := a.getRecord(cid[0])
+		if obj, hasCid := q["obj"]; hasCid && len(obj) == 1 {
+			rec, ok := a.getRecord(obj[0])
 			if !ok {
-				// TODO: build-from-URL fallback
-				return "cid not found"
+				return "obj not found"
 			}
 			lg, projected, ok := eve.AsLogoGraph(rec.Object, path)
 			if !ok {
@@ -192,22 +222,22 @@ func (a *App) Render(path string) string {
 		}
 	}
 
-	// Calendar route: ?cal=<CalendarCid>[&evt=<eventCid>]
+	// EventCalendar route: ?cal=<EventCalendarCid>[&cid=<eventCid>]
 	if cal, hasCal := q["cal"]; hasCal && len(cal) == 1 {
 		if rec, ok := a.getRecord(cal[0]); ok {
-			if c, ok := rec.Object.(Calendar); ok {
-				if event, hasEvt := q["evt"]; hasEvt && len(event) == 1 {
+			if c, ok := rec.Object.(EventCalendar); ok {
+				if event, hasEvt := q["cid"]; hasEvt && len(event) == 1 {
 					if _, ok := c.Events.Get(event[0]); ok {
 						if evtRec, ok := a.getRecord(event[0]); ok {
-							return renderEvent(evtRec.Object)
+							return a.renderEvent(evtRec.Object)
 						}
 						return "event (cid) not found in object store: " + event[0]
 					}
-					return "event cid not found in Calendar: " + event[0]
+					return "event cid not found in EventCalendar: " + event[0]
 				}
-				return a.renderCalendar(c)
+				return a.renderEventCalendar(c)
 			}
-			return "invalid Calendar record"
+			return "invalid EventCalendar record"
 		}
 		return "cal cid not found: " + cal[0]
 	}
@@ -217,24 +247,30 @@ func (a *App) Render(path string) string {
 		if v, ok := q["v"]; ok && len(v) == 1 && v[0] == "seq" {
 			return a.counter.String()
 		}
-		return a.renderCalendarTable()
+		return a.renderEventCalendarTable()
 	}
 
-	// Optional: projection registration form
+	// Optional: projection registration form (injected or fallback)
 	if submit, ok := q["submit"]; ok && len(submit) > 0 && submit[0] == "register" {
 		if base, ok := q["base"]; ok && len(base) > 0 && eve.IsCIDv1(base[0]) {
 			if r, ok := a.getRecord(base[0]); ok {
 				if ed, isEd := r.Object.(eve.Editable); isEd {
+					// Prefer injected form renderer if provided
+					if a.EditableForm != nil {
+						if form := a.EditableForm(ed, path); form != "" {
+							return form
+						}
+					}
+					// Fallback to the object's own method
 					if form := ed.RenderForm(path); form != "" {
 						return form
 					}
 				}
-			} else {
-				return "base cid not found: " + base[0]
+				return "base object is not editable"
 			}
-		} else {
-			return "missing or invalid base parameter"
+			return "base cid not found: " + base[0]
 		}
+		return "missing or invalid base parameter"
 	}
 
 	// Resolve CID & possibly project it from the path
@@ -302,7 +338,7 @@ func (a *App) Render(path string) string {
 // Render helpers
 // -----------------------------------------------------------------------------
 
-func renderEvent(obj interface{}) string {
+func (a *CalendarApp) renderEvent(obj interface{}) string {
 	event, ok := obj.(Schedule)
 	if !ok {
 		return "object is not a scheduled event"
@@ -310,22 +346,26 @@ func renderEvent(obj interface{}) string {
 	eventCid := event.Cid()
 
 	var sb strings.Builder
-	sb.WriteString("### " + event.Title + "\n")
 	sb.WriteString(event.Thumbnail() + "\n\n")
 	sb.WriteString(event.Description + "\n\n")
 
-	sb.WriteString("**CID:** [" + eventCid[len(eventCid)-8:] + "](?cid=" + eventCid + "&cal=" + event.CalendarCid + ")\n\n")
+	sb.WriteString("**CID:** [" + eventCid[len(eventCid)-8:] + "](?obj=" + eventCid + "&cal=" + event.EventCalendarCid + ")\n\n")
 	sb.WriteString("**Status:** " + event.Status + "\n\n")
 	sb.WriteString("**Date:** " + event.StartDate[:10] + "\n\n")
 	sb.WriteString("**Time:** " + event.StartDate[11:16] + " to " + event.EndDate[11:16] + " UTC\n\n")
-	if event.CalendarCid != "" {
-		sb.WriteString("[← Calendar" + "](?cal=" + event.CalendarCid + ")\n\n")
+	if event.EventCalendarCid != "" {
+		sb.WriteString("[← EventCalendar" + "](?cal=" + event.EventCalendarCid + ")\n\n")
 	}
-	sb.WriteString(proposalForm(eventCid, event) + "\n")
+
+	// Injected proposal/comment form (if provided)
+	if a.CommentForm != nil {
+		sb.WriteString(a.CommentForm(eventCid, event) + "\n")
+	}
+
 	return sb.String()
 }
 
-func (a *App) renderCalendar(c Calendar) string {
+func (a *CalendarApp) renderEventCalendar(c EventCalendar) string {
 	var sb strings.Builder
 	sb.WriteString("### " + c.Title + "\n")
 	sb.WriteString(c.Thumbnail() + "\n\n")
@@ -334,7 +374,7 @@ func (a *App) renderCalendar(c Calendar) string {
 		evtCid := value.(string)
 		if evtRec, ok := a.getRecord(evtCid); ok {
 			if evt, ok := evtRec.Object.(Schedule); ok {
-				sb.WriteString("| " + evt.StartDate[:10] + " | [" + evt.Description + "](?evt=" + evtCid + "&cal=" + c.Cid() + ") |\n")
+				sb.WriteString("| " + evt.StartDate[:10] + " | [" + evt.Description + "](" + evt.ToPath(evt) + ") |\n")
 			}
 		}
 		return false
@@ -342,16 +382,16 @@ func (a *App) renderCalendar(c Calendar) string {
 	return sb.String()
 }
 
-func (a *App) renderCalendarTable() string {
-	if a.CalendarIndex.Size() == 0 {
-		return "No Calendars registered."
+func (a *CalendarApp) renderEventCalendarTable() string {
+	if a.EventCalendarIndex.Size() == 0 {
+		return "No EventCalendars registered."
 	}
 	var sb strings.Builder
 	sb.WriteString(a.eventCalendar.Heading())
-	a.CalendarIndex.IterateByOffset(0, a.CalendarIndex.Size(), func(_ string, value any) bool {
+	a.EventCalendarIndex.IterateByOffset(0, a.EventCalendarIndex.Size(), func(_ string, value any) bool {
 		cid := value.(string)
 		if rec, ok := a.getRecord(cid); ok {
-			if cal, isCalendar := rec.Object.(Calendar); isCalendar {
+			if cal, isCalendar := rec.Object.(EventCalendar); isCalendar {
 				sb.WriteString(a.eventCalendar.Row(cal))
 			}
 		}
@@ -360,7 +400,7 @@ func (a *App) renderCalendarTable() string {
 	return sb.String()
 }
 
-func (a *App) renderObject(rec eve.Record, lg eve.LogoGraph, projected interface{}) string {
+func (a *CalendarApp) renderObject(rec eve.Record, lg eve.LogoGraph, projected interface{}) string {
 	ld := lg.JsonLD()
 	var sb strings.Builder
 
@@ -375,8 +415,10 @@ func (a *App) renderObject(rec eve.Record, lg eve.LogoGraph, projected interface
 	if projBase, isProj := rec.Object.(eve.Projectable); isProj && projected != nil {
 		if _, found := a.objectStore.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
-			sb.WriteString(eve.Button("Commit Projection:    "+eve.Tail(cid, 8),
-				projBase.ToPath(projected)+"&base="+rec.Cid+"&submit=register"+"\n"))
+			sb.WriteString(eve.Button(
+				"Commit Projection:    "+eve.Tail(cid, 8),
+				projBase.ToPath(projected)+"&base="+rec.Cid+"&submit=register"+"\n",
+			))
 		} else {
 			sb.WriteString("[" + cid + "](" + projBase.ToPath(projected) + ")\n")
 		}
@@ -391,24 +433,20 @@ func (a *App) renderObject(rec eve.Record, lg eve.LogoGraph, projected interface
 	return sb.String()
 }
 
-func parseTimeSafe(timeStr string) time.Time {
-	t, err := time.Parse(time.RFC3339, timeStr)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
-}
+// -----------------------------------------------------------------------------
+// Default/fallback forms (can be overridden via options)
+// -----------------------------------------------------------------------------
 
-func proposalForm(cid string, event Schedule) string {
-	if time.Now().After(parseTimeSafe(event.EndDate).Add(48 * time.Hour)) {
+func defaultCommentForm(cid string, event Schedule) string {
+	if time.Now().After(ParseTimeSafe(event.EndDate).Add(48 * time.Hour)) {
 		return ""
 	}
 	var sb strings.Builder
-	sb.WriteString(`### Propose Topic
+	sb.WriteString(`### Post a Message
 <gno-columns>
 <gno-form>
-    <gno-textarea name="description" label="Description" rows="3" required placeholder="Describe your topic proposal, Or leave a comment here..."/>
-    <gno-input name="topic" type="radio" value="` + cid + `" checked="true" description="Submit for this Session" />
+    <gno-textarea name="description" label="Description" rows="3" required placeholder="Post a message about this event."/>
+    <gno-input name="topic" type="radio" value="` + cid + `" checked="true" />
     </gno-form>
 
 |||
@@ -419,6 +457,18 @@ func proposalForm(cid string, event Schedule) string {
 }
 
 // -----------------------------------------------------------------------------
+// Time helpers
+// -----------------------------------------------------------------------------
+
+func ParseTimeSafe(timeStr string) time.Time {
+	t, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// -----------------------------------------------------------------------------
 // Schedule (LogoGraph + Projectable)
 // -----------------------------------------------------------------------------
 
@@ -426,24 +476,28 @@ var _ eve.LogoGraph = (*Schedule)(nil)
 var _ eve.Projectable = (*Schedule)(nil)
 
 type Schedule struct {
-	Status      string
-	StartDate   string
-	EndDate     string
-	Title       string
-	Description string
-	CalendarCid string
+	Status           string
+	StartDate        string
+	EndDate          string
+	Title            string
+	Description      string
+	EventCalendarCid string
 }
 
 func (o Schedule) Cid() string       { return o.JsonLD().Cid() }
-func (o Schedule) Thumbnail() string { return "![OhrSchedule](" + o.DataUrl() + ")" }
-func (o Schedule) DataUrl() string   { return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG()) }
-func (Schedule) SVG() string         { return scheduleSVG }
-func (o Schedule) String() string    { return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}" }
+func (o Schedule) Thumbnail() string { return "![" + o.Title + "](" + o.DataUrl() + ")" }
+func (o Schedule) DataUrl() string {
+	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG())
+}
+func (o Schedule) SVG() string { return scheduleSVG(o.Title) }
+func (o Schedule) String() string {
+	return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}"
+}
 func (o Schedule) JsonLD() eve.JsonLDMap {
 	start, end, status, descr, title := parseOhrScheduleOpts(o)
 	refURL := ""
-	if o.CalendarCid != "" {
-		refURL += "?cal=" + o.CalendarCid
+	if o.EventCalendarCid != "" {
+		refURL += "?cal=" + o.EventCalendarCid
 	}
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
@@ -483,7 +537,7 @@ func (o Schedule) FromPath(path string) interface{} {
 		s.Description = v
 	}
 	if v := q.Get("cal"); v != "" {
-		s.CalendarCid = v
+		s.EventCalendarCid = v
 	}
 	return s
 }
@@ -511,8 +565,8 @@ func coalesceScheduleWithBase(o Schedule, obj interface{}) Schedule {
 		if v.Description != "" {
 			merged.Description = v.Description
 		}
-		if v.CalendarCid != "" {
-			merged.CalendarCid = v.CalendarCid
+		if v.EventCalendarCid != "" {
+			merged.EventCalendarCid = v.EventCalendarCid
 		}
 	}
 	return merged
@@ -536,8 +590,8 @@ func scheduleToValues(s Schedule) url.Values {
 	if s.Description != "" {
 		q.Set("description", s.Description)
 	}
-	if s.CalendarCid != "" {
-		q.Set("cal", s.CalendarCid)
+	if s.EventCalendarCid != "" {
+		q.Set("cal", s.EventCalendarCid)
 	}
 	return q
 }
@@ -551,38 +605,37 @@ func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr, ti
 	status = obj.Status
 	descr = obj.Description
 	if descr == "" {
-		descr = "AibLabs Event Calendar: Join us for open discussion."
+		descr = "AibLabs Event EventCalendar: Join us for open discussion."
 	}
 	title = obj.Title
 	return
 }
 
-const scheduleSVG = `
-<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
-  <rect x="20" y="20" width="260" height="160" rx="18" ry="18" fill="#fff" stroke="#bbb" stroke-width="3" />
-  <g transform="translate(150,90)">
-    <circle cx="0" cy="0" r="48" fill="#fff" stroke="#222" stroke-width="4"/>
-    <line x1="0" y1="0" x2="-32" y2="-26" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-    <line x1="0" y1="0" x2="32" y2="16" stroke="#222" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="0" cy="0" r="6" fill="#222"/>
-  </g>
-  <text x="150" y="170" text-anchor="middle" font-size="32" font-weight="bold" fill="#222">Office Hours</text>
+func scheduleSVG(title string) string {
+	if title == "" {
+		title = "Event EventCalendar"
+	}
+	return `
+<svg width="250" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <text x="100" y="120" text-anchor="middle" font-size="94" font-weight="bold" fill="#E63946">🗓</text>
+  <text x="100" y="170" text-anchor="middle" font-size="22" font-weight="bold" fill="#222">` + title + `</text>
 </svg>`
+}
 
 // -----------------------------------------------------------------------------
-// Calendar (LogoGraph)
+// EventCalendar (LogoGraph)
 // -----------------------------------------------------------------------------
 
-type Calendar struct {
+type EventCalendar struct {
 	Title   string
 	Events  *avl.Tree // key: event CID, value: event CID (string)
 	Default Schedule  // visualize/forward via this schedule
 }
 
-var _ eve.LogoGraph = (*Calendar)(nil)
+var _ eve.LogoGraph = (*EventCalendar)(nil)
 
-// Build a Schedule from the Calendar (using the Calendar's Default as base).
-func (c Calendar) Event(CalendarCid string, path ...string) Schedule {
+// Build a Schedule from the EventCalendar (using the EventCalendar's Default as base).
+func (c EventCalendar) Event(EventCalendarCid string, path ...string) Schedule {
 	base := c.Default
 	var s Schedule
 	if len(path) > 0 && path[0] != "" {
@@ -596,17 +649,17 @@ func (c Calendar) Event(CalendarCid string, path ...string) Schedule {
 	}
 	// Preserve base status (like previous behavior)
 	s.Status = base.Status
-	s.CalendarCid = CalendarCid
+	s.EventCalendarCid = EventCalendarCid
 	return s
 }
 
-// LogoGraph forwards to the Calendar's Default schedule visuals.
-func (c Calendar) Cid() string           { return c.Default.JsonLD().Cid() }
-func (c Calendar) Thumbnail() string     { return c.Default.Thumbnail() }
-func (c Calendar) SVG() string           { return c.Default.SVG() }
-func (c Calendar) JsonLD() eve.JsonLDMap { return c.Default.JsonLD() }
+// LogoGraph forwards to the EventCalendar's Default schedule visuals.
+func (c EventCalendar) Cid() string           { return c.Default.JsonLD().Cid() }
+func (c EventCalendar) Thumbnail() string     { return c.Default.Thumbnail() }
+func (c EventCalendar) SVG() string           { return c.Default.SVG() }
+func (c EventCalendar) JsonLD() eve.JsonLDMap { return c.Default.JsonLD() }
 
-func (Calendar) Heading() string { return "|          |\n| -------- |\n" }
-func (Calendar) Row(obj Calendar) string {
+func (EventCalendar) Heading() string { return "|          |\n| -------- |\n" }
+func (EventCalendar) Row(obj EventCalendar) string {
 	return "| [" + obj.Thumbnail() + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | "
 }

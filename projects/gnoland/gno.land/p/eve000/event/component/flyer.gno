@@ -25,7 +25,7 @@ type Flyer struct {
 var _ Component = (*Flyer)(nil)
 
 func (a *Flyer) Flyer() *Flyer {
-    return a
+	return a
 }
 
 func (a *Flyer) ToAnchor() string {
@@ -209,15 +209,15 @@ func (a *Flyer) Render(path string, tpl func(path string, flyer *Flyer) string) 
 }
 
 func (a *Flyer) RenderContent(path string, blocks []*Content) string {
-    var body []Content
-    for _, b := range blocks {
-        if b != nil {
-            body = append(body, *b)
-        }
-    }
-    return RenderPage(path, a, body...)
+	var body []Content
+	for _, b := range blocks {
+		if b != nil {
+			body = append(body, *b)
+		}
+	}
+	return RenderPage(path, a, body...)
 }
 
 func (a *Flyer) Cid() string {
-    return ShaToCid(HashString(a.ToJsonLD()))
+	return ShaToCid(HashString(a.ToJsonLD()))
 }

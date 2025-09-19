@@ -1,7 +1,7 @@
 package component
 
 import (
-    ufmt "gno.land/p/demo/ufmt"
+	ufmt "gno.land/p/demo/ufmt"
 )
 
 // -----------------------------------------------------------------------------
@@ -26,7 +26,6 @@ type LogoGraph interface {
 	Thumbnail() string
 }
 
-
 // -----------------------------------------------------------------------------
 // Records
 // -----------------------------------------------------------------------------
@@ -50,7 +49,6 @@ type Counter struct{ Count int64 }
 
 func (c *Counter) Bump() int64    { c.Count++; return c.Count }
 func (c *Counter) String() string { return ufmt.Sprintf("%08d", c.Count) }
-
 
 // -----------------------------------------------------------------------------
 // Helpers

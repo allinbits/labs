@@ -48,7 +48,7 @@ func renderList(selected string) string {
 		"[" + keys[selectedIndex] + "]( ./bmp:" + keys[selectedIndex] + ")\n\n" +
 		"[<- prev](./bmp:" + keys[prevIndex] + ")\n" +
 		"[next ->]( ./bmp:" + keys[nextIndex] + ")\n"
-
+}
 
 func getImageApi(path string) ImageApi {
 	imgHandler, ok := registry.Get(path)

@@ -158,45 +158,16 @@ func RenderFlyer(path string) string {
 }
 
 func RenderCalendar(path string) string {
-    q := eve.ParseQuery(path)
-    _ = q
-    var sb strings.Builder
-    _ = sb
-
-    startDate := nextEventDay()
-    endDate := startDate.Add(eventDuration)
-    status := "EventPlanned"
-    if isCancelled(startDate) {
-        status = "EventCancelled"
-    }
-
+    evt := EventFromPath(path)
     options := map[string]string{
-        "Status":      status,
-        "StartDate":   startDate.Format(time.RFC3339),
-        "EndDate":     endDate.Format(time.RFC3339),
-        "Title":       eventTitle,
-        "Description": eventDescription,
+        "ProdId":       "-//aibLabs//Office Hours//EN",
+        "CalName":      "aibLabs Office Hours",
+        "CalDesc":      "Join us for open discussion.",
+        "TimeZone":     "UTC",
+        "Method":       "PUBLISH",
+        "XWR-CALNAME": "aibLabs Office Hours",
+        "XWR-CALDESC": "Join us for open discussion.",
+        "XWR-TIMEZONE": "UTC",
     }
-     _ = options
-
-     session := &eve.Session{
-        Title:     "Office Hours Session",
-        StartTime: startDate,
-        EndTime:   endDate,
-        Sequence:  0,
-     }
-
-    evt := &event.Event{
-        Name:        eventTitle,
-        Description: eventDescription,
-        Status:      eve.Status("EventScheduled"),
-        StartDate:   startDate,
-        EndDate:     endDate,
-        Location:    &eve.Location{Name: "Online"},
-        Sessions:    []*eve.Session{session},
-    }
-
-    evt.SetRenderOpts(renderOpts)
-
     return eve.IcsRecurringCalendarFile(path, evt.Flyer(), options)
 }

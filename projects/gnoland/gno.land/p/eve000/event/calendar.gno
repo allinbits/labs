@@ -75,7 +75,7 @@ func Calendar(opts map[string]string, optFns ...CalendarOption) *CalendarApp {
 			Description: "",
 		},
 		// sensible defaults (can be overridden by options)
-		CommentForm: defaultCommentForm,
+		CommentForm:  defaultCommentForm,
 		EditableForm: nil, // fallback to ed.RenderForm if not provided
 	}
 
@@ -204,6 +204,15 @@ func (a *CalendarApp) Register(obj interface{}, cb ...func(rec eve.Record)) stri
 // Render router (method)
 // -----------------------------------------------------------------------------
 
+func Info(msg ...string) string {
+	var sb strings.Builder
+	sb.WriteString("\n\n>[!INFO]\n")
+	for _, line := range msg {
+		sb.WriteString(">\n> " + line + "\n")
+	}
+	return sb.String()
+}
+
 func (a *CalendarApp) Render(path string) string {
 	q := eve.ParseQuery(path)
 
@@ -212,7 +221,11 @@ func (a *CalendarApp) Render(path string) string {
 		if obj, hasCid := q["obj"]; hasCid && len(obj) == 1 {
 			rec, ok := a.getRecord(obj[0])
 			if !ok {
-				return "obj not found"
+				return a.renderEventCalendarTable() +
+					Info(
+						"The link you followed does not point to an on-chain event.",
+						"If you expected to see an event, please check with the event organizer.",
+					)
 			}
 			lg, projected, ok := eve.AsLogoGraph(rec.Object, path)
 			if !ok {
@@ -229,7 +242,7 @@ func (a *CalendarApp) Render(path string) string {
 				if event, hasEvt := q["cid"]; hasEvt && len(event) == 1 {
 					if _, ok := c.Events.Get(event[0]); ok {
 						if evtRec, ok := a.getRecord(event[0]); ok {
-							return a.renderEvent(evtRec.Object)
+							return a.renderEvent(path, evtRec.Object)
 						}
 						return "event (cid) not found in object store: " + event[0]
 					}
@@ -338,11 +351,12 @@ func (a *CalendarApp) Render(path string) string {
 // Render helpers
 // -----------------------------------------------------------------------------
 
-func (a *CalendarApp) renderEvent(obj interface{}) string {
+func (a *CalendarApp) renderEvent(path string, obj interface{}) string {
 	event, ok := obj.(Schedule)
 	if !ok {
 		return "object is not a scheduled event"
 	}
+	event = event.FromPath(path).(Schedule)
 	eventCid := event.Cid()
 
 	var sb strings.Builder

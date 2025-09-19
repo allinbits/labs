@@ -675,5 +675,8 @@ func (c EventCalendar) JsonLD() eve.JsonLDMap { return c.Default.JsonLD() }
 
 func (EventCalendar) Heading() string { return "|          |\n| -------- |\n" }
 func (EventCalendar) Row(obj EventCalendar) string {
-	return "| [" + obj.Thumbnail() + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | "
+	cidLink := "./officehours?cal=" + obj.Cid()
+	return "| [" + obj.Thumbnail() + "](" + cidLink + ") |\n" +
+	"| 📅 ["+ obj.Title + " Calendar](" + cidLink + ")" + " |\n" +
+	"| 📄 [View Event Flyer](?render=flyer)" + " |\n"
 }

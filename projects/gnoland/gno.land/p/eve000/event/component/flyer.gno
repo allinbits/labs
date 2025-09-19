@@ -58,7 +58,7 @@ func (a *Flyer) ToMarkdown(body ...Content) string {
 		markdown += "[📥 Download Calendar File](" + calFile.(string) + "/" + fullURL + "?format=ics" + ")\n\n"
 	}
 	if _, ok := a.RenderOpts()["CalendarDataUrl"]; ok {
-		markdown += "[📅 Add To Calendar](" + CalenderDataUrl("?format=ics", a) + ")\n\n"
+		markdown += "[📅 Add To Calendar](" + IcsCalenderDataUrl("?format=ics", a) + ")\n\n"
 	}
 
 	if len(body) > 0 {

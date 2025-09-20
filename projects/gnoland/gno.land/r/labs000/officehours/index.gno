@@ -18,14 +18,13 @@ var (
 
 	renderOpts = map[string]interface{}{
 		"dev": map[string]interface{}{
-			"SvgFooter":       struct{}{},
 			"CalendarFile":    "http://127.0.0.1:8080",
-			"SessionsTitle": "Agenda",
+			"SessionsTitle": "Next Session",
 		},
 		"labsnet1": map[string]interface{}{
 			"SvgFooter":       struct{}{},
 			"CalendarHost":    "webcal://gnocal.aiblabs.net",
-			"SessionsTitle": "Agenda",
+			"SessionsTitle": "Next Session",
 		},
 	}
 )
@@ -132,15 +131,15 @@ func EventFromPath(path string) *event.Event {
      _ = options
 
      session := &eve.Session{
-        Title:     "Office Hours Session",
+        Title:     "Office Hours",
         StartTime: startDate,
         EndTime:   endDate,
+        Description: "Join us for open discussion.",
         Sequence:  0,
      }
 
     evt := &event.Event{
         Name:        eventTitle,
-        Description: eventDescription,
         Status:      eve.Status("EventScheduled"),
         StartDate:   startDate,
         EndDate:     endDate,
@@ -154,7 +153,13 @@ func EventFromPath(path string) *event.Event {
 }
 
 func RenderFlyer(path string) string {
-    return EventFromPath(path).RenderPage(path)
+    var sb strings.Builder
+    q := eve.ParseQuery(path)
+    if cal, ok := q["cal"]; ok && len(cal) > 0 {
+        s := event.ScheduleFromEvent(EventFromPath(path), cal[0])
+        sb.WriteString(proposalForm(cal[0], s))
+    }
+    return EventFromPath(path).RenderPage(path) + sb.String()
 }
 
 func RenderCalendar(path string) string {

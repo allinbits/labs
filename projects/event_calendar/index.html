@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LogoGraph-style Event Calendar Demo</title>
+  <style>
+    :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; }
+    body { margin: 0; padding: 24px; background: #0b0b0c; color: #e7e7ea; }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .card { background: #141416; border: 1px solid #232327; border-radius: 14px; padding: 16px; box-shadow: 0 1px 0 #000; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .stack { display: grid; gap: 12px; }
+    .muted { color: #b0b1b7; }
+    input[type="text"] { width: 100%; padding: 10px 12px; border-radius: 10px; background: #0f0f11; color: #e7e7ea; border: 1px solid #232327; }
+    select, button { padding: 10px 12px; border-radius: 10px; border: 1px solid #232327; background: #1a1b1e; color: #e7e7ea; cursor: pointer; }
+    button:hover { background: #202125; }
+    pre { background: #0f0f11; color: #e7e7ea; border: 1px solid #232327; padding: 12px; border-radius: 10px; overflow: auto; max-height: 420px; }
+    .pill { font-size: 12px; padding: 4px 8px; border: 1px solid #2b2c31; border-radius: 999px; background: #191a1d; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .grid { display: grid; gap: 8px; }
+    .cid { word-break: break-all; }
+    svg { height: 132px; width: auto; display: block; }
+    img.thumb { height: 24px; width: 24px; object-fit: contain; vertical-align: middle; }
+    a { color: #7aa2ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="stack" id="app">
+    <h1>LogoGraph-style Event Calendar (plain JS)</h1>
+
+    <div class="card stack">
+      <div class="muted">This page imports <span class="kbd">logograph.js</span>, runs <span class="kbd">demo()</span> (Schedule → Events → Calendar), registers each object, and lets you render by CID as <span class="pill">json</span>, <span class="pill">svg</span>, or <span class="pill">thumbnail</span>.</div>
+      <div class="grid" id="demo-cids"></div>
+      <div class="row">
+        <div class="stack">
+          <label class="muted">CID</label>
+          <input id="cidInput" type="text" placeholder="bafy..." />
+        </div>
+        <div class="stack">
+          <label class="muted">Format</label>
+          <div class="row" style="grid-template-columns: 1fr auto; align-items: end;">
+            <select id="fmtSelect">
+              <option value="json">json</option>
+              <option value="svg">svg</option>
+              <option value="thumbnail">thumbnail</option>
+            </select>
+            <button id="renderBtn">Render</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card stack">
+        <div class="muted">Output</div>
+        <div id="output"></div>
+      </div>
+      <div class="card stack">
+        <div class="muted">JSON (pretty)</div>
+        <pre id="jsonOut">(render with fmt=json)</pre>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // IMPORTANT: ensure logograph.js is in the same directory, or update the path
+    import { demo, Render } from './logograph.js';
+
+    const demoCidsEl = document.getElementById('demo-cids');
+    const cidInput = document.getElementById('cidInput');
+    const fmtSelect = document.getElementById('fmtSelect');
+    const renderBtn = document.getElementById('renderBtn');
+    const out = document.getElementById('output');
+    const jsonOut = document.getElementById('jsonOut');
+
+    function renderByCid(cid, fmt) {
+      if (!cid) return;
+      const payload = Render(`?cid=${encodeURIComponent(cid)}&fmt=${encodeURIComponent(fmt)}`);
+      out.innerHTML = '';
+      jsonOut.textContent = '';
+
+      if (fmt === 'svg') {
+        out.innerHTML = payload; // trust-only your own generated SVG
+      } else if (fmt === 'thumbnail') {
+        const img = document.createElement('img');
+        img.className = 'thumb';
+        img.src = payload;
+        out.appendChild(img);
+      } else {
+        // json
+        try { jsonOut.textContent = JSON.stringify(JSON.parse(payload), null, 2); }
+        catch { jsonOut.textContent = String(payload); }
+        out.innerHTML = '<div class="muted">See the pretty JSON panel →</div>';
+      }
+    }
+
+    function addCidRow(label, cid, fmt='json') {
+      const row = document.createElement('div');
+      row.className = 'grid';
+      row.innerHTML = `
+        <div><span class="pill">${label}</span></div>
+        <div class="cid kbd">${cid}</div>
+        <div class="row" style="grid-template-columns: auto auto auto auto;">
+          <button data-cid="${cid}" data-fmt="json">Render JSON</button>
+          <button data-cid="${cid}" data-fmt="svg">Render SVG</button>
+          <button data-cid="${cid}" data-fmt="thumbnail">Thumbnail</button>
+          <button data-cid="${cid}" data-fmt="json" data-fill>Fill ↑</button>
+        </div>`;
+      demoCidsEl.appendChild(row);
+
+      row.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const c = e.currentTarget.getAttribute('data-cid');
+          const f = e.currentTarget.getAttribute('data-fmt');
+          const fill = e.currentTarget.hasAttribute('data-fill');
+          if (fill) { cidInput.value = c; fmtSelect.value = f || 'json'; }
+          else renderByCid(c, f || 'json');
+        });
+      });
+
+      // auto-render first one
+      if (fmt) renderByCid(cid, fmt);
+    }
+
+    renderBtn.addEventListener('click', () => {
+      renderByCid(cidInput.value.trim(), fmtSelect.value);
+    });
+
+    // Run demo and show its CIDs
+    (async () => {
+      try {
+        const ids = await demo();
+        addCidRow('calendar', ids.calendarCid, 'svg');
+        addCidRow('schedule', ids.scheduleCid, 'json');
+        addCidRow('event-1', ids.event1Cid, 'json');
+        addCidRow('event-2', ids.event2Cid, 'json');
+        cidInput.value = ids.calendarCid;
+        fmtSelect.value = 'svg';
+      } catch (err) {
+        demoCidsEl.innerHTML = `<div class="muted">Demo failed: ${String(err)}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -514,7 +514,7 @@ func (o Schedule) Thumbnail() string { return "![" + o.Title + "](" + o.DataUrl(
 func (o Schedule) DataUrl() string {
 	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG())
 }
-func (o Schedule) SVG() string { return scheduleSVG(o.Title) }
+func (o Schedule) SVG() string { return ScheduleSVG(o.Title) }
 func (o Schedule) String() string {
 	return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}"
 }
@@ -636,7 +636,7 @@ func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr, ti
 	return
 }
 
-func scheduleSVG(title string) string {
+func ScheduleSVG(title string) string {
 	if title == "" {
 		title = "Event EventCalendar"
 	}

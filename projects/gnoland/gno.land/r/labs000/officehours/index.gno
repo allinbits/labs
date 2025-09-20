@@ -71,13 +71,21 @@ func Render(path string) string {
 	q := eve.ParseQuery(path)
 	var sb strings.Builder
 
-    if renderCal := q.Get("render"); renderCal != "" {
-	    if renderCal == "flyer" {
-            return RenderFlyer(path)
-        } else if renderCal == "calendar" {
-            return RenderCalendar(path)
-        }
-    }
+	startDate := nextEventDay()
+	endDate := startDate.Add(eventDuration)
+	status := "EventPlanned"
+
+	options := map[string]string{
+		"Status":      status,
+		"StartDate":   startDate.Format(time.RFC3339),
+		"EndDate":     endDate.Format(time.RFC3339),
+		"Title":       eventTitle,
+		"Description": eventDescription,
+	}
+
+	if isCancelled(startDate) {
+		status = "EventCancelled"
+	}
 
 	if topic, ok := q["topic"]; ok && len(topic) > 0 {
 		sb.WriteString("## Commit \n Topic: " + topic[0] + "\n\n")
@@ -92,25 +100,19 @@ func Render(path string) string {
 		}
 	}
 
-	startDate := nextEventDay()
-	endDate := startDate.Add(eventDuration)
-	status := "EventPlanned"
-	if isCancelled(startDate) {
-		status = "EventCancelled"
-	}
+    if renderCal := q.Get("render"); renderCal != "" {
+	    if renderCal == "calendar" {
+            return event.Calendar(options, event.WithCommentForm(proposalForm)).Render(path)
+        } else if renderCal == "calendar" {
+            return RenderCalendar(path)
+        }
+    }
 
-	options := map[string]string{
-		"Status":      status,
-		"StartDate":   startDate.Format(time.RFC3339),
-		"EndDate":     endDate.Format(time.RFC3339),
-		"Title":       eventTitle,
-		"Description": eventDescription,
-	}
-
-	return event.Calendar(options, event.WithCommentForm(proposalForm)).Render(path)
+    return RenderFlyer(path)
 }
 
 func EventFromPath(path string) *event.Event {
+    // FIXME
     q := eve.ParseQuery(path)
     _ = q
 
@@ -155,11 +157,17 @@ func EventFromPath(path string) *event.Event {
 func RenderFlyer(path string) string {
     var sb strings.Builder
     q := eve.ParseQuery(path)
+    evt := EventFromPath(path)
     if cal, ok := q["cal"]; ok && len(cal) > 0 {
-        s := event.ScheduleFromEvent(EventFromPath(path), cal[0])
+        s := event.ScheduleFromEvent(evt), cal[0])
         sb.WriteString(proposalForm(cal[0], s))
     }
-    return EventFromPath(path).RenderPage(path) + sb.String()
+    return evt.RenderPage("", eve.Content{
+        Published: true,
+        Markdown: "[" + event.Schedule{
+            Title: evt.Name,
+        }.Thumbnail() + "](?render=calendar)\n\n", // FIXME: link to calendar view
+    }) + sb.String()
 }
 
 func RenderCalendar(path string) string {

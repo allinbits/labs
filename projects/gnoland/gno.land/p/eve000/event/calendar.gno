@@ -489,6 +489,17 @@ func ParseTimeSafe(timeStr string) time.Time {
 var _ eve.LogoGraph = (*Schedule)(nil)
 var _ eve.Projectable = (*Schedule)(nil)
 
+func ScheduleFromEvent(evt *Event, cid string) Schedule {
+    return Schedule{
+        Status:           string(evt.Status),
+        StartDate:        evt.StartDate.Format(time.RFC3339),
+        EndDate:          evt.EndDate.Format(time.RFC3339),
+        Title:            evt.Name,
+        Description:      evt.Description,
+        EventCalendarCid: cid,
+    }
+}
+
 type Schedule struct {
 	Status           string
 	StartDate        string
@@ -503,7 +514,7 @@ func (o Schedule) Thumbnail() string { return "![" + o.Title + "](" + o.DataUrl(
 func (o Schedule) DataUrl() string {
 	return "data:image/svg+xml;charset=utf-8," + url.PathEscape(o.SVG())
 }
-func (o Schedule) SVG() string { return scheduleSVG(o.Title) }
+func (o Schedule) SVG() string { return ScheduleSVG(o.Title) }
 func (o Schedule) String() string {
 	return "Schedule{Status:" + o.Status + ", StartDate:" + o.StartDate + "}"
 }
@@ -625,7 +636,7 @@ func parseOhrScheduleOpts(obj Schedule) (start, end time.Time, status, descr, ti
 	return
 }
 
-func scheduleSVG(title string) string {
+func ScheduleSVG(title string) string {
 	if title == "" {
 		title = "Event EventCalendar"
 	}
@@ -675,5 +686,8 @@ func (c EventCalendar) JsonLD() eve.JsonLDMap { return c.Default.JsonLD() }
 
 func (EventCalendar) Heading() string { return "|          |\n| -------- |\n" }
 func (EventCalendar) Row(obj EventCalendar) string {
-	return "| [" + obj.Thumbnail() + obj.Title + "](./officehours?cal=" + obj.Cid() + ") | "
+	cidLink := "?cal=" + obj.Cid()
+	return "| [" + obj.Thumbnail() + "](" + cidLink + ") |\n" +
+	"| 📅 ["+ obj.Title + " Calendar](" + cidLink + ")" + " |\n" +
+	"| 📄 [View Event Flyer]("+ cidLink +"&render=flyer)" + " |\n"
 }

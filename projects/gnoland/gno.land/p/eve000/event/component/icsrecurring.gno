@@ -9,20 +9,18 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
-func CalenderDataUrl(path string, a *Flyer) string {
+func IcsRecurringCalenderDataUrl(path string, opts map[string]string, a *Flyer) string {
 	if path == "" {
 		path = "?format=ics"
 	}
-	data := IcsCalendarFile(path, a)
+	data := IcsRecurringCalendarFile(path, a, opts)
 	return "data:text/calendar;charset=utf-8," + url.QueryEscape(data)
 }
 
-func IcsCalendarFile(path string, a *Flyer) string {
+func IcsRecurringCalendarFile(path string, a *Flyer, opts map[string]string) string {
 	var f = ufmt.Sprintf
 	var b strings.Builder
-	w := func(s string) {
-		b.WriteString(s + "\n")
-	}
+	w := func(s string) { b.WriteString(s + "\n") }
 
 	q := ParseQuery(path)
 	sessionIDs := q["session"]
@@ -42,7 +40,6 @@ func IcsCalendarFile(path string, a *Flyer) string {
 	case "json":
 		b.WriteString(a.ToJson())
 		return b.String()
-
 	case "ics":
 		w("BEGIN:VCALENDAR")
 		w("VERSION:2.0")
@@ -61,6 +58,13 @@ func IcsCalendarFile(path string, a *Flyer) string {
 		if a.Location != nil && a.Location.Name != "" {
 			w(f("LOCATION:%s", a.Location.Name))
 		}
+		// Recurrence support
+		if rrule, ok := opts["RRULE"]; ok && rrule != "" {
+			w("RRULE:" + rrule)
+		}
+		if exdate, ok := opts["EXDATE"]; ok && exdate != "" {
+			w("EXDATE:" + exdate)
+		}
 		w("END:VEVENT\n")
 
 		for i, s := range a.Sessions {
@@ -68,13 +72,8 @@ func IcsCalendarFile(path string, a *Flyer) string {
 			if !include(id) {
 				continue
 			}
-
 			w("BEGIN:VEVENT")
-			w(f("UID:%s-%d@%s",
-				slugify(s.Title)[:5],
-				s.StartTime.Unix(),
-				fullPath,
-			))
+			w(f("UID:%s-%d@%s", slugify(s.Title)[:5], s.StartTime.Unix(), fullPath))
 			w(f("SEQUENCE:%d", s.Sequence))
 			w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
 			w(f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")))
@@ -85,12 +84,18 @@ func IcsCalendarFile(path string, a *Flyer) string {
 			if s.Cancelled {
 				w("STATUS:CANCELLED")
 			}
+			// Recurrence for sessions
+			if rrule, ok := opts["RRULE"]; ok && rrule != "" {
+				w("RRULE:" + rrule)
+			}
+			if exdate, ok := opts["EXDATE"]; ok && exdate != "" {
+				w("EXDATE:" + exdate)
+			}
 			w("END:VEVENT\n")
 		}
 
 		w("END:VCALENDAR")
 		return b.String()
-
 	default:
 		w(f("# %s\n\n%s", a.Name, a.Description))
 		for i, s := range a.Sessions {

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Event Calendar Web Component Example</title>
+    <style>
+        body { background:#0b0b0c; color:#e7e7ea; font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif; margin:0; padding:24px; }
+        h1 { font-size:20px; margin-bottom:16px; }
+        event-calendar { max-width:640px; display:block; margin:auto; }
+    </style>
+</head>
+<body>
+<h1>Event Calendar (Custom Element)</h1>
+
+<!-- Load the custom element implementation -->
+<script type="module" src="./event-calendar.js"></script>
+
+<!-- Inline JSON usage -->
+<event-calendar view="list" timezone="UTC">
+    <script type="application/json">
+        [
+            {
+                "@type": "Event",
+                "name": "Office Hours — Week 1",
+                "description": "Open discussion with the team.",
+                "eventStatus": "EventProposed",
+                "startDate": "2025-10-01T10:00:00Z",
+                "endDate": "2025-10-01T11:00:00Z",
+                "location": "Virtual"
+            },
+            {
+                "@type": "Event",
+                "name": "Office Hours — Week 2",
+                "eventStatus": "EventScheduled",
+                "startDate": "2025-10-08T10:00:00Z",
+                "endDate": "2025-10-08T11:00:00Z",
+                "schedule": { "@id": "bafyexamplecid" }
+            }
+        ]
+    </script>
+</event-calendar>
+
+<p style="margin-top:2em; color:#9a9ba1">Try switching <code>view="list"</code> to <code>view="month"</code> in the markup.</p>
+</body>
+</html>

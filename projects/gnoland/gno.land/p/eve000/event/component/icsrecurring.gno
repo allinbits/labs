@@ -49,7 +49,7 @@ func IcsRecurringCalendarFile(path string, a *Flyer, opts map[string]string) str
 
 		w("BEGIN:VEVENT")
 		w(f("UID:event-%s@%s", slugify(a.Name), fullPath))
-		w("SEQUENCE:0")
+		w("SEQUENCE:0") // TODO: does this need to be incremented on changes?
 		w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
 		w(f("DTSTART;VALUE=DATE:%s", a.StartDate.Format("20060102")))
 		w(f("DTEND;VALUE=DATE:%s", a.StartDate.AddDate(0, 0, 1).Format("20060102")))

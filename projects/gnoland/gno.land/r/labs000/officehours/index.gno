@@ -199,27 +199,14 @@ func proposalForm(topicCID string, s event.Schedule) string {
 
 func EventFromPath(path string) *event.Event {
 	q := eve.ParseQuery(path)
-
+	_ = q // TODO: allow user to skip ahead to future events
 	start := nextEventDay()
+
 	end := start.Add(officeHours.eventDuration)
 	status := "EventPlanned"
+
 	if isCancelled(start) {
 		status = "EventCancelled"
-	}
-
-	if ds := q.Get("start"); ds != "" {
-		if t := event.ParseTimeSafe(ds); !t.IsZero() {
-			start = t
-			end = start.Add(officeHours.eventDuration)
-		}
-	}
-	if de := q.Get("end"); de != "" {
-		if t := event.ParseTimeSafe(de); !t.IsZero() {
-			end = t
-		}
-	}
-	if st := q.Get("status"); st != "" {
-		status = st
 	}
 
 	session := &eve.Session{
@@ -282,8 +269,8 @@ func Render(path string) string {
 	q := eve.ParseQuery(path)
 	var sb strings.Builder
 
-	if (path == "json") {
-	        return officeHours.String()
+    if q.Get("format") == "json" {
+        return officeHours.String()
     }
 
 	if ics := q.Get("render"); ics == "calendar" {

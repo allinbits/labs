@@ -1,8 +1,8 @@
 package officehours
 
 import (
-    "std"
-    "strconv"
+	"std"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,19 +24,19 @@ type OfficeHours struct {
 
 // format as json
 func (o *OfficeHours) String() string {
-    return `{
+	return `{
     "eventTitle": "` + o.eventTitle + `",
     "eventDescription": "` + o.eventDescription + `",
     "eventDayOfWeek": "` + o.eventDayOfWeek.String() + `",
     "eventStartHour": ` + strconv.Itoa(o.eventStartHour) + `,
     "eventDurationMinutes": ` + strconv.Itoa(int(o.eventDuration.Minutes())) + `,
     "cancelledDates": ` + func() string {
-        var dates []string
-        for d := range o.cancelledDates {
-            dates = append(dates, `"`+d+`"`)
-        }
-        return "[" + strings.Join(dates, ", ") + "]"
-    }() + `,
+		var dates []string
+		for d := range o.cancelledDates {
+			dates = append(dates, `"`+d+`"`)
+		}
+		return "[" + strings.Join(dates, ", ") + "]"
+	}() + `,
     "admin": "` + o.admin + `",
     "sequence": ` + strconv.Itoa(o.sequence) + `
 }`
@@ -68,14 +68,14 @@ func init() {
 	}
 
 	officeHours.Update(
-        "eventTitle", "Office Hours",
-        "eventDescription", "Join us for open discussion.",
-        "eventDayOfWeek", "wednesday",
-        "eventStartHour", "10",
-        "eventDurationMinutes", "60",
-        "cancelledDate", "2024-12-25",
-        "cancelledDate", "2024-10-25",
-    )
+		"eventTitle", "Office Hours",
+		"eventDescription", "Join us for open discussion.",
+		"eventDayOfWeek", "wednesday",
+		"eventStartHour", "10",
+		"eventDurationMinutes", "60",
+		"cancelledDate", "2024-12-25",
+		"cancelledDate", "2024-10-25",
+	)
 }
 
 func assertAccess() {
@@ -85,78 +85,78 @@ func assertAccess() {
 }
 
 func Update(_ realm, parts ...string) {
-    assertAccess()
-    officeHours.Update(parts...)
+	assertAccess()
+	officeHours.Update(parts...)
 }
 
 var validKeys = map[string]bool{
-    "admin":         true,
-    "eventTitle":    true,
-    "eventDescription": true,
-    "eventDayOfWeek": true,
-    "eventStartHour": true,
-    "eventDurationMinutes": true,
-    "cancelledDate": true,
+	"admin":                true,
+	"eventTitle":           true,
+	"eventDescription":     true,
+	"eventDayOfWeek":       true,
+	"eventStartHour":       true,
+	"eventDurationMinutes": true,
+	"cancelledDate":        true,
 }
 
 func (OfficeHours) Update(parts ...string) {
-    if len(parts)%2 != 0 || len(parts) == 2 {
-        panic("Update requires key-value pairs")
-    }
-    officeHours.sequence++
-    for i := 0; i < len(parts); i += 2 {
-        key := strings.TrimSpace(parts[i])
-        if !validKeys[key] {
-            panic("Invalid key: " + key + ". Valid keys are: admin, eventTitle, eventDescription, eventDayOfWeek, eventStartHour, eventDurationMinutes, cancelledDate")
-        }
-        value := strings.TrimSpace(parts[i+1])
+	if len(parts)%2 != 0 || len(parts) < 2 {
+		panic("Update requires key-value pairs")
+	}
+	officeHours.sequence++
+	for i := 0; i < len(parts); i += 2 {
+		key := strings.TrimSpace(parts[i])
+		if !validKeys[key] {
+			panic("Invalid key: " + key + ". Valid keys are: admin, eventTitle, eventDescription, eventDayOfWeek, eventStartHour, eventDurationMinutes, cancelledDate")
+		}
+		value := strings.TrimSpace(parts[i+1])
 
-        switch key {
-        case "admin":
-            officeHours.admin = value
-        case "eventTitle":
-            officeHours.eventTitle = value
-        case "eventDescription":
-            officeHours.eventDescription = value
-        case "eventDayOfWeek":
-            switch strings.ToLower(value) {
-            case "sunday":
-                officeHours.eventDayOfWeek = time.Sunday
-            case "monday":
-                officeHours.eventDayOfWeek = time.Monday
-            case "tuesday":
-                officeHours.eventDayOfWeek = time.Tuesday
-            case "wednesday":
-                officeHours.eventDayOfWeek = time.Wednesday
-            case "thursday":
-                officeHours.eventDayOfWeek = time.Thursday
-            case "friday":
-                officeHours.eventDayOfWeek = time.Friday
-            case "saturday":
-                officeHours.eventDayOfWeek = time.Saturday
-            default:
-                panic("Invalid day of week")
-            }
-        case "eventStartHour":
-            if h, err := strconv.Atoi(value); err == nil && h >= 0 && h < 24 {
-                officeHours.eventStartHour = h
-            } else {
-                panic("Invalid start hour")
-            }
-        case "eventDurationMinutes":
-            if m, err := strconv.Atoi(value); err == nil && m > 0 {
-                officeHours.eventDuration = time.Duration(m) * time.Minute
-            } else {
-                panic("Invalid duration minutes")
-            }
-        case "cancelledDate":
-            if _, err := time.Parse("2006-01-02", value); err == nil {
-                officeHours.cancelledDates[value] = true
-            } else {
-                panic("Invalid date format for cancelledDate. Use YYYY-MM-DD.")
-            }
-        }
-    }
+		switch key {
+		case "admin":
+			officeHours.admin = value
+		case "eventTitle":
+			officeHours.eventTitle = value
+		case "eventDescription":
+			officeHours.eventDescription = value
+		case "eventDayOfWeek":
+			switch strings.ToLower(value) {
+			case "sunday":
+				officeHours.eventDayOfWeek = time.Sunday
+			case "monday":
+				officeHours.eventDayOfWeek = time.Monday
+			case "tuesday":
+				officeHours.eventDayOfWeek = time.Tuesday
+			case "wednesday":
+				officeHours.eventDayOfWeek = time.Wednesday
+			case "thursday":
+				officeHours.eventDayOfWeek = time.Thursday
+			case "friday":
+				officeHours.eventDayOfWeek = time.Friday
+			case "saturday":
+				officeHours.eventDayOfWeek = time.Saturday
+			default:
+				panic("Invalid day of week")
+			}
+		case "eventStartHour":
+			if h, err := strconv.Atoi(value); err == nil && h >= 0 && h < 24 {
+				officeHours.eventStartHour = h
+			} else {
+				panic("Invalid start hour")
+			}
+		case "eventDurationMinutes":
+			if m, err := strconv.Atoi(value); err == nil && m > 0 {
+				officeHours.eventDuration = time.Duration(m) * time.Minute
+			} else {
+				panic("Invalid duration minutes")
+			}
+		case "cancelledDate":
+			if _, err := time.Parse("2006-01-02", value); err == nil {
+				officeHours.cancelledDates[value] = true
+			} else {
+				panic("Invalid date format for cancelledDate. Use YYYY-MM-DD.")
+			}
+		}
+	}
 }
 
 // ---------- Time helpers ----------
@@ -192,6 +192,9 @@ func proposalForm(topicCID string, s event.Schedule) string {
 |||
 </gno-columns>
 `)
+	// Add link to next event date
+	nextDate := event.ParseTimeSafe(s.StartDate).AddDate(0, 0, 7).Format("2006-01-02")
+	sb.WriteString("\n[Next date →](" + "?date=" + nextDate + ")\n")
 	return sb.String()
 }
 
@@ -199,8 +202,18 @@ func proposalForm(topicCID string, s event.Schedule) string {
 
 func EventFromPath(path string) *event.Event {
 	q := eve.ParseQuery(path)
-	_ = q // TODO: allow user to skip ahead to future events
-	start := nextEventDay()
+	var start time.Time
+
+	if dateStr := q.Get("date"); dateStr != "" {
+		parsed, err := time.Parse("2006-01-02", dateStr)
+		if err == nil {
+			start = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), officeHours.eventStartHour, 0, 0, 0, time.UTC)
+		} else {
+			start = nextEventDay()
+		}
+	} else {
+		start = nextEventDay()
+	}
 
 	end := start.Add(officeHours.eventDuration)
 	status := "EventPlanned"
@@ -269,9 +282,9 @@ func Render(path string) string {
 	q := eve.ParseQuery(path)
 	var sb strings.Builder
 
-    if q.Get("format") == "json" {
-        return officeHours.String()
-    }
+	if q.Get("format") == "json" {
+		return officeHours.String()
+	}
 
 	if ics := q.Get("render"); ics == "calendar" {
 		return RenderCalendar(path)

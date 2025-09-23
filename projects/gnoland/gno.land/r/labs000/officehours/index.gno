@@ -10,6 +10,8 @@ import (
 	eve "gno.land/p/eve000/event/component"
 )
 
+var publishedAt = time.Date(2025, 9, 1, 0, 0, 0, 0, time.UTC)
+
 type OfficeHours struct {
 	eventTitle       string
 	eventDescription string
@@ -52,15 +54,15 @@ func init() {
 		eventStartHour:   1,
 		eventDuration:    time.Hour,
 		cancelledDates:   map[string]bool{},
-		renderOpts: map[string]interface{}{
-			"dev": map[string]interface{}{
+		renderOpts: map[string]any{
+			"dev": map[string]any{
 				"CalendarFile":  "http://127.0.0.1:8080",
-				"SessionsTitle": "Next Session",
+				"SessionsTitle": "Weekly Session",
 			},
-			"labsnet1": map[string]interface{}{
+			"labsnet1": map[string]any{
 				"SvgFooter":     struct{}{},
 				"CalendarFile":  "https://gnocal.aiblabs.net",
-				"SessionsTitle": "Next Session",
+				"SessionsTitle": "Weekly Session",
 			},
 		},
 		sequence: -1,
@@ -263,18 +265,16 @@ func RenderFlyer(path string) string {
 
 // RenderCalendar composes an ICS calendar file (recurring) for the event.
 func RenderCalendar(path string) string {
-	evt := EventFromPath(path)
-	opts := map[string]string{
-		"ProdId":       "-//aibLabs//Office Hours//EN",
-		"CalName":      "aibLabs Office Hours",
-		"CalDesc":      "Join us for open discussion.",
-		"TimeZone":     "UTC",
-		"Method":       "PUBLISH",
-		"XWR-CALNAME":  "aibLabs Office Hours",
-		"XWR-CALDESC":  "Join us for open discussion.",
-		"XWR-TIMEZONE": "UTC",
+	opts := map[string]any{
+		"Location": "Online",
+		"Freq":     "WEEKLY",
+		"ByDay":    strings.ToUpper(officeHours.eventDayOfWeek.String()[:2]),
+		"Interval": 1,
+		"DtStart":  publishedAt.Format("20060102T150405Z"),
+		"Until":    "20261231T000000Z", // hard limit
 	}
-	return eve.IcsRecurringCalendarFile(path, evt.Flyer(), opts)
+	opts["ExDates"] = []string{"20240701T150405Z", "20240708T150405Z"}
+	return eve.IcsRecurringCalendarFile(path, opts)
 }
 
 // Render is the single entrypoint; it composes the correct view by route param.

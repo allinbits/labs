@@ -1,14 +1,18 @@
 package officehours
 
 import (
-    "std"
-    "strconv"
+	"std"
+	"strconv"
 	"strings"
 	"time"
+
+	"gno.land/p/moul/txlink"
 
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
 )
+
+var publishedAt = time.Date(2025, 9, 1, 0, 0, 0, 0, time.UTC)
 
 type OfficeHours struct {
 	eventTitle       string
@@ -24,58 +28,44 @@ type OfficeHours struct {
 
 // format as json
 func (o *OfficeHours) String() string {
-    return `{
+	return `{
     "eventTitle": "` + o.eventTitle + `",
     "eventDescription": "` + o.eventDescription + `",
     "eventDayOfWeek": "` + o.eventDayOfWeek.String() + `",
     "eventStartHour": ` + strconv.Itoa(o.eventStartHour) + `,
     "eventDurationMinutes": ` + strconv.Itoa(int(o.eventDuration.Minutes())) + `,
     "cancelledDates": ` + func() string {
-        var dates []string
-        for d := range o.cancelledDates {
-            dates = append(dates, `"`+d+`"`)
-        }
-        return "[" + strings.Join(dates, ", ") + "]"
-    }() + `,
+		var dates []string
+		for d := range o.cancelledDates {
+			dates = append(dates, `"`+d+`"`)
+		}
+		return "[" + strings.Join(dates, ", ") + "]"
+	}() + `,
     "admin": "` + o.admin + `",
     "sequence": ` + strconv.Itoa(o.sequence) + `
 }`
 }
 
-var officeHours *OfficeHours
-
-func init() {
-	officeHours = &OfficeHours{
-		eventTitle:       "",
-		eventDescription: "",
-		eventDayOfWeek:   time.Sunday,
-		eventStartHour:   1,
-		eventDuration:    time.Hour,
-		cancelledDates:   map[string]bool{},
-		renderOpts: map[string]interface{}{
-			"dev": map[string]interface{}{
-				"CalendarFile":  "http://127.0.0.1:8080",
-				"SessionsTitle": "Next Session",
-			},
-			"labsnet1": map[string]interface{}{
-				"SvgFooter":     struct{}{},
-				"CalendarFile":  "https://gnocal.aiblabs.net",
-				"SessionsTitle": "Next Session",
-			},
+var officeHours = &OfficeHours{
+	eventTitle:       "",
+	eventDescription: "",
+	eventDayOfWeek:   time.Sunday,
+	eventStartHour:   1,
+	eventDuration:    time.Hour,
+	cancelledDates:   map[string]bool{},
+	renderOpts: map[string]any{
+		"dev": map[string]any{
+			"CalendarFile":  "http://127.0.0.1:8080",
+			"SessionsTitle": "Weekly Session",
 		},
-		sequence: -1,
-		admin:    std.PreviousRealm().Address().String(), // initial admin is the deployer
-	}
-
-	officeHours.Update(
-        "eventTitle", "Office Hours",
-        "eventDescription", "Join us for open discussion.",
-        "eventDayOfWeek", "wednesday",
-        "eventStartHour", "10",
-        "eventDurationMinutes", "60",
-        "cancelledDate", "2024-12-25",
-        "cancelledDate", "2024-10-25",
-    )
+		"labsnet1": map[string]any{
+			"SvgFooter":     struct{}{},
+			"CalendarFile":  "https://gnocal.aiblabs.net",
+			"SessionsTitle": "Weekly Session",
+		},
+	},
+	sequence: -1,
+	admin:    std.PreviousRealm().Address().String(), // initial admin is the deployer
 }
 
 func assertAccess() {
@@ -84,79 +74,82 @@ func assertAccess() {
 	}
 }
 
-func Update(_ realm, parts ...string) {
-    assertAccess()
-    officeHours.Update(parts...)
+// Update modifies the office hours configuration. It requires key-value pairs.
+// Valid keys are:
+// { admin, eventTitle, eventDescription, eventDayOfWeek, eventStartHour, eventDurationMinutes, cancelledDate. }
+func Update(cur realm, parts ...string) {
+	assertAccess()
+	officeHours.Update(parts...)
 }
 
 var validKeys = map[string]bool{
-    "admin":         true,
-    "eventTitle":    true,
-    "eventDescription": true,
-    "eventDayOfWeek": true,
-    "eventStartHour": true,
-    "eventDurationMinutes": true,
-    "cancelledDate": true,
+	"admin":                true,
+	"eventTitle":           true,
+	"eventDescription":     true,
+	"eventDayOfWeek":       true,
+	"eventStartHour":       true,
+	"eventDurationMinutes": true,
+	"cancelledDate":        true,
 }
 
 func (OfficeHours) Update(parts ...string) {
-    if len(parts)%2 != 0 || len(parts) == 2 {
-        panic("Update requires key-value pairs")
-    }
-    officeHours.sequence++
-    for i := 0; i < len(parts); i += 2 {
-        key := strings.TrimSpace(parts[i])
-        if !validKeys[key] {
-            panic("Invalid key: " + key + ". Valid keys are: admin, eventTitle, eventDescription, eventDayOfWeek, eventStartHour, eventDurationMinutes, cancelledDate")
-        }
-        value := strings.TrimSpace(parts[i+1])
+	if len(parts)%2 != 0 || len(parts) < 2 {
+		panic("Update requires key-value pairs")
+	}
+	officeHours.sequence++
+	for i := 0; i < len(parts); i += 2 {
+		key := strings.TrimSpace(parts[i])
+		if !validKeys[key] {
+			panic("Invalid key: " + key + ". Valid keys are: admin, eventTitle, eventDescription, eventDayOfWeek, eventStartHour, eventDurationMinutes, cancelledDate")
+		}
+		value := strings.TrimSpace(parts[i+1])
 
-        switch key {
-        case "admin":
-            officeHours.admin = value
-        case "eventTitle":
-            officeHours.eventTitle = value
-        case "eventDescription":
-            officeHours.eventDescription = value
-        case "eventDayOfWeek":
-            switch strings.ToLower(value) {
-            case "sunday":
-                officeHours.eventDayOfWeek = time.Sunday
-            case "monday":
-                officeHours.eventDayOfWeek = time.Monday
-            case "tuesday":
-                officeHours.eventDayOfWeek = time.Tuesday
-            case "wednesday":
-                officeHours.eventDayOfWeek = time.Wednesday
-            case "thursday":
-                officeHours.eventDayOfWeek = time.Thursday
-            case "friday":
-                officeHours.eventDayOfWeek = time.Friday
-            case "saturday":
-                officeHours.eventDayOfWeek = time.Saturday
-            default:
-                panic("Invalid day of week")
-            }
-        case "eventStartHour":
-            if h, err := strconv.Atoi(value); err == nil && h >= 0 && h < 24 {
-                officeHours.eventStartHour = h
-            } else {
-                panic("Invalid start hour")
-            }
-        case "eventDurationMinutes":
-            if m, err := strconv.Atoi(value); err == nil && m > 0 {
-                officeHours.eventDuration = time.Duration(m) * time.Minute
-            } else {
-                panic("Invalid duration minutes")
-            }
-        case "cancelledDate":
-            if _, err := time.Parse("2006-01-02", value); err == nil {
-                officeHours.cancelledDates[value] = true
-            } else {
-                panic("Invalid date format for cancelledDate. Use YYYY-MM-DD.")
-            }
-        }
-    }
+		switch key {
+		case "admin":
+			officeHours.admin = value
+		case "eventTitle":
+			officeHours.eventTitle = value
+		case "eventDescription":
+			officeHours.eventDescription = value
+		case "eventDayOfWeek":
+			switch strings.ToLower(value) {
+			case "sunday":
+				officeHours.eventDayOfWeek = time.Sunday
+			case "monday":
+				officeHours.eventDayOfWeek = time.Monday
+			case "tuesday":
+				officeHours.eventDayOfWeek = time.Tuesday
+			case "wednesday":
+				officeHours.eventDayOfWeek = time.Wednesday
+			case "thursday":
+				officeHours.eventDayOfWeek = time.Thursday
+			case "friday":
+				officeHours.eventDayOfWeek = time.Friday
+			case "saturday":
+				officeHours.eventDayOfWeek = time.Saturday
+			default:
+				panic("Invalid day of week")
+			}
+		case "eventStartHour":
+			if h, err := strconv.Atoi(value); err == nil && h >= 0 && h < 24 {
+				officeHours.eventStartHour = h
+			} else {
+				panic("Invalid start hour")
+			}
+		case "eventDurationMinutes":
+			if m, err := strconv.Atoi(value); err == nil && m > 0 {
+				officeHours.eventDuration = time.Duration(m) * time.Minute
+			} else {
+				panic("Invalid duration minutes")
+			}
+		case "cancelledDate":
+			if _, err := time.Parse("2006-01-02", value); err == nil {
+				officeHours.cancelledDates[value] = true
+			} else {
+				panic("Invalid date format for cancelledDate. Use YYYY-MM-DD.")
+			}
+		}
+	}
 }
 
 // ---------- Time helpers ----------
@@ -192,15 +185,28 @@ func proposalForm(topicCID string, s event.Schedule) string {
 |||
 </gno-columns>
 `)
+	// Add link to next event date
+	nextDate := event.ParseTimeSafe(s.StartDate).AddDate(0, 0, 7).Format("2006-01-02")
+	sb.WriteString("\n[Next date →](" + "?date=" + nextDate + ")\n")
 	return sb.String()
 }
 
 // ---------- Composition core ----------
 
-func EventFromPath(path string) *event.Event {
+func eventFromPath(path string) *event.Event {
 	q := eve.ParseQuery(path)
-	_ = q // TODO: allow user to skip ahead to future events
-	start := nextEventDay()
+	var start time.Time
+
+	if dateStr := q.Get("date"); dateStr != "" {
+		parsed, err := time.Parse("2006-01-02", dateStr)
+		if err == nil {
+			start = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), officeHours.eventStartHour, 0, 0, 0, time.UTC)
+		} else {
+			start = nextEventDay()
+		}
+	} else {
+		start = nextEventDay()
+	}
 
 	end := start.Add(officeHours.eventDuration)
 	status := "EventPlanned"
@@ -229,10 +235,10 @@ func EventFromPath(path string) *event.Event {
 	return evt
 }
 
-// RenderFlyer composes the flyer page view.
-func RenderFlyer(path string) string {
+// renderFlyer composes the flyer page view.
+func renderFlyer(path string) string {
 	q := eve.ParseQuery(path)
-	evt := EventFromPath(path)
+	evt := eventFromPath(path)
 	var body strings.Builder
 
 	body.WriteString(event.Schedule{Title: evt.Name}.Thumbnail())
@@ -250,18 +256,17 @@ func RenderFlyer(path string) string {
 
 // RenderCalendar composes an ICS calendar file (recurring) for the event.
 func RenderCalendar(path string) string {
-	evt := EventFromPath(path)
-	opts := map[string]string{
-		"ProdId":       "-//aibLabs//Office Hours//EN",
-		"CalName":      "aibLabs Office Hours",
-		"CalDesc":      "Join us for open discussion.",
-		"TimeZone":     "UTC",
-		"Method":       "PUBLISH",
-		"XWR-CALNAME":  "aibLabs Office Hours",
-		"XWR-CALDESC":  "Join us for open discussion.",
-		"XWR-TIMEZONE": "UTC",
+	opts := map[string]any{
+		"Location": "Online",
+		"Freq":     "WEEKLY",
+		"ByDay":    strings.ToUpper(officeHours.eventDayOfWeek.String()[:2]),
+		"Interval": 1,
+		"DtStart":  publishedAt.Format("20060102T150405Z"),
+		"Until":    "20261231T000000Z", // hard limit
 	}
-	return eve.IcsRecurringCalendarFile(path, evt.Flyer(), opts)
+	// FIXME: build ExDates from cancelledDates
+	opts["ExDates"] = []string{"20240701T150405Z", "20240708T150405Z"}
+	return eve.IcsRecurringCalendarFile(path, opts)
 }
 
 // Render is the single entrypoint; it composes the correct view by route param.
@@ -269,9 +274,9 @@ func Render(path string) string {
 	q := eve.ParseQuery(path)
 	var sb strings.Builder
 
-    if q.Get("format") == "json" {
-        return officeHours.String()
-    }
+	if q.Get("format") == "json" {
+		return officeHours.String()
+	}
 
 	if ics := q.Get("render"); ics == "calendar" {
 		return RenderCalendar(path)
@@ -279,19 +284,78 @@ func Render(path string) string {
 
 	if topic := q.Get("topic"); topic != "" {
 		sb.WriteString("## Commit\n")
+		sb.WriteString("Submit your topic proposal by committing a transaction with the following parameters:\n\n")
+		sb.WriteString("---\n\n")
+		sb.WriteString("Func: PostTopic\n\n")
 		sb.WriteString("Topic: " + topic + "\n\n")
 
 		if date := q.Get("date"); date != "" {
 			sb.WriteString("Date: " + date + "\n\n")
-		}
-		if desc := q.Get("description"); desc != "" {
-			sb.WriteString("Description: " + desc + "\n\n")
+			if desc := q.Get("description"); desc != "" {
+				sb.WriteString("Description: " + desc + "\n\n")
+				sb.WriteString("---\n\n")
+				sb.WriteString(showCLI(topic, date, desc))
+			} else {
+				sb.WriteString("> [!CAUTION]\n")
+				sb.WriteString("> Missing description parameter\n\n")
+			}
+		} else {
+			sb.WriteString("> [!CAUTION]\n")
+			sb.WriteString("> Missing date parameter\n\n")
 		}
 		return sb.String()
 	} else {
-		evt := EventFromPath(path)
+		evt := eventFromPath(path)
 		cid := evt.Cid()
 		sb.WriteString(proposalForm(cid, event.ScheduleFromEvent(evt, cid)))
 	}
-	return RenderFlyer(path) + sb.String()
+	return renderFlyer(path) + sb.String()
+}
+
+func showCLI(topic, date, description string) string {
+	var sb strings.Builder
+	link := txlink.NewLink("PostTopic").AddArgs(
+		"CID", topic,
+		"date", date,
+		"description", description,
+	).URL()
+
+	sb.WriteString("#### Txlink Button (Adena Wallet) \n\n")
+	sb.WriteString("Click the button below to open Adena Wallet and prefill a transaction:\n\n")
+	sb.WriteString("NOTE: Adena support is still being tested (looking for feedback here).\n\n")
+	sb.WriteString(eve.Button("Post Topic  ", link))
+	sb.WriteString("\n\n")
+	sb.WriteString("[" + link + "](" + link + ")\n\n")
+	return cliCommand(topic, date, description) + "\n\n" + sb.String()
+}
+
+func cliCommand(topic, date, description string) string {
+	var sb strings.Builder
+	sb.WriteString("#### CLI Command (Gnokey) \n\n")
+	sb.WriteString("\n```\n\n")
+	sb.WriteString("gnokey maketx call ")
+	sb.WriteString(" -pkgpath \"gno.land/r/labs000/officehours\"")
+	sb.WriteString(" -func \"PostTopic\"")
+	sb.WriteString(" -args \"" + topic + "\"")
+	sb.WriteString(" -args \"" + date + "\"")
+	sb.WriteString(" -args \"" + description + "\"")
+	sb.WriteString(" -gas-fee 1000000ugnot ")
+	sb.WriteString(" -gas-wanted 5000000 ")
+	sb.WriteString(" -send \"\" ")
+	sb.WriteString(" -broadcast ")
+	sb.WriteString(" -chainid \"dev\" ")
+	sb.WriteString(" -remote \"tcp://0.0.0.0:26657\" ")
+	sb.WriteString(" ADDRESS")
+	sb.WriteString("\n```")
+	return sb.String()
+}
+
+// PostTopic emits an event for a proposed topic.
+func PostTopic(cur realm, CID, date, description string) {
+	eve.MustCIDv1("topic", CID)
+	std.Emit("officehours-topic",
+		"topic", CID,
+		"date", date,
+		"description", description,
+	)
 }

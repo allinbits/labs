@@ -7,6 +7,21 @@ import (
 	"gno.land/p/demo/ufmt"
 )
 
+/*
+ // RenderCalendar composes an ICS calendar file (recurring) for the event.
+ func RenderCalendar(path string) string {
+
+     opts := map[string]any{}{
+         "Location": "Online",
+         "Freq":     "WEEKLY",
+         "ByDay":    strings.ToUpper(officeHours.eventDayOfWeek.String()[:2]),
+         "Interval": 1,
+         "Until":    "20261231T000000Z", // hard limit
+     }
+ 	return eve.IcsRecurringCalendarFile(path, opts)
+ }
+*/
+
 func IcsRecurringCalendarFile(path string, opts map[string]any) string {
 	now := time.Now().UTC()
 	uid := ufmt.Sprintf("%d@gnoland", now.UnixNano())

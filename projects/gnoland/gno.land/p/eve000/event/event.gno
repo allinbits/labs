@@ -228,24 +228,8 @@ func (evt *Event) RenderContent(path string, blocks []*eve.Content) string {
 }
 
 func (evt *Event) Cid() string {
-	var elements []string
-
-	elements = append(elements, hashString(evt.Name))
-	elements = append(elements, hashString(evt.Description))
-	elements = append(elements, hashString(evt.Status))
-	elements = append(elements, hashString(evt.AttendanceMode))
-	elements = append(elements, hashString(evt.StartDate))
-	elements = append(elements, hashString(evt.EndDate))
-	if evt.Location != nil {
-		elements = append(elements, hashStrings(
-			evt.Location.Name,
-			evt.Location.Address,
-			evt.Location.Coordinates,
-			evt.Location.Description,
-		))
-	}
-
-	return shaToCid(buildMerkleRoot(elements))
+	sha := hashString(evt.Flyer().ToJsonLD())
+	return shaToCid(sha)
 }
 
 func buildMerkleRoot(elements []string) string {

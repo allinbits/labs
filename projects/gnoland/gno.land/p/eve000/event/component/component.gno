@@ -240,7 +240,10 @@ func LinkTag(name string) string {
 	return "[" + name + "](?tag=" + TagString(name) + ")"
 }
 
-func ParseQuery(path string) url.Values {
+// Alias for url.Values
+type Query = url.Values
+
+func ParseQuery(path string) Query {
 	if len(path) > 0 && path[0] == '?' {
 		u, err := url.Parse(std.CurrentRealm().PkgPath() + path)
 		if err == nil {

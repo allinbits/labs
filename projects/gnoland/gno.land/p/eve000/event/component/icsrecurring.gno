@@ -1,110 +1,101 @@
 package component
 
 import (
-	"net/url"
-	"std"
 	"strings"
 	"time"
 
 	"gno.land/p/demo/ufmt"
 )
 
-func IcsRecurringCalenderDataUrl(path string, opts map[string]string, a *Flyer) string {
-	if path == "" {
-		path = "?format=ics"
-	}
-	data := IcsRecurringCalendarFile(path, a, opts)
-	return "data:text/calendar;charset=utf-8," + url.QueryEscape(data)
-}
+/*
+ // RenderCalendar composes an ICS calendar file (recurring) for the event.
+ func RenderCalendar(path string) string {
 
-func IcsRecurringCalendarFile(path string, a *Flyer, opts map[string]string) string {
-	var f = ufmt.Sprintf
+     opts := map[string]any{}{
+         "Location": "Online",
+         "Freq":     "WEEKLY",
+         "ByDay":    strings.ToUpper(officeHours.eventDayOfWeek.String()[:2]),
+         "Interval": 1,
+         "Until":    "20261231T000000Z", // hard limit
+     }
+ 	return eve.IcsRecurringCalendarFile(path, opts)
+ }
+*/
+
+// IcsRecurringCalendarFile generates an ICS calendar file content for a recurring event.
+// It accepts a path (for timezone) and options for customization.
+func IcsRecurringCalendarFile(path string, opts map[string]any) string {
+	timezone := "UTC"
+	if path != "" {
+		parts := strings.Split(path, "/")
+		if len(parts) > 1 {
+			timezone = strings.Join(parts[1:], "/")
+		}
+	}
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		loc = time.UTC
+	}
+
+	now := time.Now().In(loc)
+	uid := ufmt.Sprintf("%d@gnoland", now.UnixNano())
+
+	location, _ := opts["Location"].(string)
+	if location == "" {
+		location = "Online"
+	}
+	freq, _ := opts["Freq"].(string)
+	if freq == "" {
+		freq = "WEEKLY"
+	}
+	byDay, _ := opts["ByDay"].(string)
+	if byDay == "" {
+		byDay = "MO"
+	}
+	interval := "1"
+	if v, ok := opts["Interval"]; ok {
+		switch val := v.(type) {
+		case string:
+			interval = val
+		case int:
+			interval = ufmt.Sprintf("%d", val)
+		}
+	}
+	until, _ := opts["Until"].(string)
+	if until == "" {
+		until = "20261231T000000Z"
+	}
+
+	rrule := ufmt.Sprintf("FREQ=%s;BYDAY=%s;INTERVAL=%s;UNTIL=%s", freq, byDay, interval, until)
+
+	start, _ := opts["DtStart"].(string)
+	if start == "" {
+		start = now.UTC().Format("20060102T150405Z")
+	}
+	end := now.Add(1 * time.Hour).UTC().Format("20060102T150405Z")
+
 	var b strings.Builder
-	w := func(s string) { b.WriteString(s + "\n") }
+	b.WriteString("BEGIN:VCALENDAR\r\n")
+	b.WriteString("VERSION:2.0\r\n")
+	b.WriteString("PRODID:-//gnoland//event//EN\r\n")
+	b.WriteString("BEGIN:VEVENT\r\n")
+	b.WriteString("UID:" + uid + "\r\n")
+	b.WriteString("DTSTAMP:" + start + "\r\n")
+	b.WriteString("DTSTART:" + start + "\r\n")
+	b.WriteString("DTEND:" + end + "\r\n")
+	b.WriteString("LOCATION:" + location + "\r\n")
+	b.WriteString("RRULE:" + rrule + "\r\n")
 
-	q := ParseQuery(path)
-	sessionIDs := q["session"]
-	format := strings.ToLower(q.Get("format"))
-
-	useAll := len(sessionIDs) == 0
-	allowed := make(map[string]bool)
-	for _, id := range sessionIDs {
-		allowed[id] = true
+	// Add EXDATEs for cancelled dates
+	if exdates, ok := opts["ExDates"].([]string); ok {
+		for _, exdate := range exdates {
+			b.WriteString("EXDATE:" + exdate + "\r\n")
+		}
 	}
-	include := func(id string) bool { return useAll || allowed[id] }
 
-	fullPath := std.CurrentRealm().PkgPath()
-	prodID := strings.ReplaceAll(fullPath, "/", "//") + "//EN"
+	b.WriteString("SUMMARY:Recurring Event\r\n")
+	b.WriteString("END:VEVENT\r\n")
+	b.WriteString("END:VCALENDAR\r\n")
 
-	switch format {
-	case "json":
-		b.WriteString(a.ToJson())
-		return b.String()
-	case "ics":
-		w("BEGIN:VCALENDAR")
-		w("VERSION:2.0")
-		w("CALSCALE:GREGORIAN")
-		w("PRODID:-" + prodID)
-		w("METHOD:PUBLISH\n")
-
-		w("BEGIN:VEVENT")
-		w(f("UID:event-%s@%s", slugify(a.Name), fullPath))
-		w("SEQUENCE:0") // TODO: does this need to be incremented on changes?
-		w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
-		w(f("DTSTART;VALUE=DATE:%s", a.StartDate.Format("20060102")))
-		w(f("DTEND;VALUE=DATE:%s", a.StartDate.AddDate(0, 0, 1).Format("20060102")))
-		w(f("SUMMARY:%s", a.Name))
-		w(f("DESCRIPTION:%s", a.Description))
-		if a.Location != nil && a.Location.Name != "" {
-			w(f("LOCATION:%s", a.Location.Name))
-		}
-		// Recurrence support
-		if rrule, ok := opts["RRULE"]; ok && rrule != "" {
-			w("RRULE:" + rrule)
-		}
-		if exdate, ok := opts["EXDATE"]; ok && exdate != "" {
-			w("EXDATE:" + exdate)
-		}
-		w("END:VEVENT\n")
-
-		for i, s := range a.Sessions {
-			id := Pad3(i)
-			if !include(id) {
-				continue
-			}
-			w("BEGIN:VEVENT")
-			w(f("UID:%s-%d@%s", slugify(s.Title)[:5], s.StartTime.Unix(), fullPath))
-			w(f("SEQUENCE:%d", s.Sequence))
-			w(f("DTSTAMP:%s", time.Now().UTC().Format("20060102T150405Z")))
-			w(f("DTSTART:%s", s.StartTime.UTC().Format("20060102T150000Z")))
-			w(f("DTEND:%s", s.EndTime.UTC().Format("20060102T150000Z")))
-			w(f("SUMMARY:%s", s.Title))
-			w(f("DESCRIPTION:%s", s.Description))
-			w(f("LOCATION:%s", s.Location.Name))
-			if s.Cancelled {
-				w("STATUS:CANCELLED")
-			}
-			// Recurrence for sessions
-			if rrule, ok := opts["RRULE"]; ok && rrule != "" {
-				w("RRULE:" + rrule)
-			}
-			if exdate, ok := opts["EXDATE"]; ok && exdate != "" {
-				w("EXDATE:" + exdate)
-			}
-			w("END:VEVENT\n")
-		}
-
-		w("END:VCALENDAR")
-		return b.String()
-	default:
-		w(f("# %s\n\n%s", a.Name, a.Description))
-		for i, s := range a.Sessions {
-			id := Pad3(i)
-			if !include(id) {
-				continue
-			}
-			w(s.ToMarkdown())
-		}
-		return b.String()
-	}
+	return b.String()
 }

@@ -231,6 +231,9 @@ Key                      Value format                  Notes
 -   **Event pages:** If you want to link to "the next session"
     dynamically, just link the base route (no params) and let the realm
     compute it.
+-   **Banner Support:** If you want to embed this realm in a
+    banner or iframe, add `?embed=banner` to show the svg view of the next event.
+-   **Thumbnail Support:** If you want to embed this realm as a thumbnail image, add `?embed=thumbnail` to show a logo + link to the next event.
 
 ------------------------------------------------------------------------
 

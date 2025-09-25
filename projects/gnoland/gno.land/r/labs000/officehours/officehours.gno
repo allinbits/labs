@@ -302,6 +302,7 @@ func RenderCalendar(path string) string {
 }
 
 // Render is the main entry point to render the office hours page.
+// | banner | to render a markdown banner with a link to the flyer image. (useful from other realms)
 // | ?format=json | to view the current configuration in JSON.
 // | ?render=calendar | to view the ICS calendar file.
 // | ?topic=CID&date=YYYY-MM-DD&description={str} | to view a topic proposal confirmation.
@@ -309,8 +310,13 @@ func RenderCalendar(path string) string {
 func Render(path string) string {
 	q := eve.ParseQuery(path)
 	var sb strings.Builder
+	link := std.CurrentRealm().PkgPath()[9:]
 
 	switch {
+	case q.Get("embed") == "thumbnail":
+		return "[" + officeHours.Thumbnail() + "](/" +  link + ")\n\n"
+	case q.Get("embed") == "banner":
+		return "[![Event Flyer](" + officeHours.DataUrl() + ")](/" +  link + ")\n\n"
 	case q.Get("format") == "json":
 		return officeHours.JsonLD().String()
 	case q.Get("render") == "calendar":

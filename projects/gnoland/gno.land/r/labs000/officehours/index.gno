@@ -42,7 +42,6 @@ var officeHours = &OfficeHours{
 			"SessionsTitle": "Weekly Session",
 		},
 		"labsnet1": map[string]any{
-			"SvgFooter":     struct{}{},
 			"CalendarFile":  "https://gnocal.aiblabs.net",
 			"SessionsTitle": "Weekly Session",
 		},
@@ -279,8 +278,8 @@ func renderFlyer(path string) string {
 	})
 }
 
-// RenderCalendar composes an ICS calendar file (recurring) for the event. Objects are language, not files.
-// You’re not persisting “an ics file” or “a page”; you keep a tiny semantic core and project canonical views on demand.
+// RenderCalendar composes an ICS calendar file (recurring) for the event.
+// Objects are language, not files -  we keep a tiny semantic core and project canonical views on demand.
 func RenderCalendar(path string) string {
 	opts := map[string]any{
 		"Location": "Online",
@@ -288,14 +287,24 @@ func RenderCalendar(path string) string {
 		"ByDay":    strings.ToUpper(officeHours.eventDayOfWeek.String()[:2]),
 		"Interval": 1,
 		"DtStart":  publishedAt.Format("20060102T150405Z"),
-		"Until":    "20261231T000000Z",
+		"Until":    "20261231T000000Z", // REVIEW: make configurable?
 	}
-	// FIXME: build ExDates from cancelledDates
-	opts["ExDates"] = []string{"20240701T150405Z", "20240708T150405Z"}
+
+	for date, _ := range officeHours.cancelledDates {
+        if t, err := time.Parse("2006-01-02", date); err == nil {
+            exdate := time.Date(t.Year(), t.Month(), t.Day(), officeHours.eventStartHour, 0, 0, 0, time.UTC)
+            opts["ExDate"] = append(opts["ExDate"].([]string), exdate.Format("20060102T150405Z"))
+        }
+    }
+
 	return eve.IcsRecurringCalendarFile(path, opts)
 }
 
-// Render is the single entrypoint; it composes the correct view by route param.
+// Render is the main entry point to render the office hours page.
+// | ?format=json | to view the current configuration in JSON.
+// | ?render=calendar | to view the ICS calendar file.
+// | ?topic=CID&date=YYYY-MM-DD&description={str} | to view a topic proposal confirmation.
+// otherwise, it renders the flyer with a proposal form.
 func Render(path string) string {
 	q := eve.ParseQuery(path)
 	var sb strings.Builder
@@ -377,6 +386,8 @@ func cliCommand(topic, date, description string) string {
 
 // ---------- Event Posting ----------
 
+// PostTopic is the function to be called in a transaction to propose a topic for the next office hours.
+// This function emits an event that is indexed by the realm owner to build a list of proposed topics and review comments.
 func PostTopic(cur realm, CID, date, description string) {
 	eve.MustCIDv1("topic", CID)
 	std.Emit("officehours-topic",

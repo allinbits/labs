@@ -22,8 +22,22 @@ import (
  }
 */
 
+// IcsRecurringCalendarFile generates an ICS calendar file content for a recurring event.
+// It accepts a path (for timezone) and options for customization.
 func IcsRecurringCalendarFile(path string, opts map[string]any) string {
-	now := time.Now().UTC()
+	timezone := "UTC"
+	if path != "" {
+		parts := strings.Split(path, "/")
+		if len(parts) > 1 {
+			timezone = strings.Join(parts[1:], "/")
+		}
+	}
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		loc = time.UTC
+	}
+
+	now := time.Now().In(loc)
 	uid := ufmt.Sprintf("%d@gnoland", now.UnixNano())
 
 	location, _ := opts["Location"].(string)
@@ -56,9 +70,9 @@ func IcsRecurringCalendarFile(path string, opts map[string]any) string {
 
 	start, _ := opts["DtStart"].(string)
 	if start == "" {
-		start = now.Format("20060102T150405Z")
+		start = now.UTC().Format("20060102T150405Z")
 	}
-	end := now.Add(1 * time.Hour).Format("20060102T160405Z")
+	end := now.Add(1 * time.Hour).UTC().Format("20060102T150405Z")
 
 	var b strings.Builder
 	b.WriteString("BEGIN:VCALENDAR\r\n")

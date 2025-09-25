@@ -279,7 +279,8 @@ func renderFlyer(path string) string {
 	})
 }
 
-// RenderCalendar composes an ICS calendar file (recurring) for the event.
+// RenderCalendar composes an ICS calendar file (recurring) for the event. Objects are language, not files.
+// You’re not persisting “an ics file” or “a page”; you keep a tiny semantic core and project canonical views on demand.
 func RenderCalendar(path string) string {
 	opts := map[string]any{
 		"Location": "Online",
@@ -305,7 +306,7 @@ func Render(path string) string {
 	case q.Get("render") == "calendar":
 		return RenderCalendar(path)
 	case q.Get("topic") != "":
-		sb.WriteString(renderTopicCommit(q))
+		sb.WriteString(renderTopicConfirm(q))
 	default:
 		evt := eventFromPath(path)
 		cid := evt.Cid()
@@ -314,7 +315,7 @@ func Render(path string) string {
 	return renderFlyer(path) + sb.String()
 }
 
-func renderTopicCommit(q eve.Query) string {
+func renderTopicConfirm(q eve.Query) string {
 	var sb strings.Builder
 	sb.WriteString("## Confirm\n")
 	sb.WriteString("Submit your topic proposal by posting a transaction with the following parameters:\n\n---\n\n")

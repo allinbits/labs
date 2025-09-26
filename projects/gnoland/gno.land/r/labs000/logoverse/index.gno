@@ -8,6 +8,7 @@ import (
 
 	"gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
+	"gno.land/r/labs000/officehours"
 )
 
 var registry = avl.NewTree()
@@ -147,6 +148,8 @@ func Register(i interface{}) string {
 	return newCid
 }
 
+var _ = officehours.Init // ensure officehours is initialized
+
 var rows = []string{
 	Register(AibLabs),
 	Register(AllInBits),
@@ -158,6 +161,7 @@ var rows = []string{
 	Register(Pflow),
 	Register(Photon),
 	Register(Wojak),
+	Register(officehours.OfficeHours{}),
 }
 
 var columns = []string{"cid", "name", "description", "committer"}

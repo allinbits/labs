@@ -14,6 +14,7 @@ var (
 	_ eve.LogoGraph  = officeHours
 	_ eve.Projectable = officeHours
 	_ eve.Editable   = officeHours
+	packagePath    = std.CurrentRealm().PkgPath()
 )
 
 func init() {
@@ -158,9 +159,11 @@ func (o OfficeHours) JsonLD() eve.JsonLDMap {
 		"@context":             "https://schema.org",
 		"@type":                "ImageObject",
 		"name":                 "Office Hours",
-		"description":          o.eventDescription,
+		"description":          "Recurring Weekly Event with AllInBits Labs.",
 		"representativeOfPage": true,
-		"url":                  std.CurrentRealm().PkgPath(),
+		"url":                  packagePath[8:],
+		"banner":                  packagePath[8:] + "?embed=banner",
+		"thumbnail":                  packagePath[8:] + "?embed=thumbnail",
 		"about": map[string]interface{}{
 			"@type":       "Event",
 			"name":        o.eventTitle,

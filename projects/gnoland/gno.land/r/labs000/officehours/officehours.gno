@@ -292,11 +292,11 @@ func RenderCalendar(path string) string {
 	}
 
 	for date, _ := range officeHours.cancelledDates {
-        if t, err := time.Parse("2006-01-02", date); err == nil {
-            exdate := time.Date(t.Year(), t.Month(), t.Day(), officeHours.eventStartHour, 0, 0, 0, time.UTC)
-            opts["ExDates"] = append(opts["ExDates"].([]string), exdate.Format("20060102T150405Z"))
-        }
-    }
+		if t, err := time.Parse("2006-01-02", date); err == nil {
+			exdate := time.Date(t.Year(), t.Month(), t.Day(), officeHours.eventStartHour, 0, 0, 0, time.UTC)
+			opts["ExDates"] = append(opts["ExDates"].([]string), exdate.Format("20060102T150405Z"))
+		}
+	}
 
 	return eve.IcsRecurringCalendarFile(path, opts)
 }
@@ -314,9 +314,9 @@ func Render(path string) string {
 
 	switch {
 	case q.Get("embed") == "thumbnail":
-		return "[" + officeHours.Thumbnail() + "](/" +  link + ")\n\n"
+		return "[" + officeHours.Thumbnail() + "](/" + link + ")\n\n"
 	case q.Get("embed") == "banner":
-		return "[![Event Flyer](" + officeHours.DataUrl() + ")](/" +  link + ")\n\n"
+		return "[![Event Flyer](" + officeHours.DataUrl() + ")](/" + link + ")\n\n"
 	case q.Get("format") == "json":
 		return officeHours.JsonLD().String()
 	case q.Get("render") == "calendar":

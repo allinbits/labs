@@ -1,5 +1,9 @@
 package home
 
+import (
+	"gno.land/r/labs000/officehours"
+)
+
 func Render(_ string) string {
 	return `# Welcome to the All in Bits LabsNet!
 
@@ -16,10 +20,7 @@ Labs Net is our dedicated testnet environment:
 - **Deploy** and interact with Gno packages
 - **Innovate** without mainnet constraints
 
-Office Hours
-------------
-
-#TODO: add index of events upcoming and historical
+` + officehours.Render("?embed=banner") + `
 
 # Project Menu
 

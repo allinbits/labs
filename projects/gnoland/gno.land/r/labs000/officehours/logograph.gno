@@ -1,8 +1,8 @@
 package officehours
 
 import (
-    "std"
-    "net/url"
+	"net/url"
+	"std"
 
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
@@ -11,14 +11,14 @@ import (
 // ---------- Logograph / Projectable / Editable surface ----------
 
 var (
-	_ eve.LogoGraph  = officeHours
-	_ eve.Projectable = officeHours
-	_ eve.Editable   = officeHours
-	packagePath    = std.CurrentRealm().PkgPath()
+	_           eve.LogoGraph   = officeHours
+	_           eve.Projectable = officeHours
+	_           eve.Editable    = officeHours
+	packagePath                 = std.CurrentRealm().PkgPath()
 )
 
 func init() {
-   eve.AssertProjectionRoundTrip(officeHours, officeHours)
+	eve.AssertProjectionRoundTrip(officeHours, officeHours)
 }
 
 // Cid is derived from the stable JSON-LD composed below.
@@ -61,7 +61,7 @@ func (OfficeHours) ThumbnailSvg(w, h string) string {
 
 // SVG returns the full SVG representation of the flyer.
 func (o OfficeHours) SVG() string {
-    var y = 28
+	var y = 28
 	body := o.Flyer().ToSVGFragment(&y)
 	body += `<g transform="translate(410, 40) scale(1.8)"> ` + aibLogoPath + `</g>`
 	return eve.SvgHeading("600", "200") + body + "</svg>"
@@ -110,7 +110,7 @@ func (o OfficeHours) mergeOpts(objs ...interface{}) OfficeHours {
 }
 
 func (o OfficeHours) Compose(obj interface{}) eve.LogoGraph {
-    return o.mergeOpts(obj)
+	return o.mergeOpts(obj)
 }
 
 // FromPath extracts overrides from the query string (?date=YYYY-MM-DD, etc.).
@@ -147,35 +147,27 @@ func (OfficeHours) ToPath(obj interface{}) string {
 // Compose builds the stable JSON-LD (and is what we CID over).
 func (o OfficeHours) JsonLD() eve.JsonLDMap {
 
-	// Build the concrete event for the current (or requested) session.
-	// We intentionally don’t read path here to keep the LD stable; path-specific
-	// choices (like ?date=) are “views.” If you want date-pinning in the CID,
+	// build the concrete event for the current (or requested) session.
+	// we intentionally don’t read path here to keep the ld stable; path-specific
+	// choices (like ?date=) are “views.” if you want date-pinning in the cid,
 	// pass an override object that sets it in your own workflow.
-	evt := eventFromPath("") // next upcoming by default
-	start := evt.StartDate
-	end := evt.EndDate
+	status := "EventScheduled"
+	if isCancelled(publishedAt) { // cancelling this date marks the whole series as cancelled
+		status = "EventCancelled"
+	}
 
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
 		"@type":                "ImageObject",
-		"name":                 "Office Hours",
+		"name":                 "OfficeHours",
 		"description":          "Recurring Weekly Event with AllInBits Labs.",
 		"representativeOfPage": true,
 		"url":                  packagePath[8:],
-		"banner":                  packagePath[8:] + "?embed=banner",
-		"thumbnail":                  packagePath[8:] + "?embed=thumbnail",
+		"banner":               packagePath[8:] + "?embed=banner",
+		"thumbnail":            packagePath[8:] + "?embed=thumbnail",
 		"about": map[string]interface{}{
 			"@type":       "Event",
-			"name":        o.eventTitle,
-			"description": o.eventDescription,
-			"eventStatus": string(evt.Status),
-			"startDate":   start,
-			"endDate":     end,
-			"location": map[string]interface{}{
-				"@type":   "Place",
-				"name":    "Online",
-				"address": "Online",
-			},
+			"eventStatus": status,
 		},
 	}
 }
@@ -185,12 +177,12 @@ func (OfficeHours) Flyer(obj ...interface{}) *eve.Flyer {
 	// Build from the same concrete event we render elsewhere
 	evt := eventFromPath("")
 	f := &eve.Flyer{
-		Name:      "Office Hours",
-		Location:  &eve.Location{Name: "Online"},
-		StartDate: evt.StartDate,
-		EndDate:   evt.EndDate,
+		Name:        "Office Hours",
+		Location:    &eve.Location{Name: "Online"},
+		StartDate:   evt.StartDate,
+		EndDate:     evt.EndDate,
 		Description: "Recurring Weekly Event with AllInBits Labs.",
-		Status:    eve.EventStatus(evt.Status),
+		Status:      eve.EventStatus(evt.Status),
 		Sessions: []*eve.Session{
 			{
 				Title:       officeHours.eventTitle,

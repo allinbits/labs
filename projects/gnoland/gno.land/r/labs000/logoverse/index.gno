@@ -155,11 +155,11 @@ var rows = []string{
 	Register(Event),
 	Register(LogoVerse),
 	Register(Metamodel),
+	Register(officehours.OfficeHours{}),
 	Register(PepeSilvia),
 	Register(Pflow),
 	Register(Photon),
 	Register(Wojak),
-	Register(officehours.OfficeHours{}),
 }
 
 var columns = []string{"cid", "name", "description", "committer"}

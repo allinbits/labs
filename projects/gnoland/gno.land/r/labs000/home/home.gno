@@ -34,9 +34,12 @@ Labs Net is our dedicated testnet environment:
 - [buidlthefuture000/events/](/r/buidlthefuture000/events) - BTF Events Index
 - [cdn000](/r/cdn000) - CDN for static files (proxy for jsDelivr e.g. /gh/BUIDLTHEFUTURE/events@main/static/)
 - [frames000](/r/frames000) - Frames for Gno - build js widgets as gnomark HtmlElements
+- [labs000/home](/r/labs000/home) - LabsNet home page (this page)
 - [linker000](/r/linker000) - Gno Linker - a tool for linking Gno Addresses to External Resources
+- [logoverse](/r/labs000/logoverse) - Logoverse - a decentralized knowledge graph of LogoGraphs
 - [metamodel000](/r/metamodel000) - Library of metamodels for gnolang (WIP)
-- [stackdump000/home](/r/stackdump000/home) - Stackdump home page
+- [officehours](/r/labs000/officehours) - Schedule and post topics for office hours
 - [stackdump000/grc000](/r/stackdump000/grc000) - Experimental GRC000 Petri Net Model
+- [stackdump000/home](/r/stackdump000/home) - Stackdump home page
 `
 }

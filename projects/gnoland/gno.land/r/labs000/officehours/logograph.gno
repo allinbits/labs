@@ -156,6 +156,11 @@ func (o OfficeHours) JsonLD() eve.JsonLDMap {
 		status = "EventCancelled"
 	}
 
+    admin := o.admin
+    if admin == "" {
+        admin = std.CurrentRealm().Address().String()
+    }
+
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
 		"@type":                "ImageObject",
@@ -168,6 +173,8 @@ func (o OfficeHours) JsonLD() eve.JsonLDMap {
 		"about": map[string]interface{}{
 			"@type":       "Event",
 			"eventStatus": status,
+		    "url":            packagePath[8:] + "?render=calendar",
+		    "admin":          admin,
 		},
 	}
 }

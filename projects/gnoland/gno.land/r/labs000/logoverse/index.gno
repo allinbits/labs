@@ -148,8 +148,6 @@ func Register(i interface{}) string {
 	return newCid
 }
 
-var _ = officehours.Init // ensure officehours is initialized
-
 var rows = []string{
 	Register(AibLabs),
 	Register(AllInBits),

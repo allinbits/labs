@@ -86,6 +86,13 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 		panic("object is not projectable")
 	}
 	r.Object = proj.FromPath(path)
+	// validate jsonld
+	_ = r.Object.(LogoGraph).SVG()
+	_ = r.Object.(LogoGraph).Thumbnail()
+	if !eve.IsValidJson(r.Object.(LogoGraph).JsonLD().String()) {
+        panic("projected object has invalid JSON-LD")
+    }
+
 	cid = proj.Compose(r.Object).Cid()
 	if seal != cid {
 		panic("invalid seal: expected " + seal + " but got " + cid)

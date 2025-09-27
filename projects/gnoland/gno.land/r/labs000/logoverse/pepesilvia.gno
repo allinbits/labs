@@ -18,7 +18,7 @@ var _ eve.LogoGraph = pepeSilviaMeme{}
 
 func (pepeSilviaMeme) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
-		"@context":    []string{"https://schema.org", "https://pepeSilvia.xyz/schema"},
+		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
 		"name":        "Pepe Silvia",
 		"description": "Pepe Silvia is a meme from 'It's Always Sunny in Philadelphia', symbolizing frantic conspiracy theorizing.",
@@ -40,9 +40,16 @@ func (pepeSilviaMeme) JsonLD() eve.JsonLDMap {
 
 func (pepeSilviaMeme) SVG() string {
 	return `<svg id="` + PepeSilvia.Cid() +
-		`"  xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="348.489" height="329.678" viewBox="0 0 92.204 87.227">
+		`"  xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="348.489" height="329.678" viewBox="0 0 92 87">
     ` + pepeSilviaSvgPath + `
      </svg>`
+     return PepeSilvia.ThumbnailSvg("348", "329")
+}
+
+func (pepeSilviaMeme) ThumbnailSvg(w, h string) string {
+    return `<svg id="` + PepeSilvia.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
+    ` + pepeSilviaSvgPath + `
+</svg>`
 }
 
 func (pepeSilviaMeme) DataUrl() string {
@@ -57,7 +64,8 @@ func (pepeSilviaMeme) Image(url ...string) string {
 }
 
 func (pepeSilviaMeme) Thumbnail() string {
-	return PepeSilvia.Image()
+    svg :=  PepeSilvia.ThumbnailSvg("75", "94")
+    return "![pepeSilviaMeme](" + "data:image/svg+xml;utf8," + url.PathEscape(svg) + ")"
 }
 
 // REVIEW: this is a representation of a frame grab from the show

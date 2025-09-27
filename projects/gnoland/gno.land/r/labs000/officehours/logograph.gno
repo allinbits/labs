@@ -63,7 +63,7 @@ func (OfficeHours) ThumbnailSvg(w, h string) string {
 func (o OfficeHours) SVG() string {
 	var y = 28
 	body := o.Flyer().ToSVGFragment(&y)
-	body += `<g transform="translate(410, 40) scale(1.8)"> ` + aibLogoPath + `</g>`
+	body += `<g transform="translate(410, 52) scale(1.8)"> ` + aibLogoPath + `</g>`
 	return eve.SvgHeading("600", "200") + body + "</svg>"
 }
 

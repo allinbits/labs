@@ -312,7 +312,7 @@ func renderObject(path string, obj interface{}) string {
     }
 	var sb strings.Builder
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
-	sb.WriteString(glyph.Thumbnail() + "\n\n")
+	sb.WriteString("[" + glyph.Thumbnail() + "]("+ path + "&embed=thumbnail" +")\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
@@ -328,7 +328,7 @@ func renderObject(path string, obj interface{}) string {
 	}
 
     dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
-    sb.WriteString("![svg image](" + dataUrl + ")")
+    sb.WriteString("\n[![svg image](" + dataUrl + ")](" + path +"&embed=img" + ")\n\n")
 
 	links := ld.MarkdownLinks()
 	if links != "" {

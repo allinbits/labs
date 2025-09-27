@@ -21,7 +21,7 @@ func (pflowEditor) Cid() string {
 	return Pflow.JsonLD().Cid()
 }
 
-var _ LogoGraph = pflowEditor{}
+var _ eve.LogoGraph = pflowEditor{}
 
 func (pflowEditor) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{

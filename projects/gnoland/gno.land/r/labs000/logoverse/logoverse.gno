@@ -7,7 +7,7 @@ import (
 type logoVerse struct{}
 
 var LogoVerse = logoVerse{}
-var _ LogoGraph = LogoVerse
+var _ eve.LogoGraph = LogoVerse
 
 func (logoVerse) Cid() string {
 	return LogoVerse.Compose().Cid()
@@ -43,6 +43,7 @@ func (logoVerse) ThumbnailSvg(width, height string) string {
 	return AibLabs.ThumbnailSvg(width, height)
 }
 
+// FIXME: compose is used as part of projection - FIXME everywhere
 func (logoVerse) Compose() eve.JsonLDMap {
 
 	return eve.JsonLDMap{
@@ -51,7 +52,7 @@ func (logoVerse) Compose() eve.JsonLDMap {
 		"name":        "Logoverse",
 		"description": LogoVerse.Description(),
 		"url":         "/r/labs000/logoverse",
-		"image":       LogoVerse.Image(),
+		"image":       LogoVerse.Image(), // make these links
 		"thumbnail":   LogoVerse.Thumbnail(),
 		"author": map[string]any{
 			"type": "Organization",

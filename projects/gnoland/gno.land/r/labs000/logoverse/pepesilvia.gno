@@ -14,7 +14,7 @@ func (pepeSilviaMeme) Cid() string {
 	return PepeSilvia.JsonLD().Cid()
 }
 
-var _ LogoGraph = pepeSilviaMeme{}
+var _ eve.LogoGraph = pepeSilviaMeme{}
 
 func (pepeSilviaMeme) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{

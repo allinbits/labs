@@ -14,7 +14,7 @@ func (metamodelObj) Cid() string {
 	return Metamodel.JsonLD().Cid()
 }
 
-var _ LogoGraph = metamodelObj{}
+var _ eve.LogoGraph = metamodelObj{}
 
 func (metamodelObj) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{

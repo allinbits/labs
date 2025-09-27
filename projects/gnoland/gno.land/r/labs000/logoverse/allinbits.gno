@@ -10,7 +10,7 @@ type allInBitsOrg struct{}
 
 var AllInBits = allInBitsOrg{}
 
-var _ LogoGraph = allInBitsOrg{}
+var _ eve.LogoGraph = allInBitsOrg{}
 
 func (allInBitsOrg) Cid() string {
 	return AllInBits.JsonLD().Cid()

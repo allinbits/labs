@@ -14,7 +14,7 @@ func (wojakMeme) Cid() string {
 	return Wojak.JsonLD().Cid()
 }
 
-var _ LogoGraph = wojakMeme{}
+var _ eve.LogoGraph = wojakMeme{}
 
 func (wojakMeme) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{

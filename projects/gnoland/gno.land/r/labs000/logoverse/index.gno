@@ -28,23 +28,6 @@ func (c *Counter) String() string {
 
 var counter = Counter{Count: 0}
 
-type Editable interface {
-	RenderForm(string) string
-}
-
-type Projectable interface {
-	ToPath(...interface{}) string
-	FromPath(path string) interface{}
-	Compose(...interface{}) eve.JsonLDMap
-}
-
-type LogoGraph interface {
-	SVG() string
-	JsonLD() eve.JsonLDMap
-	Cid() string
-	Thumbnail() string
-}
-
 type Record struct {
 	Name        string
 	Description string
@@ -81,15 +64,15 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 		return "base CID not found"
 	}
 	r := v.(Record)
-	proj, isProj := r.Object.(Projectable)
+	proj, isProj := r.Object.(eve.Projectable)
 	if !isProj {
 		panic("object is not projectable")
 	}
 	r.Object = proj.FromPath(path)
 	// validate jsonld
-	_ = r.Object.(LogoGraph).SVG()
-	_ = r.Object.(LogoGraph).Thumbnail()
-	if !eve.IsValidJson(r.Object.(LogoGraph).JsonLD().String()) {
+	_ = r.Object.(eve.LogoGraph).SVG()
+	_ = r.Object.(eve.LogoGraph).Thumbnail()
+	if !eve.IsValidJson(r.Object.(eve.LogoGraph).JsonLD().String()) {
         panic("projected object has invalid JSON-LD")
     }
 
@@ -118,9 +101,9 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 // Register adds a LogoGraph object to the registry and returns its Record.
 // It panics if the object does not have a valid CID or if the CID is already registered.
 func Register(i interface{}) string {
-	ldg, ok := i.(LogoGraph)
+	ldg, ok := i.(eve.LogoGraph)
 	if !ok {
-		panic("object must implement LogoGraph interface")
+		panic("object must implement eve.LogoGraph interface")
 	}
 	newCid := ldg.Cid()
 	if !isCIDv1(newCid) {
@@ -187,7 +170,7 @@ func Render(path string) string {
 	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
 		if base, hasBase := q["base"]; hasBase && isCIDv1(base[0]) {
 			if baseObj, ok := registry.Get(base[0]); ok {
-				if ed, isEd := baseObj.(Record).Object.(Editable); isEd {
+				if ed, isEd := baseObj.(Record).Object.(eve.Editable); isEd {
 					form := ed.RenderForm(path)
 					if form != "" {
 						return form
@@ -208,7 +191,7 @@ func Render(path string) string {
 	}
 
 	r := v.(Record)
-	proj, isProj := r.Object.(Projectable)
+	proj, isProj := r.Object.(eve.Projectable)
 	obj := r.Object
 	if isProj {
 		obj = proj.FromPath(path)
@@ -218,7 +201,7 @@ func Render(path string) string {
 		switch format[0] {
 		case "ldjson":
 			if ldjson, ok := q["ldjson"]; ok && len(ldjson) > 0 {
-				ld := obj.(LogoGraph).JsonLD()
+				ld := obj.(eve.LogoGraph).JsonLD()
 				parts := strings.Split(ldjson[0], ".")
 				val := interface{}(ld)
 				for _, p := range parts {
@@ -235,7 +218,7 @@ func Render(path string) string {
 					return ufmt.Sprintf("%v", v)
 				}
 			} else {
-				return r.Object.(LogoGraph).JsonLD().String()
+				return r.Object.(eve.LogoGraph).JsonLD().String()
 			}
 			return ""
 		case "cid":
@@ -249,14 +232,14 @@ func Render(path string) string {
 		case "committer":
 			return r.Committer
 		case "svg":
-			return r.Object.(LogoGraph).SVG()
+			return r.Object.(eve.LogoGraph).SVG()
 		case "thumbnail":
-			return r.Object.(LogoGraph).Thumbnail()
+			return r.Object.(eve.LogoGraph).Thumbnail()
 		case "json":
 			if isProj {
-				return proj.Compose(r.Object).String()
+                return proj.Compose(r.Object).JsonLD().String()
 			}
-			return r.Object.(LogoGraph).JsonLD().String()
+			return r.Object.(eve.LogoGraph).JsonLD().String()
 		}
 	}
 
@@ -275,10 +258,10 @@ func Render(path string) string {
 
 func renderObject(path string, obj interface{}) string {
 	_ = path
-	glyph := obj.(LogoGraph)
+	glyph := obj.(eve.LogoGraph)
 	var ld eve.JsonLDMap
-	if proj, ok := obj.(Projectable); ok {
-		ld = proj.Compose(proj.FromPath(path))
+	if proj, ok := obj.(eve.Projectable); ok {
+	    ld = proj.Compose(obj).JsonLD()
 	} else {
 		ld = glyph.JsonLD()
 	}
@@ -288,7 +271,7 @@ func renderObject(path string, obj interface{}) string {
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
-	if proj, ok := obj.(Projectable); ok {
+	if proj, ok := obj.(eve.Projectable); ok {
 		if _, found := registry.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
 			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register"+"\n"))

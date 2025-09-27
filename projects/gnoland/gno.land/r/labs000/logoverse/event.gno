@@ -24,9 +24,10 @@ var Event = EventObj{
 	},
 }
 
-var _ LogoGraph = Event
-var _ Projectable = Event
-var _ Editable = Event
+var _ eve.LogoGraph = Event
+// FIXME
+//var _ eve.Projectable = Event
+var _ eve.Editable = Event
 
 func (EventObj) Cid() string {
 	return Event.Compose().Cid()
@@ -108,7 +109,7 @@ func (EventObj) mergeOpts(objs []interface{}) EventObj {
 }
 
 func (EventObj) JsonLD() eve.JsonLDMap {
-	return Event.Compose()
+	return Event.Compose() // FIXME: Compose should not return JsonLDMap
 }
 
 func parseEventOpts(obj EventObj) (start, end time.Time, status, location, descr string) {

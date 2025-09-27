@@ -10,7 +10,7 @@ type photonToken struct{}
 
 var Photon = photonToken{}
 
-var _ LogoGraph = photonToken{}
+var _ eve.LogoGraph = photonToken{}
 
 func (photonToken) Cid() string {
 	return Photon.JsonLD().Cid()

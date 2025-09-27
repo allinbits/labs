@@ -10,7 +10,7 @@ type aibLabs struct{}
 
 var AibLabs = aibLabs{}
 
-var _ LogoGraph = aibLabs{}
+var _ eve.LogoGraph = aibLabs{}
 
 func (aibLabs) Cid() string {
 	return AibLabs.JsonLD().Cid()

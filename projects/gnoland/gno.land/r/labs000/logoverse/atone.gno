@@ -10,7 +10,7 @@ type atoneToken struct{}
 
 var Atone atoneToken
 
-var _ LogoGraph = atoneToken{}
+var _ eve.LogoGraph = atoneToken{}
 
 func (atoneToken) Cid() string {
 	return Atone.JsonLD().Cid()

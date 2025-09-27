@@ -166,7 +166,7 @@ func Render(path string) string {
 		if len(q["v"]) == 1 && q["v"][0] == "seq" {
 			return counter.String()
 		}
-        // valid names must be longer than 4 chars
+        // valid names must be longer than 4 chars to be used as a filter
 		if id, hasId := q["name"]; hasId  && len(id) > 0 && len(id[0]) > 4 {
             for _, c := range rows {
                 if v, ok := registry.Get(c); ok {
@@ -269,14 +269,47 @@ func Render(path string) string {
 }
 
 func renderObject(path string, obj interface{}) string {
-	_ = path
 	glyph := obj.(eve.LogoGraph)
 	var ld eve.JsonLDMap
 	if proj, ok := obj.(eve.Projectable); ok {
-	    ld = proj.Compose(obj).JsonLD()
+		ld = glyph.JsonLD() // FIXME
+		_ = proj
+	    //ld = proj.Compose(obj).JsonLD()
 	} else {
 		ld = glyph.JsonLD()
 	}
+	q := eve.ParseQuery(path)
+	if edit, ok := q["edit"]; ok && len(edit) > 0 && edit [0] == "true" {
+        if ed, isEd := obj.(eve.Editable); isEd {
+            form := ed.RenderForm(path)
+            if form != "" {
+                return form
+            }
+        }
+    }
+    if embed, ok := q["embed"]; ok && len(embed) > 0 && embed[0] != "" {
+        switch embed[0] {
+        case "svg":
+            return glyph.SVG()
+		case "img":
+	        dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
+			return "![svg image](" + dataUrl + ")"
+        case "thumbnail":
+            return glyph.Thumbnail()
+        case "name":
+            return ld.StringVal("name")
+        case "description":
+            return ld.StringVal("description")
+        case "cid":
+            return ld.Cid()
+        case "links":
+            return ld.MarkdownLinks()
+        case "jsonld", "json":
+            return ld.String()
+        default:
+            panic("unknown embed type: " + embed[0] + ", supported: svg, thumbnail, name, description, cid, links, jsonld")
+        }
+    }
 	var sb strings.Builder
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
 	sb.WriteString(glyph.Thumbnail() + "\n\n")
@@ -293,6 +326,10 @@ func renderObject(path string, obj interface{}) string {
 	} else {
 		sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")
 	}
+
+    dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
+    sb.WriteString("![svg image](" + dataUrl + ")")
+
 	links := ld.MarkdownLinks()
 	if links != "" {
 		sb.WriteString("\n### Links\n")

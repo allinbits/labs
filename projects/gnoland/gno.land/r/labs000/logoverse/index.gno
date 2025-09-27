@@ -3,6 +3,7 @@ package logoverse
 import (
 	"std"
 	"strings"
+	"net/url"
 
 	"gno.land/p/demo/ufmt"
 
@@ -155,7 +156,7 @@ var rows = []string{
 var columns = []string{"cid", "name", "description", "committer"}
 
 func (e Record) String() string {
-	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
+	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "](?name="+ url.QueryEscape(e.Name) + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
 }
 
 func Render(path string) string {
@@ -163,8 +164,19 @@ func Render(path string) string {
 	cid, hasCid := q["cid"]
 	if !hasCid {
 		if len(q["v"]) == 1 && q["v"][0] == "seq" {
-			return counter.String() // FIXME: remove dup below...
+			return counter.String()
 		}
+        // valid names must be longer than 4 chars
+		if id, hasId := q["name"]; hasId  && len(id) > 0 && len(id[0]) > 4 {
+            for _, c := range rows {
+                if v, ok := registry.Get(c); ok {
+                    r := v.(Record)
+                    if r.Name == id[0] {
+                        return renderObject(path, r.Object)
+                    }
+                }
+            }
+        }
 		return renderTable()
 	}
 	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {

@@ -343,8 +343,9 @@ func renderObject(path string, obj interface{}) string {
 func renderTable() string {
 	var sb strings.Builder
 	sb.WriteString("## Logoverse Registry\n\n")
+	sb.WriteString("\n![svg image](" + LogoVerse.DataUrl() + ")\n\n")
 	sb.WriteString(LogoVerse.Introduction() + "\n")
-	// Header
+
 	sb.WriteString("|")
 	for _, col := range columns {
 		sb.WriteString(" " + capitalize(col) + " |")

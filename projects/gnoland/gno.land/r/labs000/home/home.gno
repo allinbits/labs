@@ -2,6 +2,7 @@ package home
 
 import (
 	"gno.land/r/labs000/officehours"
+	"gno.land/r/labs000/logoverse"
 )
 
 func Render(_ string) string {
@@ -22,7 +23,12 @@ Labs Net is our dedicated testnet environment:
 
 ` + officehours.Render("?embed=banner") + `
 
-# Project Menu
+## LogoGraphs
+
+[` + logoverse.Render("?name=Logoverse&embed=img") + `Logoverse Index](/r/labs000/logoverse)
+
+
+## Project Menu
 
 ### gno.land/p
 - [eve000/event/](/p/eve000/event/) - eve000 provides a gnolang component library for events

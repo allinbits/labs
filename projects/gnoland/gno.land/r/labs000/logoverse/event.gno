@@ -25,12 +25,13 @@ var Event = EventObj{
 }
 
 var _ eve.LogoGraph = Event
+
 // FIXME
-//var _ eve.Projectable = Event
+// var _ eve.Projectable = Event
 var _ eve.Editable = Event
 
 func (EventObj) Cid() string {
-	return Event.Compose().Cid()
+	return Event.JsonLD().Cid()
 }
 
 func (EventObj) renderOpts() map[string]any {
@@ -109,7 +110,28 @@ func (EventObj) mergeOpts(objs []interface{}) EventObj {
 }
 
 func (EventObj) JsonLD() eve.JsonLDMap {
-	return Event.Compose() // FIXME: Compose should not return JsonLDMap
+	start, end, status, location, descr := parseEventOpts(Event)
+	return eve.JsonLDMap{
+		"@context":             "https://schema.org",
+		"@type":                "ImageObject",
+		"name":                 "Event",
+		"description":          descr,
+		"representativeOfPage": true,
+		"url":                  "/p/eve000/event",
+		"about": map[string]interface{}{
+			"@type":       "Event",
+			"name":        "Event Flyer",
+			"description": descr,
+			"eventStatus": status,
+			"startDate":   start,
+			"endDate":     end,
+			"location": map[string]interface{}{
+				"@type":   "Place",
+				"name":    location,
+				"address": location,
+			},
+		},
+	}
 }
 
 func parseEventOpts(obj EventObj) (start, end time.Time, status, location, descr string) {
@@ -174,30 +196,10 @@ func (EventObj) ToPath(obj ...interface{}) string {
 	return "?" + q.Encode()
 }
 
-func (EventObj) Compose(obj ...interface{}) eve.JsonLDMap {
-	start, end, status, location, descr := parseEventOpts(Event.mergeOpts(obj))
-	return eve.JsonLDMap{
-		"@context":             "https://schema.org",
-		"@type":                "ImageObject",
-		"name":                 "Event",
-		"description":          descr,
-		"representativeOfPage": true,
-		"url":                  "/p/eve000/event",
-		"about": map[string]interface{}{
-			"@type":       "Event",
-			"name":        "Event Flyer",
-			"description": descr,
-			"eventStatus": status,
-			"startDate":   start,
-			"endDate":     end,
-			"location": map[string]interface{}{
-				"@type":   "Place",
-				"name":    location,
-				"address": location,
-			},
-		},
-	}
-}
+// FIXME
+// func (EventObj) Compose(obj ...interface{}) eve.LogoGraph {
+//     return Event
+// }
 
 func (EventObj) Flyer(obj ...interface{}) *eve.Flyer {
 	start, end, status, location, descr := parseEventOpts(Event.mergeOpts(obj))

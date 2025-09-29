@@ -1,8 +1,8 @@
 package home
 
 import (
-	"gno.land/r/labs000/officehours"
 	"gno.land/r/labs000/logoverse"
+	"gno.land/r/labs000/officehours"
 )
 
 func Render(_ string) string {

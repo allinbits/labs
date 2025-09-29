@@ -45,8 +45,8 @@ func (wojakMeme) SVG() string {
 }
 
 func (wojakMeme) ThumbnailSvg(w, h string) string {
-    encodedSvg := url.PathEscape(Wojak.SVG())
-    return `<svg id="` + Wojak.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
+	encodedSvg := url.PathEscape(Wojak.SVG())
+	return `<svg id="` + Wojak.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
 
         <image href="data:image/svg+xml;utf8,` + encodedSvg + `"
                x="0" y="5"
@@ -66,6 +66,6 @@ func (wojakMeme) Image(url ...string) string {
 }
 
 func (wojakMeme) Thumbnail() string {
-    svg := Wojak.ThumbnailSvg("65", "65")
-    return "![wojakMeme](" + "data:image/svg+xml;utf8," + url.PathEscape(svg) + ")"
+	svg := Wojak.ThumbnailSvg("65", "65")
+	return "![wojakMeme](" + "data:image/svg+xml;utf8," + url.PathEscape(svg) + ")"
 }

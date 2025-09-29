@@ -43,11 +43,11 @@ func (pepeSilviaMeme) SVG() string {
 		`"  xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="348.489" height="329.678" viewBox="0 0 92 87">
     ` + pepeSilviaSvgPath + `
      </svg>`
-     return PepeSilvia.ThumbnailSvg("348", "329")
+	return PepeSilvia.ThumbnailSvg("348", "329")
 }
 
 func (pepeSilviaMeme) ThumbnailSvg(w, h string) string {
-    return `<svg id="` + PepeSilvia.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
+	return `<svg id="` + PepeSilvia.Cid() + `" width="` + w + `" height="` + h + `" xmlns="http://www.w3.org/2000/svg">
     ` + pepeSilviaSvgPath + `
 </svg>`
 }
@@ -64,8 +64,8 @@ func (pepeSilviaMeme) Image(url ...string) string {
 }
 
 func (pepeSilviaMeme) Thumbnail() string {
-    svg :=  PepeSilvia.ThumbnailSvg("75", "94")
-    return "![pepeSilviaMeme](" + "data:image/svg+xml;utf8," + url.PathEscape(svg) + ")"
+	svg := PepeSilvia.ThumbnailSvg("75", "94")
+	return "![pepeSilviaMeme](" + "data:image/svg+xml;utf8," + url.PathEscape(svg) + ")"
 }
 
 // REVIEW: this is a representation of a frame grab from the show

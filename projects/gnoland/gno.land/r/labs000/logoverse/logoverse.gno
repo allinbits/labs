@@ -6,6 +6,15 @@ import (
 
 type logoVerse struct{}
 
+var LogoverseContext = eve.JsonLDMap{
+	"@version":  1.1,
+	"logoverse": "/r/labs000/logoverse?glyph=Glyph",
+
+	// Term definitions
+	"Glyph":    "logoverse:Glyph",
+	"parentId": "logoverse:parentId",
+}
+
 var LogoVerse = logoVerse{}
 var _ eve.LogoGraph = LogoVerse
 

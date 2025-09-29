@@ -1,9 +1,9 @@
 package logoverse
 
 import (
+	"net/url"
 	"std"
 	"strings"
-	"net/url"
 
 	"gno.land/p/demo/ufmt"
 
@@ -74,8 +74,8 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 	_ = r.Object.(eve.LogoGraph).SVG()
 	_ = r.Object.(eve.LogoGraph).Thumbnail()
 	if !eve.IsValidJson(r.Object.(eve.LogoGraph).JsonLD().String()) {
-        panic("projected object has invalid JSON-LD")
-    }
+		panic("projected object has invalid JSON-LD")
+	}
 
 	cid = proj.Compose(r.Object).Cid()
 	if seal != cid {
@@ -144,6 +144,7 @@ var rows = []string{
 	Register(AllInBits),
 	Register(Atone),
 	Register(Event),
+	Register(Glyph),
 	Register(LogoVerse),
 	Register(Metamodel),
 	Register(officehours.OfficeHours{}),
@@ -156,7 +157,7 @@ var rows = []string{
 var columns = []string{"cid", "name", "description", "committer"}
 
 func (e Record) String() string {
-	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "](?name="+ url.QueryEscape(e.Name) + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
+	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "](?glyph=" + url.QueryEscape(e.Name) + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
 }
 
 func Render(path string) string {
@@ -166,17 +167,23 @@ func Render(path string) string {
 		if len(q["v"]) == 1 && q["v"][0] == "seq" {
 			return counter.String()
 		}
-        // valid names must be longer than 4 chars to be used as a filter
-		if id, hasId := q["name"]; hasId  && len(id) > 0 && len(id[0]) > 4 {
-            for _, c := range rows {
-                if v, ok := registry.Get(c); ok {
-                    r := v.(Record)
-                    if r.Name == id[0] {
-                        return renderObject(path, r.Object)
-                    }
-                }
-            }
-        }
+		// valid names must be longer than 4 chars to be used as a filter
+		if id, hasId := q["glyph"]; hasId && len(id) > 0 && len(id[0]) > 4 {
+
+			// enforce the query to start with ?glyph= to make it easier to remove
+			if !strings.HasPrefix(path, "?glyph=") {
+				return "invalid glyph query"
+			}
+
+			for _, c := range rows {
+				if v, ok := registry.Get(c); ok {
+					r := v.(Record)
+					if r.Name == id[0] {
+						return renderObject(path, r.Object)
+					}
+				}
+			}
+		}
 		return renderTable()
 	}
 	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
@@ -249,7 +256,7 @@ func Render(path string) string {
 			return r.Object.(eve.LogoGraph).Thumbnail()
 		case "json":
 			if isProj {
-                return proj.Compose(r.Object).JsonLD().String()
+				return proj.Compose(r.Object).JsonLD().String()
 			}
 			return r.Object.(eve.LogoGraph).JsonLD().String()
 		}
@@ -274,45 +281,45 @@ func renderObject(path string, obj interface{}) string {
 	if proj, ok := obj.(eve.Projectable); ok {
 		ld = glyph.JsonLD() // FIXME
 		_ = proj
-	    //ld = proj.Compose(obj).JsonLD()
+		//ld = proj.Compose(obj).JsonLD()
 	} else {
 		ld = glyph.JsonLD()
 	}
 	q := eve.ParseQuery(path)
-	if edit, ok := q["edit"]; ok && len(edit) > 0 && edit [0] == "true" {
-        if ed, isEd := obj.(eve.Editable); isEd {
-            form := ed.RenderForm(path)
-            if form != "" {
-                return form
-            }
-        }
-    }
-    if embed, ok := q["embed"]; ok && len(embed) > 0 && embed[0] != "" {
-        switch embed[0] {
-        case "svg":
-            return glyph.SVG()
+	if edit, ok := q["edit"]; ok && len(edit) > 0 && edit[0] == "true" {
+		if ed, isEd := obj.(eve.Editable); isEd {
+			form := ed.RenderForm(path)
+			if form != "" {
+				return form
+			}
+		}
+	}
+	if embed, ok := q["embed"]; ok && len(embed) > 0 && embed[0] != "" {
+		switch embed[0] {
+		case "svg":
+			return glyph.SVG()
 		case "img":
-	        dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
+			dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
 			return "![svg image](" + dataUrl + ")"
-        case "thumbnail":
-            return glyph.Thumbnail()
-        case "name":
-            return ld.StringVal("name")
-        case "description":
-            return ld.StringVal("description")
-        case "cid":
-            return ld.Cid()
-        case "links":
-            return ld.MarkdownLinks()
-        case "jsonld", "json":
-            return ld.String()
-        default:
-            panic("unknown embed type: " + embed[0] + ", supported: svg, thumbnail, name, description, cid, links, jsonld")
-        }
-    }
+		case "thumbnail":
+			return glyph.Thumbnail()
+		case "name":
+			return ld.StringVal("name")
+		case "description":
+			return ld.StringVal("description")
+		case "cid":
+			return ld.Cid()
+		case "links":
+			return ld.MarkdownLinks()
+		case "jsonld", "json":
+			return ld.String()
+		default:
+			panic("unknown embed type: " + embed[0] + ", supported: svg, thumbnail, name, description, cid, links, jsonld")
+		}
+	}
 	var sb strings.Builder
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
-	sb.WriteString("[" + glyph.Thumbnail() + "]("+ path + "&embed=thumbnail" +")\n\n")
+	sb.WriteString("[" + glyph.Thumbnail() + "](" + path + "&embed=thumbnail" + ")\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
@@ -327,8 +334,8 @@ func renderObject(path string, obj interface{}) string {
 		sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")
 	}
 
-    dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
-    sb.WriteString("\n[![svg image](" + dataUrl + ")](" + path +"&embed=img" + ")\n\n")
+	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
+	sb.WriteString("\n[![svg image](" + dataUrl + ")](" + path + "&embed=img" + ")\n\n")
 
 	links := ld.MarkdownLinks()
 	if links != "" {
@@ -337,6 +344,9 @@ func renderObject(path string, obj interface{}) string {
 	}
 	sb.WriteString("\n#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
+
+	sb.WriteString("\n---\n\n")
+	sb.WriteString("[← index](?)\n")
 	return sb.String()
 }
 

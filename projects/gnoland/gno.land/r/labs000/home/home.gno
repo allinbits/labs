@@ -25,7 +25,7 @@ Labs Net is our dedicated testnet environment:
 
 ## LogoGraphs
 
-[` + logoverse.Render("?name=Logoverse&embed=img") + `Logoverse Index](/r/labs000/logoverse)
+[` + logoverse.Render("?glyph=Logoverse&embed=img") + `Logoverse Index](/r/labs000/logoverse)
 
 
 ## Project Menu

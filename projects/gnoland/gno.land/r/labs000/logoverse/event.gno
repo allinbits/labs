@@ -112,7 +112,8 @@ func (EventObj) JsonLD() eve.JsonLDMap {
 	start, end, status, location, descr := parseEventOpts(Event)
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
-		"@type":                "ImageObject",
+		"@type":                "WebPage",
+		"@id":                  "{{CID}}",
 		"name":                 "Event",
 		"description":          descr,
 		"representativeOfPage": true,

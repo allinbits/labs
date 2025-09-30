@@ -27,7 +27,8 @@ func (allInBitsOrg) Thumbnail() string {
 func (allInBitsOrg) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
-		"@type":       "ImageObject",
+		"@type":       "WebPage",
+		"@id":         "{{CID}}",
 		"name":        "allinbits.com",
 		"url":         "https://allinbits.com",
 		"description": "We build secure networks and decentralized applications for web3 that advance community-based governance, enable social coordination and foster community building.",

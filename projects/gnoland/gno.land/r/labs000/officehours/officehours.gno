@@ -319,7 +319,7 @@ func Render(path string) string {
 	case q.Get("embed") == "banner":
 		return "[![Event Flyer](" + officeHours.DataUrl() + ")](/" + link + ")\n\n"
 	case q.Get("format") == "json":
-		return officeHours.JsonLD().String()
+		return officeHours.JsonLD().StringWithCID()
 	case q.Get("render") == "calendar":
 		return "```\n" + RenderCalendar(path) + "\n```"
 	case q.Get("topic") != "":

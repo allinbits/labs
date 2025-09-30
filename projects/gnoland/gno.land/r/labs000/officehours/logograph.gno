@@ -12,7 +12,6 @@ import (
 
 var (
 	_           eve.LogoGraph   = officeHours
-	_           eve.Projectable = officeHours
 	_           eve.Editable    = officeHours
 	packagePath                 = std.CurrentRealm().PkgPath()
 )
@@ -67,83 +66,6 @@ func (o OfficeHours) SVG() string {
 	return eve.SvgHeading("600", "200") + body + "</svg>"
 }
 
-// mergeOpts lets you override transient view options before composing JSON-LD.
-func (o OfficeHours) mergeOpts(objs ...interface{}) OfficeHours {
-	// Start from current global state snapshot
-	base := o
-	for _, o := range objs {
-		if v, ok := o.(OfficeHours); ok {
-			if v.eventTitle != "" {
-				base.eventTitle = v.eventTitle
-			}
-			if v.eventDescription != "" {
-				base.eventDescription = v.eventDescription
-			}
-			if v.eventDayOfWeek != 0 {
-				base.eventDayOfWeek = v.eventDayOfWeek
-			}
-			if v.eventStartHour != 0 {
-				base.eventStartHour = v.eventStartHour
-			}
-			if v.eventDuration != 0 {
-				base.eventDuration = v.eventDuration
-			}
-			if len(v.cancelledDates) > 0 {
-				if base.cancelledDates == nil {
-					base.cancelledDates = map[string]bool{}
-				}
-				for k, b := range v.cancelledDates {
-					base.cancelledDates[k] = b
-				}
-			}
-			if len(v.renderOpts) > 0 {
-				if base.renderOpts == nil {
-					base.renderOpts = map[string]any{}
-				}
-				for k, vv := range v.renderOpts {
-					base.renderOpts[k] = vv
-				}
-			}
-		}
-	}
-	return base
-}
-
-func (o OfficeHours) Compose(obj interface{}) eve.LogoGraph {
-	return o.mergeOpts(obj)
-}
-
-// FromPath extracts overrides from the query string (?date=YYYY-MM-DD, etc.).
-func (OfficeHours) FromPath(path string) interface{} {
-	q := eve.ParseQuery(path)
-	o := *officeHours // start from current
-	if t := q.Get("title"); t != "" {
-		o.eventTitle = t
-	}
-	if d := q.Get("description"); d != "" {
-		o.eventDescription = d
-	}
-	if ds := q.Get("date"); ds != "" {
-		// Allow one-off date: we’ll carry it through in Compose/Flyer via eventFromPath.
-		// (No direct field; we read from path at build time.)
-	}
-	return o
-}
-
-// ToPath emits a stable query reflecting the current projection.
-func (OfficeHours) ToPath(obj interface{}) string {
-	o := OfficeHours{}.mergeOpts(obj)
-	q := url.Values{}
-	if o.eventTitle != "" {
-		q.Set("title", o.eventTitle)
-	}
-	if o.eventDescription != "" {
-		q.Set("description", o.eventDescription)
-	}
-	// You can add ?date=YYYY-MM-DD here if you’re pinning a specific session.
-	return "?" + q.Encode()
-}
-
 // Compose builds the stable JSON-LD (and is what we CID over).
 func (o OfficeHours) JsonLD() eve.JsonLDMap {
 
@@ -163,7 +85,8 @@ func (o OfficeHours) JsonLD() eve.JsonLDMap {
 
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
-		"@type":                "ImageObject",
+		"@type":                "WebPage",
+		"@id":                  "{{CID}}",
 		"name":                 "OfficeHours",
 		"description":          "Recurring Weekly Event with AllInBits Labs.",
 		"representativeOfPage": true,

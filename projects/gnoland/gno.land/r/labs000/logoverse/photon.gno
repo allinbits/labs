@@ -20,6 +20,7 @@ func (photonToken) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
+		"@id":         "{{CID}}",
 		"name":        "$photon",
 		"description": "Photon is a digital asset in the AtomOne ecosystem.",
 		"url":         "https://photon.atomone.dev",

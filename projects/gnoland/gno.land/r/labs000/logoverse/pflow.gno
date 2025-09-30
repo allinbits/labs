@@ -27,6 +27,7 @@ func (pflowEditor) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    []string{"https://schema.org", "https://pflow.xyz/schema"},
 		"@type":       "ImageObject",
+		"@id":         "{{CID}}",
 		"name":        "pflow.xyz",
 		"description": "Petri-net models for web3 - Provides a state machine [json+ld schema](https://pflow.xyz/schema).",
 		"hasPart": []interface{}{

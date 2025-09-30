@@ -27,8 +27,9 @@ var LogoVerse = logoVerse{}
 var _ eve.LogoGraph = LogoVerse
 
 func (logoVerse) Cid() string {
-	return LogoVerse.Compose().Cid()
+	return LogoVerse.JsonLD().Cid()
 }
+
 func (logoVerse) renderOpts() map[string]any {
 	return map[string]any{
 		"dev":      map[string]any{},
@@ -53,41 +54,32 @@ func (logoVerse) SVG() string {
 }
 
 func (logoVerse) JsonLD() eve.JsonLDMap {
-	return LogoVerse.Compose()
+	return eve.JsonLDMap{
+		"@context":    []any{"https://schema.org", LogoverseContext},
+        "@type":       "CreativeWork",
+		"@id":         "{{CID}}", // filled in by projection
+		"name":        "Logoverse",
+		"description": LogoVerse.Description(),
+		"url":         "/r/labs000/logoverse",
+		"banner":       "/r/labs000/logoverse?glyph=Logoverse&embed=img",
+		"thumbnail":      "/r/labs000/logoverse?glyph=Logoverse&embed=thumbnail",
+		"author": map[string]any{
+			"@type": "Organization",
+			"name": "AllInBits",
+			"url":  "https://allinbits.com",
+		},
+		"license": "https://github.com/gnolang/gno/blob/master/LICENSE.md",
+		"hasPart": map[string]any{
+            "@type": "WebPage",
+            "name":  "Glyph",
+            "url":   "/r/labs000/logoverse?glyph=Glyph",
+            "about": "Glyph is the fundamental building block of the Logoverse.",
+        },
+	}
 }
 
 func (logoVerse) ThumbnailSvg(width, height string) string {
 	return AibLabs.ThumbnailSvg(width, height)
-}
-
-// FIXME: compose is used as part of projection - FIXME everywhere
-func (logoVerse) Compose() eve.JsonLDMap {
-
-	return eve.JsonLDMap{
-		"@context":    "https://schema.org",
-		"type":        "CreativeWork",
-		"name":        "Logoverse",
-		"description": LogoVerse.Description(),
-		"url":         "/r/labs000/logoverse",
-		"image":       LogoVerse.Image(), // make these links
-		"thumbnail":   LogoVerse.Thumbnail(),
-		"author": map[string]any{
-			"type": "Organization",
-			"name": "AllInBits",
-			"url":  "https://allinbits.com",
-		},
-		"keywords": []string{
-			"logoverse",
-			"aiblabs",
-			"immutable",
-			"composable",
-			"cid",
-			"projection",
-			"gno.land",
-			"software as a universe",
-		},
-		"license": "https://github.com/gnolang/gno/blob/master/LICENSE.md",
-	}
 }
 
 func (logoVerse) Description() string {

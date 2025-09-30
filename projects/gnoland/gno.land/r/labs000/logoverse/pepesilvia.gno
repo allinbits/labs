@@ -20,6 +20,7 @@ func (pepeSilviaMeme) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
+		"@id":         "{{CID}}",
 		"name":        "Pepe Silvia",
 		"description": "Pepe Silvia is a meme from 'It's Always Sunny in Philadelphia', symbolizing frantic conspiracy theorizing.",
 		"hasPart": []interface{}{

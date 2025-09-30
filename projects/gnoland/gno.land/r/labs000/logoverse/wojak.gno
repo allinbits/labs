@@ -20,6 +20,7 @@ func (wojakMeme) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
 		"@type":       "ImageObject",
+		"@id":         "{{CID}}",
 		"name":        "Wojak",
 		"description": "Wojak is an internet meme, often used to express emotions and reactions.",
 		"hasPart": []interface{}{

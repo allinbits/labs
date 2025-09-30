@@ -47,7 +47,8 @@ func (aibLabs) SVG() string {
 func (aibLabs) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
-		"@type":       "ImageObject",
+		"@type":       "WebPage",
+		"@id":         "{{CID}}",
 		"name":        "aiblabs.net",
 		"description": "Working group fostering core principals: Censorship-Resistance, Sovereignty, Privacy",
 		"about": eve.JsonLDMap{

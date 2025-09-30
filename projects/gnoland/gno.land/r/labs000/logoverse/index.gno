@@ -392,8 +392,3 @@ func isCIDv1(s string) bool {
 	}
 	return true
 }
-
-// TODO: does this need to support path param?
-func RenderJsonLD(path string) string {
-	return LogoVerse.JsonLD().String()
-}

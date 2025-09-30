@@ -8,11 +8,19 @@ type logoVerse struct{}
 
 var LogoverseContext = eve.JsonLDMap{
 	"@version":  1.1,
-	"logoverse": "/r/labs000/logoverse?glyph=Glyph",
+	"logoverse": "/r/labs000/logoverse#",
 
 	// Term definitions
 	"Glyph":    "logoverse:Glyph",
-	"parentId": "logoverse:parentId",
+	"parents": map[string]any{
+	    "@id":  "logoverse:parents",
+        "@type": "@id",
+        "@container": "@set",
+	},
+	"commit": map[string]any{
+	    "@id": "logoverse:commit",
+        "@type": "@id",
+	},
 }
 
 var LogoVerse = logoVerse{}

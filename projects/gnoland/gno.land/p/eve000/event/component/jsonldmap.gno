@@ -99,6 +99,12 @@ func (ld JsonLDMap) MarkdownLinks() string {
 					if licStr, ok := v2.(string); ok && (strings.HasPrefix(licStr, "/r/") || strings.HasPrefix(licStr, "https://")) {
 						urls[newPath] = "[" + licStr + "](" + licStr + ")"
 					}
+				} else if (k == "parentId" || k == "seal") {
+					if str, ok := v2.(string); ok && str != "" {
+					    if IsCIDv1(str) {
+                            urls[newPath] = "[" + str + "](?cid=" + str + ")"
+                        }
+					}
 				} else {
 					collectUrls(v2, newPath, urls)
 				}

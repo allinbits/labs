@@ -9,18 +9,14 @@ import (
 
 type glyphObj struct {
 	Url     string
-	BaseCid string
-	ObjType string
+	ParentCids []string
+	LDType string
+	Commit string
 }
 
-var baseGlyph = glyphObj{
-	Url:     "/r/labs000/logoverse",
-	ObjType: "logoverse:Glyph",
+var Glyph = glyphObj{
+	Url: "?glyph=Glyph",
 }
-
-var Glyph = baseGlyph.Compose(glyphObj{
-	Url: "/r/realm/path-to-your-projection?v=1324&t=123123&h=abcd",
-})
 
 var _ eve.LogoGraph = Glyph
 
@@ -39,9 +35,9 @@ func (g glyphObj) Compose(obj interface{}) glyphObj {
 	case url.URL:
 		return glyphObj{Url: v.String()}
 	case glyphObj:
-		v.BaseCid = g.Cid()
-		if v.ObjType == "" {
-			v.ObjType = g.ObjType
+		v.ParentCids = append(v.ParentCids, g.Cid())
+		if v.LDType == "" {
+			v.LDType = g.LDType
 		}
 		return v
 	default:
@@ -84,7 +80,8 @@ func (g glyphObj) JsonLD() eve.JsonLDMap {
 
 		"@type": "Glyph",
 
-		"parentId": g.BaseCid,
+		"parents": g.ParentCids,
+		"commit": g.Commit,
 
 		// schema.org fields
 		"url":         g.Url,

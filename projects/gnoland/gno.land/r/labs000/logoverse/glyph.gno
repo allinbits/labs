@@ -1,6 +1,7 @@
 package logoverse
 
 import (
+    "strings"
 	eve "gno.land/p/eve000/event/component"
 )
 
@@ -16,6 +17,7 @@ var Glyph = glyphObj{
 }
 
 var _ eve.LogoGraph = Glyph
+var _ eve.Projectable = Glyph
 
 func (g glyphObj) String() string {
 	return g.Url
@@ -25,7 +27,61 @@ func (g glyphObj) IsValid() bool {
 	return g.Url != ""
 }
 
-func (g glyphObj) Compose(obj interface{}) glyphObj {
+func (g glyphObj) FromPath(string) interface{} {
+    o := glyphObj{
+        Url: g.Url,
+        LDType: g.LDType,
+    }
+
+    q := eve.ParseQuery(g.Url)
+    if glyph := q.Get("glyph"); glyph != "" {
+        o.Url = "?glyph=" + glyph
+    }
+    if name := q.Get("name"); name != "" {
+        o.Url += "&name=" + name
+    }
+    if description := q.Get("description"); description != "" {
+        o.Url += "&description=" + description
+    }
+    if parents := q["parent"]; len(parents) > 0 {
+        o.ParentCids = append(o.ParentCids, parents...)
+        for _, parent := range parents {
+            o.Url += "&parent=" + parent
+        }
+    }
+
+    return o
+}
+
+func (g glyphObj) ToPath(o interface{}) string {
+	if v, ok := o.(glyphObj); ok {
+		q := eve.ParseQuery(v.Url)
+		glyph := q.Get("glyph")
+		name := q.Get("name")
+		description := q.Get("description")
+		parent := q.Get("parent")
+		params := []string{}
+		if glyph != "" {
+			params = append(params, "glyph="+glyph)
+		}
+		if name != "" {
+			params = append(params, "name="+name)
+		}
+		if description != "" {
+			params = append(params, "description="+description)
+		}
+		if parent != "" {
+			params = append(params, "parent="+parent)
+		}
+		if len(params) > 0 {
+			return "?" + strings.Join(params, "&")
+		}
+		return v.Url
+	}
+	return ""
+}
+
+func (g glyphObj) Compose(obj interface{}) eve.LogoGraph {
 	switch v := obj.(type) {
 	case string:
 		return glyphObj{Url: v}
@@ -73,10 +129,3 @@ func (g glyphObj) JsonLD() eve.JsonLDMap {
         "description": "Gno Links Yield Projectable Hypermedia",
 	}
 }
-
-// TODO: support projection where we replace name & description
-// maybe need to namespace the params glyphName glyphDesc
-// then we can do /r/realm/path-to-your-projection?v=1324&t=123123&h=abcd&glyphName=MyGlyph&glyphDesc=ThisIsMy
-
-// REVIEW: use Glyph as an entry point to call other realms rendering services?
-// provide methods to invoke rendering projections...

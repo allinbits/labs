@@ -13,6 +13,7 @@ func (ld JsonLDMap) StringWithCID() string {
     return strings.ReplaceAll(ld.String(), "{{CID}}", ld.Cid())
 }
 
+// String returns the JSON-LD string representation.
 func (ld JsonLDMap) String() string {
 	s := "{\n"
 	i := 0

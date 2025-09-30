@@ -26,8 +26,7 @@ var Event = EventObj{
 
 var _ eve.LogoGraph = Event
 
-// FIXME
-// var _ eve.Projectable = Event
+var _ eve.Projectable = Event
 var _ eve.Editable = Event
 
 func (EventObj) Cid() string {
@@ -84,7 +83,7 @@ func (EventObj) SVG() string {
 	return AibLabs.SVG()
 }
 
-func (EventObj) mergeOpts(objs []interface{}) EventObj {
+func (EventObj) mergeOpts(objs ...interface{}) EventObj {
 	obj := make([]EventObj, 0, len(objs))
 	for _, o := range objs {
 		if evt, ok := o.(EventObj); ok {
@@ -174,7 +173,7 @@ func (EventObj) FromPath(path string) interface{} {
 	return e
 }
 
-func (EventObj) ToPath(obj ...interface{}) string {
+func (EventObj) ToPath(obj interface{}) string {
 	evt := Event.mergeOpts(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
@@ -196,10 +195,9 @@ func (EventObj) ToPath(obj ...interface{}) string {
 	return "?" + q.Encode()
 }
 
-// FIXME
-// func (EventObj) Compose(obj ...interface{}) eve.LogoGraph {
-//     return Event
-// }
+func (EventObj) Compose(obj interface{}) eve.LogoGraph {
+    return Event.mergeOpts(obj)
+}
 
 func (EventObj) Flyer(obj ...interface{}) *eve.Flyer {
 	start, end, status, location, descr := parseEventOpts(Event.mergeOpts(obj))

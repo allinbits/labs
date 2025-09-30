@@ -1,9 +1,6 @@
 package logoverse
 
 import (
-	"net/url"
-
-	"gno.land/p/demo/ufmt"
 	eve "gno.land/p/eve000/event/component"
 )
 
@@ -32,8 +29,6 @@ func (g glyphObj) Compose(obj interface{}) glyphObj {
 	switch v := obj.(type) {
 	case string:
 		return glyphObj{Url: v}
-	case url.URL:
-		return glyphObj{Url: v.String()}
 	case glyphObj:
 		v.ParentCids = append(v.ParentCids, g.Cid())
 		if v.LDType == "" {
@@ -59,34 +54,23 @@ func (g glyphObj) Thumbnail() string {
 	return "[[GLYPH]]"
 }
 
-func (g glyphObj) Banner() string {
-	return ufmt.Sprintf("![banner](%s)", g.Url)
-}
-
-func (g glyphObj) Link() string {
-	return ufmt.Sprintf("[link](%s)", g.Url)
-}
-
-func (g glyphObj) Button() string {
-	return ufmt.Sprintf("[button](%s)", g.Url)
-}
-
 func (g glyphObj) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context": []any{
 			"https://schema.org",
 			LogoverseContext,
 		},
-
-		"@type": "Glyph",
-
-		"parents": g.ParentCids,
-		"commit": g.Commit,
-
-		// schema.org fields
-		"url":         g.Url,
-		"name":        "Glyph",
-		"description": "Gno Links Yield Projectable Hypermedia",
+		"@graph": []any {
+			map[string]any{
+			    "@id":         "{{CID}}",
+				"@type":       "Glyph",
+				"parents":     g.ParentCids,
+				"commit":      g.Commit,
+				"url":         g.Url,
+			},
+		},
+        "name":        "Glyph",
+        "description": "Gno Links Yield Projectable Hypermedia",
 	}
 }
 

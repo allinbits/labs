@@ -169,12 +169,6 @@ func Render(path string) string {
 		}
 		// valid names must be longer than 4 chars to be used as a filter
 		if id, hasId := q["glyph"]; hasId && len(id) > 0 && len(id[0]) > 4 {
-
-			// enforce the query to start with ?glyph= to make it easier to remove
-			if !strings.HasPrefix(path, "?glyph=") {
-				return "invalid glyph query"
-			}
-
 			for _, c := range rows {
 				if v, ok := registry.Get(c); ok {
 					r := v.(Record)
@@ -312,7 +306,7 @@ func renderObject(path string, obj interface{}) string {
 		case "links":
 			return ld.MarkdownLinks()
 		case "jsonld", "json":
-			return ld.String()
+			return ld.StringWithCID()
 		default:
 			panic("unknown embed type: " + embed[0] + ", supported: svg, thumbnail, name, description, cid, links, jsonld")
 		}
@@ -343,7 +337,7 @@ func renderObject(path string, obj interface{}) string {
 		sb.WriteString(links + "\n")
 	}
 	sb.WriteString("\n#### JSON-LD\n")
-	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
+	sb.WriteString("```json\n" + strings.TrimSpace(ld.StringWithCID()) + "\n```\n")
 
 	sb.WriteString("\n---\n\n")
 	sb.WriteString("[← index](?)\n")

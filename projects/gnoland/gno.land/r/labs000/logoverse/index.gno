@@ -173,7 +173,13 @@ func Render(path string) string {
 				if v, ok := registry.Get(c); ok {
 					r := v.(Record)
 					if r.Name == id[0] {
-						return renderObject(path, r.Object)
+						// REVIEW: can we consolidate this with the projection logic in commitProjection?
+						proj, isProj := r.Object.(eve.Projectable)
+						obj := r.Object
+						if isProj {
+							obj = proj.FromPath(path)
+						}
+						return renderObject(path, obj)
 					}
 				}
 			}
@@ -203,6 +209,7 @@ func Render(path string) string {
 		return "cid not found"
 	}
 
+	// REVIEW: can we consolidate this with the projection logic in commitProjection?
 	r := v.(Record)
 	proj, isProj := r.Object.(eve.Projectable)
 	obj := r.Object
@@ -271,14 +278,7 @@ func Render(path string) string {
 
 func renderObject(path string, obj interface{}) string {
 	glyph := obj.(eve.LogoGraph)
-	var ld eve.JsonLDMap
-	if proj, ok := obj.(eve.Projectable); ok {
-		ld = glyph.JsonLD() // FIXME
-		_ = proj
-		//ld = proj.Compose(obj).JsonLD()
-	} else {
-		ld = glyph.JsonLD()
-	}
+	ld := glyph.JsonLD()
 	q := eve.ParseQuery(path)
 	if edit, ok := q["edit"]; ok && len(edit) > 0 && edit[0] == "true" {
 		if ed, isEd := obj.(eve.Editable); isEd {
@@ -320,7 +320,7 @@ func renderObject(path string, obj interface{}) string {
 	if proj, ok := obj.(eve.Projectable); ok {
 		if _, found := registry.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
-			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register")+"\n")
+			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register") + "\n")
 		} else {
 			sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
 		}
@@ -393,8 +393,7 @@ func isCIDv1(s string) bool {
 	return true
 }
 
-
 // TODO: does this need to support path param?
 func RenderJsonLD(path string) string {
-    return LogoVerse.JsonLD().String()
+	return LogoVerse.JsonLD().String()
 }

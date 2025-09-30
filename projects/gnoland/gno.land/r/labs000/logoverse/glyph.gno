@@ -1,19 +1,22 @@
 package logoverse
 
 import (
-    "strings"
 	eve "gno.land/p/eve000/event/component"
 )
 
 type glyphObj struct {
-	Url     string
-	ParentCids []string
-	LDType string
-	Commit string
+	Url         string
+	ParentCids  []string
+	LDType      string
+	Commit      string
+	Name        string
+	Description string
 }
 
 var Glyph = glyphObj{
-	Url: "?glyph=Glyph",
+	Url:         "?glyph=Glyph",
+	Name:        "Glyph",
+	Description: "Gno Links Yield Projectable Hypermedia",
 }
 
 var _ eve.LogoGraph = Glyph
@@ -27,58 +30,62 @@ func (g glyphObj) IsValid() bool {
 	return g.Url != ""
 }
 
-func (g glyphObj) FromPath(string) interface{} {
-    o := glyphObj{
-        Url: g.Url,
-        LDType: g.LDType,
-    }
+func (g glyphObj) FromPath(path string) interface{} {
+	o := glyphObj{
+		Url:         g.Url,
+		LDType:      g.LDType,
+		Name:        g.Name,
+		Description: g.Description,
+	}
+	if o.LDType == "" {
+		o.LDType = "Glyph"
+	}
 
-    q := eve.ParseQuery(g.Url)
-    if glyph := q.Get("glyph"); glyph != "" {
-        o.Url = "?glyph=" + glyph
-    }
-    if name := q.Get("name"); name != "" {
-        o.Url += "&name=" + name
-    }
-    if description := q.Get("description"); description != "" {
-        o.Url += "&description=" + description
-    }
-    if parents := q["parent"]; len(parents) > 0 {
-        o.ParentCids = append(o.ParentCids, parents...)
-        for _, parent := range parents {
-            o.Url += "&parent=" + parent
-        }
-    }
+	q := eve.ParseQuery(path)
+	if glyph := q.Get("glyph"); glyph != "" {
+		o.Url = "?glyph=" + glyph
+	}
+	if name := q.Get("name"); name != "" {
+		o.Name = name
+	}
+	if description := q.Get("description"); description != "" {
+		o.Description = description
+	}
 
-    return o
+	if commit := q.Get("commit"); commit != "" {
+		o.Commit = commit
+	}
+
+	if len(q["parent"]) > 0 {
+		for _, parent := range q["parent"] {
+			o.ParentCids = append(o.ParentCids, parent)
+		}
+	}
+
+	o.Url = "?glyph=Glyph" // consider getting from "redirect" in the query params + add form
+
+	return o
 }
 
 func (g glyphObj) ToPath(o interface{}) string {
-	if v, ok := o.(glyphObj); ok {
-		q := eve.ParseQuery(v.Url)
-		glyph := q.Get("glyph")
-		name := q.Get("name")
-		description := q.Get("description")
-		parent := q.Get("parent")
-		params := []string{}
-		if glyph != "" {
-			params = append(params, "glyph="+glyph)
-		}
-		if name != "" {
-			params = append(params, "name="+name)
-		}
-		if description != "" {
-			params = append(params, "description="+description)
-		}
-		if parent != "" {
-			params = append(params, "parent="+parent)
-		}
-		if len(params) > 0 {
-			return "?" + strings.Join(params, "&")
-		}
-		return v.Url
+	obj := o.(glyphObj)
+	q := make(map[string][]string)
+	if obj.Url != "" {
+		q["glyph"] = []string{obj.Url[7:]} // trim "?glyph="
 	}
-	return ""
+	if obj.Name != "" {
+		q["name"] = []string{obj.Name}
+	}
+	if obj.Description != "" {
+		q["description"] = []string{obj.Description}
+	}
+	if obj.Commit != "" {
+		q["commit"] = []string{obj.Commit}
+	}
+	if len(obj.ParentCids) > 0 {
+		q["parent"] = obj.ParentCids
+	}
+	return eve.BuildQuery(q)
 }
 
 func (g glyphObj) Compose(obj interface{}) eve.LogoGraph {
@@ -116,16 +123,16 @@ func (g glyphObj) JsonLD() eve.JsonLDMap {
 			"https://schema.org",
 			LogoverseContext,
 		},
-		"@graph": []any {
+		"@graph": []any{
 			map[string]any{
-			    "@id":         "{{CID}}",
-				"@type":       "Glyph",
-				"parents":     g.ParentCids,
-				"commit":      g.Commit,
-				"url":         g.Url,
+				"@id":     "{{CID}}",
+				"@type":   g.LDType,
+				"parents": g.ParentCids,
+				"commit":  g.Commit,
+				"url":     g.Url,
 			},
 		},
-        "name":        "Glyph",
-        "description": "Gno Links Yield Projectable Hypermedia",
+		"name":        g.Name,
+		"description": g.Description,
 	}
 }

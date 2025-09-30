@@ -16,6 +16,7 @@ type glyphObj struct {
 var Glyph = glyphObj{
 	Url:         "?glyph=Glyph",
 	Name:        "Glyph",
+	LDType:      "Glyph",
 	Description: "Gno Links Yield Projectable Hypermedia",
 }
 
@@ -62,7 +63,11 @@ func (g glyphObj) FromPath(path string) interface{} {
 		}
 	}
 
-	o.Url = "?glyph=Glyph" // consider getting from "redirect" in the query params + add form
+    if url := q.Get("url"); url != "" {
+        o.Url = url
+    } else {
+        o.Url = "?glyph=Glyph"
+    }
 
 	return o
 }
@@ -85,6 +90,8 @@ func (g glyphObj) ToPath(o interface{}) string {
 	if len(obj.ParentCids) > 0 {
 		q["parent"] = obj.ParentCids
 	}
+
+	q["url"] = append(q["url"], obj.Url)
 	return eve.BuildQuery(q)
 }
 

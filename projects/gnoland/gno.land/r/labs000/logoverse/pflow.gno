@@ -42,6 +42,9 @@ func (pflowEditor) JsonLD() eve.JsonLDMap {
 			"@type": "Person",
 			"name":  "Matt York",
 			"url":   "https://github.com/stackdump",
+			"sameAs": []string{
+                "https://dither.chat/profile/atone1xruhjgq29fql3ff6vs96upk5ld9uu30fd0u3ng",
+            },
 		},
 	}
 }

@@ -18,12 +18,13 @@ func (photonToken) Cid() string {
 
 func (photonToken) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
-		"@context":    "https://schema.org",
-		"@type":       "ImageObject",
-		"@id":         "{{CID}}",
-		"name":        "$photon",
-		"description": "Photon is a digital asset in the AtomOne ecosystem.",
-		"url":         "https://photon.atomone.dev",
+		"@context":     "https://schema.org",
+		"@type":        "FinancialProduct",
+		"@id":          "{{CID}}",
+		"name":         "$photon",
+		"description":  "Photon is a digital asset in the AtomOne ecosystem.",
+		"url":          "https://atom.one/blog/atomone-v2-the-photon-powered-upgrade/",
+		"tickerSymbol": "$PHOTON",
 		"hasPart": []interface{}{
 			eve.JsonLDMap{
 				"@type":        "Product",

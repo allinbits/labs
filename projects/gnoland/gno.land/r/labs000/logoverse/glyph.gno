@@ -63,11 +63,11 @@ func (g glyphObj) FromPath(path string) interface{} {
 		}
 	}
 
-    if url := q.Get("url"); url != "" {
-        o.Url = url
-    } else {
-        o.Url = "?glyph=Glyph"
-    }
+	if url := q.Get("url"); url != "" {
+		o.Url = url
+	} else {
+		o.Url = "?glyph=Glyph"
+	}
 
 	return o
 }

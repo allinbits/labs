@@ -25,6 +25,7 @@ type OfficeHours struct {
 	renderOpts       map[string]interface{}
 	sequence         int
 	admin            string
+	selectedDate     string
 }
 
 // ---------- State ----------
@@ -46,8 +47,9 @@ var officeHours = &OfficeHours{
 			"SessionsTitle": "Weekly Session",
 		},
 	},
-	sequence: -1,
-	admin:    std.PreviousRealm().Address().String(),
+	sequence:     -1,
+	admin:        std.PreviousRealm().Address().String(),
+	selectedDate: "2025-09-01",
 }
 
 // ---------- Access Control ----------

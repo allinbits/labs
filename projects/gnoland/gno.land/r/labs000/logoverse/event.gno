@@ -20,7 +20,7 @@ var Event = EventObj{
 	EndDate:   "2025-01-01T13:00:00Z",
 	Settings: map[string]string{
 		"location":    "Online",
-		"description": "Immutable object used to compose event flyers in gno.land.",
+		"description": "On-chain Event flyers - extend the base url path with query parameters to set event options.",
 	},
 }
 
@@ -113,22 +113,26 @@ func (EventObj) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":             "https://schema.org",
 		"@type":                "WebPage",
-		"@id":                  "{{CID}}",
 		"name":                 "Event",
 		"description":          descr,
+		"banner":               LogoVerse.URL("?glyph=Event&embed=img"),
+		"thumbnail":            LogoVerse.URL("?glyph=Event&embed=thumbnail"),
 		"representativeOfPage": true,
-		"url":                  "/p/eve000/event",
-		"about": map[string]interface{}{
-			"@type":       "Event",
-			"name":        "Event Flyer",
-			"description": descr,
-			"eventStatus": status,
-			"startDate":   start,
-			"endDate":     end,
-			"location": map[string]interface{}{
-				"@type":   "Place",
-				"name":    location,
-				"address": location,
+		"url":                  "/r/events000",
+		"@graph": []any{
+			map[string]any{
+				"@type":       "Event",
+				"@id":         "{{CID}}",
+				"name":        "Event Flyer",
+				"description": descr,
+				"eventStatus": status,
+				"startDate":   start,
+				"endDate":     end,
+				"location": map[string]any{
+					"@type":   "Place",
+					"name":    location,
+					"address": location,
+				},
 			},
 		},
 	}
@@ -197,7 +201,7 @@ func (EventObj) ToPath(obj interface{}) string {
 }
 
 func (EventObj) Compose(obj interface{}) eve.LogoGraph {
-    return Event.mergeOpts(obj)
+	return Event.mergeOpts(obj)
 }
 
 func (EventObj) Flyer(obj ...interface{}) *eve.Flyer {

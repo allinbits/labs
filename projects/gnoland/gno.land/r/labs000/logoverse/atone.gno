@@ -18,12 +18,15 @@ func (atoneToken) Cid() string {
 
 func (atoneToken) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
-		"@context":    "https://schema.org",
-		"@type":       "ImageObject", // Consider extending FinancialProduct
-		"@id":         "{{CID}}",
-		"name":        "$atone",
-		"description": "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem.",
-		"url":         "https://atom.one",
+		"@context":     "https://schema.org",
+		"@type":        "FinancialProduct",
+		"@id":          "{{CID}}",
+		"name":         "$atone",
+		"description":  "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem.",
+		"url":          "https://atom.one",
+		"banner":       LogoVerse.URL("?glyph=$atone&embed=img"),
+		"thumbnail":    LogoVerse.URL("?glyph=$atone&embed=thumbnail"),
+		"tickerSymbol": "$ATONE",
 		"hasPart": []interface{}{
 			eve.JsonLDMap{
 				"@type": "CreativeWork",

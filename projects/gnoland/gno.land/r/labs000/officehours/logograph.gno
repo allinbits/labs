@@ -3,6 +3,7 @@ package officehours
 import (
 	"net/url"
 	"std"
+	"strconv"
 
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
@@ -11,9 +12,9 @@ import (
 // ---------- Logograph / Projectable / Editable surface ----------
 
 var (
-	_           eve.LogoGraph   = officeHours
-	_           eve.Editable    = officeHours
-	packagePath                 = std.CurrentRealm().PkgPath()
+	_           eve.LogoGraph = officeHours
+	_           eve.Editable  = officeHours
+	packagePath               = std.CurrentRealm().PkgPath()
 )
 
 func init() {
@@ -83,22 +84,35 @@ func (o OfficeHours) JsonLD() eve.JsonLDMap {
 		admin = std.CurrentRealm().Address().String()
 	}
 
+	selectedDate := o.selectedDate
+	if selectedDate == "" {
+		selectedDate = officeHours.selectedDate
+	}
+
+	if len(selectedDate) == 10 {
+		selectedDate = selectedDate + "T" + strconv.Itoa(officeHours.eventStartHour) + ":00:00"
+	}
+
 	return eve.JsonLDMap{
-		"@context":             "https://schema.org",
-		"@type":                "WebPage",
-		"@id":                  "{{CID}}",
-		"name":                 "OfficeHours",
-		"description":          "Recurring Weekly Event with AllInBits Labs.",
-		"representativeOfPage": true,
-		"url":                  packagePath[8:],
-		"banner":               packagePath[8:] + "?embed=banner",
-		"thumbnail":            packagePath[8:] + "?embed=thumbnail",
-		"about": map[string]interface{}{
-			"@type":       "Event",
-			"eventStatus": status,
-			"url":         packagePath[8:] + "?render=calendar",
-			"admin":       admin,
+		"@context":    "https://schema.org",
+		"@type":       "WebPage",
+		"name":        "OfficeHours",
+		"description": "Recurring Weekly Event with AllInBits Labs.",
+		"@graph": []interface{}{
+			map[string]interface{}{
+				"@type":     "Event",
+				"@id":       "{{CID}}",
+				"startDate": selectedDate,
+				"status":    status,
+			},
 		},
+		"about": map[string]interface{}{
+			"url":       packagePath[8:],
+			"banner":    packagePath[8:] + "?embed=banner",
+			"thumbnail": packagePath[8:] + "?embed=thumbnail",
+			"admin":     admin,
+		},
+		"representativeOfPage": true,
 	}
 }
 

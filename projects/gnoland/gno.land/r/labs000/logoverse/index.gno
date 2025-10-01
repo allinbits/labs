@@ -143,6 +143,7 @@ var rows = []string{
 	Register(AibLabs),
 	Register(AllInBits),
 	Register(Atone),
+	Register(Dither),
 	Register(Event),
 	Register(Glyph),
 	Register(LogoVerse),

@@ -50,6 +50,8 @@ func (aibLabs) JsonLD() eve.JsonLDMap {
 		"@type":       "WebPage",
 		"@id":         "{{CID}}",
 		"name":        "aiblabs.net",
+		"banner":      LogoVerse.URL("?glyph=Logoverse&embed=img"),
+		"thumbnail":   LogoVerse.URL("?glyph=Logoverse&embed=thumbnail"),
 		"description": "Working group fostering core principals: Censorship-Resistance, Sovereignty, Privacy",
 		"about": eve.JsonLDMap{
 			"@type": "Organization",

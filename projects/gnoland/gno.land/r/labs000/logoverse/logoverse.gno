@@ -11,15 +11,15 @@ var LogoverseContext = eve.JsonLDMap{
 	"logoverse": "/r/labs000/logoverse#",
 
 	// Term definitions
-	"Glyph":    "logoverse:Glyph",
+	"Glyph": "logoverse:Glyph",
 	"parents": map[string]any{
-	    "@id":  "logoverse:parents",
-        "@type": "@id",
-        "@container": "@set",
+		"@id":        "logoverse:parents",
+		"@type":      "@id",
+		"@container": "@set",
 	},
 	"commit": map[string]any{
-	    "@id": "logoverse:commit",
-        "@type": "@id",
+		"@id":   "logoverse:commit",
+		"@type": "@id",
 	},
 }
 
@@ -53,28 +53,36 @@ func (logoVerse) SVG() string {
 	return AibLabs.SVG()
 }
 
+func (logoVerse) URL(params ...string) string {
+	url := "/r/labs000/logoverse"
+	if len(params) > 0 {
+		return url + params[0]
+	}
+	return url
+}
+
 func (logoVerse) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    []any{"https://schema.org", LogoverseContext},
-        "@type":       "CreativeWork",
+		"@type":       "CreativeWork",
 		"@id":         "{{CID}}", // filled in by projection
 		"name":        "Logoverse",
 		"description": LogoVerse.Description(),
-		"url":         "/r/labs000/logoverse",
-		"banner":       "/r/labs000/logoverse?glyph=Logoverse&embed=img",
-		"thumbnail":      "/r/labs000/logoverse?glyph=Logoverse&embed=thumbnail",
+		"url":         LogoVerse.URL(),
+		"banner":      LogoVerse.URL("?glyph=Logoverse&embed=img"),
+		"thumbnail":   LogoVerse.URL("?glyph=Logoverse&embed=thumbnail"),
 		"author": map[string]any{
 			"@type": "Organization",
-			"name": "AllInBits",
-			"url":  "https://allinbits.com",
+			"name":  "AllInBits",
+			"url":   "https://allinbits.com",
 		},
 		"license": "https://github.com/gnolang/gno/blob/master/LICENSE.md",
 		"hasPart": map[string]any{
-            "@type": "WebPage",
-            "name":  "Glyph",
-            "url":   "/r/labs000/logoverse?glyph=Glyph",
-            "about": "Glyph is the fundamental building block of the Logoverse.",
-        },
+			"@type": "WebPage",
+			"name":  "Glyph",
+			"url":   "/r/labs000/logoverse?glyph=Glyph",
+			"about": "Glyph is the fundamental building block of the Logoverse.",
+		},
 	}
 }
 

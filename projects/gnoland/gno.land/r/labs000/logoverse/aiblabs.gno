@@ -10,7 +10,7 @@ type aibLabs struct{}
 
 var AibLabs = aibLabs{}
 
-var _ LogoGraph = aibLabs{}
+var _ eve.LogoGraph = aibLabs{}
 
 func (aibLabs) Cid() string {
 	return AibLabs.JsonLD().Cid()
@@ -47,8 +47,11 @@ func (aibLabs) SVG() string {
 func (aibLabs) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    "https://schema.org",
-		"@type":       "ImageObject",
+		"@type":       "WebPage",
+		"@id":         "{{CID}}",
 		"name":        "aiblabs.net",
+		"banner":      LogoVerse.URL("?glyph=Logoverse&embed=img"),
+		"thumbnail":   LogoVerse.URL("?glyph=Logoverse&embed=thumbnail"),
 		"description": "Working group fostering core principals: Censorship-Resistance, Sovereignty, Privacy",
 		"about": eve.JsonLDMap{
 			"@type": "Organization",

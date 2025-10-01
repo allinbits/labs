@@ -25,6 +25,7 @@ type OfficeHours struct {
 	renderOpts       map[string]interface{}
 	sequence         int
 	admin            string
+	selectedDate     string
 }
 
 // ---------- State ----------
@@ -46,8 +47,9 @@ var officeHours = &OfficeHours{
 			"SessionsTitle": "Weekly Session",
 		},
 	},
-	sequence: -1,
-	admin:    std.PreviousRealm().Address().String(),
+	sequence:     -1,
+	admin:        std.PreviousRealm().Address().String(),
+	selectedDate: "2025-09-01",
 }
 
 // ---------- Access Control ----------
@@ -292,17 +294,18 @@ func RenderCalendar(path string) string {
 	}
 
 	for date, _ := range officeHours.cancelledDates {
-        if t, err := time.Parse("2006-01-02", date); err == nil {
-            exdate := time.Date(t.Year(), t.Month(), t.Day(), officeHours.eventStartHour, 0, 0, 0, time.UTC)
-            opts["ExDates"] = append(opts["ExDates"].([]string), exdate.Format("20060102T150405Z"))
-        }
-    }
+		if t, err := time.Parse("2006-01-02", date); err == nil {
+			exdate := time.Date(t.Year(), t.Month(), t.Day(), officeHours.eventStartHour, 0, 0, 0, time.UTC)
+			opts["ExDates"] = append(opts["ExDates"].([]string), exdate.Format("20060102T150405Z"))
+		}
+	}
 
 	return eve.IcsRecurringCalendarFile(path, opts)
 }
 
 // Render is the main entry point to render the office hours page.
-// | banner | to render a markdown banner with a link to the flyer image. (useful from other realms)
+// | ?embed=banner | to render a markdown banner with a link to the flyer image. (useful from other realms)
+// | ?embed=thumbnail | to render a markdown thumbnail with a link to the flyer image. (useful from other realms)
 // | ?format=json | to view the current configuration in JSON.
 // | ?render=calendar | to view the ICS calendar file.
 // | ?topic=CID&date=YYYY-MM-DD&description={str} | to view a topic proposal confirmation.
@@ -310,15 +313,15 @@ func RenderCalendar(path string) string {
 func Render(path string) string {
 	q := eve.ParseQuery(path)
 	var sb strings.Builder
-	link := std.CurrentRealm().PkgPath()[9:]
+	link := packagePath[9:]
 
 	switch {
 	case q.Get("embed") == "thumbnail":
-		return "[" + officeHours.Thumbnail() + "](/" +  link + ")\n\n"
+		return "[" + officeHours.Thumbnail() + "](/" + link + ")\n\n"
 	case q.Get("embed") == "banner":
-		return "[![Event Flyer](" + officeHours.DataUrl() + ")](/" +  link + ")\n\n"
+		return "[![Event Flyer](" + officeHours.DataUrl() + ")](/" + link + ")\n\n"
 	case q.Get("format") == "json":
-		return officeHours.JsonLD().String()
+		return officeHours.JsonLD().StringWithCID()
 	case q.Get("render") == "calendar":
 		return "```\n" + RenderCalendar(path) + "\n```"
 	case q.Get("topic") != "":

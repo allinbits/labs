@@ -20,16 +20,17 @@ var Event = EventObj{
 	EndDate:   "2025-01-01T13:00:00Z",
 	Settings: map[string]string{
 		"location":    "Online",
-		"description": "Immutable object used to compose event flyers in gno.land.",
+		"description": "On-chain Event flyers - extend the base url path with query parameters to set event options.",
 	},
 }
 
-var _ LogoGraph = Event
-var _ Projectable = Event
-var _ Editable = Event
+var _ eve.LogoGraph = Event
+
+var _ eve.Projectable = Event
+var _ eve.Editable = Event
 
 func (EventObj) Cid() string {
-	return Event.Compose().Cid()
+	return Event.JsonLD().Cid()
 }
 
 func (EventObj) renderOpts() map[string]any {
@@ -82,7 +83,7 @@ func (EventObj) SVG() string {
 	return AibLabs.SVG()
 }
 
-func (EventObj) mergeOpts(objs []interface{}) EventObj {
+func (EventObj) mergeOpts(objs ...interface{}) EventObj {
 	obj := make([]EventObj, 0, len(objs))
 	for _, o := range objs {
 		if evt, ok := o.(EventObj); ok {
@@ -108,7 +109,33 @@ func (EventObj) mergeOpts(objs []interface{}) EventObj {
 }
 
 func (EventObj) JsonLD() eve.JsonLDMap {
-	return Event.Compose()
+	start, end, status, location, descr := parseEventOpts(Event)
+	return eve.JsonLDMap{
+		"@context":             "https://schema.org",
+		"@type":                "WebPage",
+		"name":                 "Event",
+		"description":          descr,
+		"banner":               LogoVerse.URL("?glyph=Event&embed=img"),
+		"thumbnail":            LogoVerse.URL("?glyph=Event&embed=thumbnail"),
+		"representativeOfPage": true,
+		"url":                  "/r/events000",
+		"@graph": []any{
+			map[string]any{
+				"@type":       "Event",
+				"@id":         "{{CID}}",
+				"name":        "Event Flyer",
+				"description": descr,
+				"eventStatus": status,
+				"startDate":   start,
+				"endDate":     end,
+				"location": map[string]any{
+					"@type":   "Place",
+					"name":    location,
+					"address": location,
+				},
+			},
+		},
+	}
 }
 
 func parseEventOpts(obj EventObj) (start, end time.Time, status, location, descr string) {
@@ -151,7 +178,7 @@ func (EventObj) FromPath(path string) interface{} {
 	return e
 }
 
-func (EventObj) ToPath(obj ...interface{}) string {
+func (EventObj) ToPath(obj interface{}) string {
 	evt := Event.mergeOpts(obj)
 	q := url.Values{}
 	q.Set("cid", evt.Cid())
@@ -173,29 +200,8 @@ func (EventObj) ToPath(obj ...interface{}) string {
 	return "?" + q.Encode()
 }
 
-func (EventObj) Compose(obj ...interface{}) eve.JsonLDMap {
-	start, end, status, location, descr := parseEventOpts(Event.mergeOpts(obj))
-	return eve.JsonLDMap{
-		"@context":             "https://schema.org",
-		"@type":                "ImageObject",
-		"name":                 "Event",
-		"description":          descr,
-		"representativeOfPage": true,
-		"url":                  "/p/eve000/event",
-		"about": map[string]interface{}{
-			"@type":       "Event",
-			"name":        "Event Flyer",
-			"description": descr,
-			"eventStatus": status,
-			"startDate":   start,
-			"endDate":     end,
-			"location": map[string]interface{}{
-				"@type":   "Place",
-				"name":    location,
-				"address": location,
-			},
-		},
-	}
+func (EventObj) Compose(obj interface{}) eve.LogoGraph {
+	return Event.mergeOpts(obj)
 }
 
 func (EventObj) Flyer(obj ...interface{}) *eve.Flyer {

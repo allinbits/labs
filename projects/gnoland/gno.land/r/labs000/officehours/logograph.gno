@@ -1,8 +1,9 @@
 package officehours
 
 import (
-    "std"
-    "net/url"
+	"net/url"
+	"std"
+	"strconv"
 
 	"gno.land/p/eve000/event"
 	eve "gno.land/p/eve000/event/component"
@@ -11,13 +12,13 @@ import (
 // ---------- Logograph / Projectable / Editable surface ----------
 
 var (
-	_ eve.LogoGraph  = officeHours
-	_ eve.Projectable = officeHours
-	_ eve.Editable   = officeHours
+	_           eve.LogoGraph = officeHours
+	_           eve.Editable  = officeHours
+	packagePath               = std.CurrentRealm().PkgPath()
 )
 
 func init() {
-   eve.AssertProjectionRoundTrip(officeHours, officeHours)
+	eve.AssertProjectionRoundTrip(officeHours, officeHours)
 }
 
 // Cid is derived from the stable JSON-LD composed below.
@@ -60,120 +61,58 @@ func (OfficeHours) ThumbnailSvg(w, h string) string {
 
 // SVG returns the full SVG representation of the flyer.
 func (o OfficeHours) SVG() string {
-    var y = 28
+	var y = 28
 	body := o.Flyer().ToSVGFragment(&y)
-	body += `<g transform="translate(410, 40) scale(1.8)"> ` + aibLogoPath + `</g>`
+	body += `<g transform="translate(410, 52) scale(1.8)"> ` + aibLogoPath + `</g>`
 	return eve.SvgHeading("600", "200") + body + "</svg>"
-}
-
-// mergeOpts lets you override transient view options before composing JSON-LD.
-func (o OfficeHours) mergeOpts(objs ...interface{}) OfficeHours {
-	// Start from current global state snapshot
-	base := o
-	for _, o := range objs {
-		if v, ok := o.(OfficeHours); ok {
-			if v.eventTitle != "" {
-				base.eventTitle = v.eventTitle
-			}
-			if v.eventDescription != "" {
-				base.eventDescription = v.eventDescription
-			}
-			if v.eventDayOfWeek != 0 {
-				base.eventDayOfWeek = v.eventDayOfWeek
-			}
-			if v.eventStartHour != 0 {
-				base.eventStartHour = v.eventStartHour
-			}
-			if v.eventDuration != 0 {
-				base.eventDuration = v.eventDuration
-			}
-			if len(v.cancelledDates) > 0 {
-				if base.cancelledDates == nil {
-					base.cancelledDates = map[string]bool{}
-				}
-				for k, b := range v.cancelledDates {
-					base.cancelledDates[k] = b
-				}
-			}
-			if len(v.renderOpts) > 0 {
-				if base.renderOpts == nil {
-					base.renderOpts = map[string]any{}
-				}
-				for k, vv := range v.renderOpts {
-					base.renderOpts[k] = vv
-				}
-			}
-		}
-	}
-	return base
-}
-
-func (o OfficeHours) Compose(obj interface{}) eve.LogoGraph {
-    return o.mergeOpts(obj)
-}
-
-// FromPath extracts overrides from the query string (?date=YYYY-MM-DD, etc.).
-func (OfficeHours) FromPath(path string) interface{} {
-	q := eve.ParseQuery(path)
-	o := *officeHours // start from current
-	if t := q.Get("title"); t != "" {
-		o.eventTitle = t
-	}
-	if d := q.Get("description"); d != "" {
-		o.eventDescription = d
-	}
-	if ds := q.Get("date"); ds != "" {
-		// Allow one-off date: we’ll carry it through in Compose/Flyer via eventFromPath.
-		// (No direct field; we read from path at build time.)
-	}
-	return o
-}
-
-// ToPath emits a stable query reflecting the current projection.
-func (OfficeHours) ToPath(obj interface{}) string {
-	o := OfficeHours{}.mergeOpts(obj)
-	q := url.Values{}
-	if o.eventTitle != "" {
-		q.Set("title", o.eventTitle)
-	}
-	if o.eventDescription != "" {
-		q.Set("description", o.eventDescription)
-	}
-	// You can add ?date=YYYY-MM-DD here if you’re pinning a specific session.
-	return "?" + q.Encode()
 }
 
 // Compose builds the stable JSON-LD (and is what we CID over).
 func (o OfficeHours) JsonLD() eve.JsonLDMap {
 
-	// Build the concrete event for the current (or requested) session.
-	// We intentionally don’t read path here to keep the LD stable; path-specific
-	// choices (like ?date=) are “views.” If you want date-pinning in the CID,
+	// build the concrete event for the current (or requested) session.
+	// we intentionally don’t read path here to keep the ld stable; path-specific
+	// choices (like ?date=) are “views.” if you want date-pinning in the cid,
 	// pass an override object that sets it in your own workflow.
-	evt := eventFromPath("") // next upcoming by default
-	start := evt.StartDate
-	end := evt.EndDate
+	status := "EventScheduled"
+	if isCancelled(publishedAt) { // cancelling this date marks the whole series as cancelled
+		status = "EventCancelled"
+	}
+
+	admin := o.admin
+	if admin == "" {
+		admin = std.CurrentRealm().Address().String()
+	}
+
+	selectedDate := o.selectedDate
+	if selectedDate == "" {
+		selectedDate = officeHours.selectedDate
+	}
+
+	if len(selectedDate) == 10 {
+		selectedDate = selectedDate + "T" + strconv.Itoa(officeHours.eventStartHour) + ":00:00"
+	}
 
 	return eve.JsonLDMap{
-		"@context":             "https://schema.org",
-		"@type":                "ImageObject",
-		"name":                 "Office Hours",
-		"description":          o.eventDescription,
-		"representativeOfPage": true,
-		"url":                  std.CurrentRealm().PkgPath(),
-		"about": map[string]interface{}{
-			"@type":       "Event",
-			"name":        o.eventTitle,
-			"description": o.eventDescription,
-			"eventStatus": string(evt.Status),
-			"startDate":   start,
-			"endDate":     end,
-			"location": map[string]interface{}{
-				"@type":   "Place",
-				"name":    "Online",
-				"address": "Online",
+		"@context":    "https://schema.org",
+		"@type":       "WebPage",
+		"name":        "OfficeHours",
+		"description": "Recurring Weekly Event with AllInBits Labs.",
+		"@graph": []interface{}{
+			map[string]interface{}{
+				"@type":     "Event",
+				"@id":       "{{CID}}",
+				"startDate": selectedDate,
+				"status":    status,
 			},
 		},
+		"about": map[string]interface{}{
+			"url":       packagePath[8:],
+			"banner":    packagePath[8:] + "?embed=banner",
+			"thumbnail": packagePath[8:] + "?embed=thumbnail",
+			"admin":     admin,
+		},
+		"representativeOfPage": true,
 	}
 }
 
@@ -182,12 +121,12 @@ func (OfficeHours) Flyer(obj ...interface{}) *eve.Flyer {
 	// Build from the same concrete event we render elsewhere
 	evt := eventFromPath("")
 	f := &eve.Flyer{
-		Name:      "Office Hours",
-		Location:  &eve.Location{Name: "Online"},
-		StartDate: evt.StartDate,
-		EndDate:   evt.EndDate,
+		Name:        "Office Hours",
+		Location:    &eve.Location{Name: "Online"},
+		StartDate:   evt.StartDate,
+		EndDate:     evt.EndDate,
 		Description: "Recurring Weekly Event with AllInBits Labs.",
-		Status:    eve.EventStatus(evt.Status),
+		Status:      eve.EventStatus(evt.Status),
 		Sessions: []*eve.Session{
 			{
 				Title:       officeHours.eventTitle,

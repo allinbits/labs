@@ -432,3 +432,25 @@ func DatesOnSameDay(t ...time.Time) bool {
 	}
 	return true
 }
+
+func BuildQuery(params map[string][]string) string {
+	var sb strings.Builder
+	first := true
+	for key, values := range params {
+		escapedKey := url.QueryEscape(key)
+		for _, value := range values {
+			if !first {
+				sb.WriteString("&")
+			}
+			sb.WriteString(escapedKey)
+			if value != "" {
+				sb.WriteString("=" + url.QueryEscape(value))
+			}
+			first = false
+		}
+	}
+	if sb.Len() > 0 {
+		return "?" + sb.String()
+	}
+	return ""
+}

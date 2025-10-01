@@ -8,6 +8,12 @@ import (
 
 type JsonLDMap map[string]interface{}
 
+// StringWithCID returns the JSON-LD string representation with the {{CID}} placeholder replaced by the actual CID.
+func (ld JsonLDMap) StringWithCID() string {
+    return strings.ReplaceAll(ld.String(), "{{CID}}", ld.Cid())
+}
+
+// String returns the JSON-LD string representation.
 func (ld JsonLDMap) String() string {
 	s := "{\n"
 	i := 0
@@ -79,7 +85,7 @@ func (ld JsonLDMap) MarkdownLinks() string {
 		switch val := v.(type) {
 		case map[string]interface{}:
 			for k, v2 := range val {
-				newPath := k
+				newPath := strings.Trim(k, "@")
 				if path != "" {
 					newPath = path + "." + k
 				}
@@ -90,6 +96,20 @@ func (ld JsonLDMap) MarkdownLinks() string {
 				} else if k == "license" {
 					if licStr, ok := v2.(string); ok && (strings.HasPrefix(licStr, "http://") || strings.HasPrefix(licStr, "https://")) {
 						urls[newPath] = "[" + licStr + "](" + licStr + ")"
+					}
+				} else if k == "thumbnail" {
+					if licStr, ok := v2.(string); ok && (strings.HasPrefix(licStr, "/r/") || strings.HasPrefix(licStr, "https://")) {
+						urls[newPath] = "[" + licStr + "](" + licStr + ")"
+					}
+				} else if k == "banner" {
+					if licStr, ok := v2.(string); ok && (strings.HasPrefix(licStr, "/r/") || strings.HasPrefix(licStr, "https://")) {
+						urls[newPath] = "[" + licStr + "](" + licStr + ")"
+					}
+				} else if (k == "parentId" || k == "seal") {
+					if str, ok := v2.(string); ok && str != "" {
+					    if IsCIDv1(str) {
+                            urls[newPath] = "[" + str + "](?cid=" + str + ")"
+                        }
 					}
 				} else {
 					collectUrls(v2, newPath, urls)

@@ -1,6 +1,7 @@
 package logoverse
 
 import (
+	"net/url"
 	"std"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 
 	"gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
+	"gno.land/r/labs000/officehours"
 )
 
 var registry = avl.NewTree()
@@ -26,23 +28,6 @@ func (c *Counter) String() string {
 }
 
 var counter = Counter{Count: 0}
-
-type Editable interface {
-	RenderForm(string) string
-}
-
-type Projectable interface {
-	ToPath(...interface{}) string
-	FromPath(path string) interface{}
-	Compose(...interface{}) eve.JsonLDMap
-}
-
-type LogoGraph interface {
-	SVG() string
-	JsonLD() eve.JsonLDMap
-	Cid() string
-	Thumbnail() string
-}
 
 type Record struct {
 	Name        string
@@ -80,11 +65,18 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 		return "base CID not found"
 	}
 	r := v.(Record)
-	proj, isProj := r.Object.(Projectable)
+	proj, isProj := r.Object.(eve.Projectable)
 	if !isProj {
 		panic("object is not projectable")
 	}
 	r.Object = proj.FromPath(path)
+	// validate jsonld
+	_ = r.Object.(eve.LogoGraph).SVG()
+	_ = r.Object.(eve.LogoGraph).Thumbnail()
+	if !eve.IsValidJson(r.Object.(eve.LogoGraph).JsonLD().String()) {
+		panic("projected object has invalid JSON-LD")
+	}
+
 	cid = proj.Compose(r.Object).Cid()
 	if seal != cid {
 		panic("invalid seal: expected " + seal + " but got " + cid)
@@ -110,9 +102,9 @@ func commitProjection(emitOnly bool, base, path, seal string) (cid string) {
 // Register adds a LogoGraph object to the registry and returns its Record.
 // It panics if the object does not have a valid CID or if the CID is already registered.
 func Register(i interface{}) string {
-	ldg, ok := i.(LogoGraph)
+	ldg, ok := i.(eve.LogoGraph)
 	if !ok {
-		panic("object must implement LogoGraph interface")
+		panic("object must implement eve.LogoGraph interface")
 	}
 	newCid := ldg.Cid()
 	if !isCIDv1(newCid) {
@@ -151,9 +143,12 @@ var rows = []string{
 	Register(AibLabs),
 	Register(AllInBits),
 	Register(Atone),
+	Register(Dither),
 	Register(Event),
+	Register(Glyph),
 	Register(LogoVerse),
 	Register(Metamodel),
+	Register(officehours.OfficeHours{}),
 	Register(PepeSilvia),
 	Register(Pflow),
 	Register(Photon),
@@ -163,7 +158,7 @@ var rows = []string{
 var columns = []string{"cid", "name", "description", "committer"}
 
 func (e Record) String() string {
-	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | " + e.Name + " | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
+	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "](?glyph=" + url.QueryEscape(e.Name) + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
 }
 
 func Render(path string) string {
@@ -171,14 +166,31 @@ func Render(path string) string {
 	cid, hasCid := q["cid"]
 	if !hasCid {
 		if len(q["v"]) == 1 && q["v"][0] == "seq" {
-			return counter.String() // FIXME: remove dup below...
+			return counter.String()
+		}
+		// valid names must be longer than 4 chars to be used as a filter
+		if id, hasId := q["glyph"]; hasId && len(id) > 0 && len(id[0]) > 4 {
+			for _, c := range rows {
+				if v, ok := registry.Get(c); ok {
+					r := v.(Record)
+					if r.Name == id[0] {
+						// REVIEW: can we consolidate this with the projection logic in commitProjection?
+						proj, isProj := r.Object.(eve.Projectable)
+						obj := r.Object
+						if isProj {
+							obj = proj.FromPath(path)
+						}
+						return renderObject(path, obj)
+					}
+				}
+			}
 		}
 		return renderTable()
 	}
 	if submit, hasSubmit := q["submit"]; hasSubmit && submit[0] == "register" {
 		if base, hasBase := q["base"]; hasBase && isCIDv1(base[0]) {
 			if baseObj, ok := registry.Get(base[0]); ok {
-				if ed, isEd := baseObj.(Record).Object.(Editable); isEd {
+				if ed, isEd := baseObj.(Record).Object.(eve.Editable); isEd {
 					form := ed.RenderForm(path)
 					if form != "" {
 						return form
@@ -198,8 +210,9 @@ func Render(path string) string {
 		return "cid not found"
 	}
 
+	// REVIEW: can we consolidate this with the projection logic in commitProjection?
 	r := v.(Record)
-	proj, isProj := r.Object.(Projectable)
+	proj, isProj := r.Object.(eve.Projectable)
 	obj := r.Object
 	if isProj {
 		obj = proj.FromPath(path)
@@ -209,7 +222,7 @@ func Render(path string) string {
 		switch format[0] {
 		case "ldjson":
 			if ldjson, ok := q["ldjson"]; ok && len(ldjson) > 0 {
-				ld := obj.(LogoGraph).JsonLD()
+				ld := obj.(eve.LogoGraph).JsonLD()
 				parts := strings.Split(ldjson[0], ".")
 				val := interface{}(ld)
 				for _, p := range parts {
@@ -226,7 +239,7 @@ func Render(path string) string {
 					return ufmt.Sprintf("%v", v)
 				}
 			} else {
-				return r.Object.(LogoGraph).JsonLD().String()
+				return r.Object.(eve.LogoGraph).JsonLD().String()
 			}
 			return ""
 		case "cid":
@@ -240,14 +253,14 @@ func Render(path string) string {
 		case "committer":
 			return r.Committer
 		case "svg":
-			return r.Object.(LogoGraph).SVG()
+			return r.Object.(eve.LogoGraph).SVG()
 		case "thumbnail":
-			return r.Object.(LogoGraph).Thumbnail()
+			return r.Object.(eve.LogoGraph).Thumbnail()
 		case "json":
 			if isProj {
-				return proj.Compose(r.Object).String()
+				return proj.Compose(r.Object).JsonLD().String()
 			}
-			return r.Object.(LogoGraph).JsonLD().String()
+			return r.Object.(eve.LogoGraph).JsonLD().String()
 		}
 	}
 
@@ -265,45 +278,79 @@ func Render(path string) string {
 }
 
 func renderObject(path string, obj interface{}) string {
-	_ = path
-	glyph := obj.(LogoGraph)
-	var ld eve.JsonLDMap
-	if proj, ok := obj.(Projectable); ok {
-		ld = proj.Compose(proj.FromPath(path))
-	} else {
-		ld = glyph.JsonLD()
+	glyph := obj.(eve.LogoGraph)
+	ld := glyph.JsonLD()
+	q := eve.ParseQuery(path)
+	if edit, ok := q["edit"]; ok && len(edit) > 0 && edit[0] == "true" {
+		if ed, isEd := obj.(eve.Editable); isEd {
+			form := ed.RenderForm(path)
+			if form != "" {
+				return form
+			}
+		}
+	}
+	if embed, ok := q["embed"]; ok && len(embed) > 0 && embed[0] != "" {
+		switch embed[0] {
+		case "svg":
+			return glyph.SVG()
+		case "img":
+			dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
+			return "![svg image](" + dataUrl + ")"
+		case "thumbnail":
+			return glyph.Thumbnail()
+		case "name":
+			return ld.StringVal("name")
+		case "description":
+			return ld.StringVal("description")
+		case "cid":
+			return ld.Cid()
+		case "links":
+			return ld.MarkdownLinks()
+		case "jsonld", "json":
+			return ld.StringWithCID()
+		default:
+			panic("unknown embed type: " + embed[0] + ", supported: svg, thumbnail, name, description, cid, links, jsonld")
+		}
 	}
 	var sb strings.Builder
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
-	sb.WriteString(glyph.Thumbnail() + "\n\n")
+	sb.WriteString("[" + glyph.Thumbnail() + "](" + path + "&embed=thumbnail" + ")\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
-	if proj, ok := obj.(Projectable); ok {
+	if proj, ok := obj.(eve.Projectable); ok {
 		if _, found := registry.Get(cid); !found {
 			sb.WriteString(cid + "\n\n")
-			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register"+"\n"))
+			sb.WriteString(eve.Button("Commit Projection:    "+cid[len(cid)-8:], proj.ToPath(obj)+"&base="+glyph.Cid()+"&submit=register") + "\n")
 		} else {
 			sb.WriteString("[" + cid + "](" + proj.ToPath(obj) + ")\n")
 		}
 	} else {
 		sb.WriteString("[" + cid + "](?cid=" + cid + ")\n")
 	}
+
+	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
+	sb.WriteString("\n[![svg image](" + dataUrl + ")](" + path + "&embed=img" + ")\n\n")
+
 	links := ld.MarkdownLinks()
 	if links != "" {
 		sb.WriteString("\n### Links\n")
 		sb.WriteString(links + "\n")
 	}
 	sb.WriteString("\n#### JSON-LD\n")
-	sb.WriteString("```json\n" + strings.TrimSpace(ld.String()) + "\n```\n")
+	sb.WriteString("```json\n" + strings.TrimSpace(ld.StringWithCID()) + "\n```\n")
+
+	sb.WriteString("\n---\n\n")
+	sb.WriteString("[← index](?)\n")
 	return sb.String()
 }
 
 func renderTable() string {
 	var sb strings.Builder
 	sb.WriteString("## Logoverse Registry\n\n")
+	sb.WriteString("\n![svg image](" + LogoVerse.DataUrl() + ")\n\n")
 	sb.WriteString(LogoVerse.Introduction() + "\n")
-	// Header
+
 	sb.WriteString("|")
 	for _, col := range columns {
 		sb.WriteString(" " + capitalize(col) + " |")

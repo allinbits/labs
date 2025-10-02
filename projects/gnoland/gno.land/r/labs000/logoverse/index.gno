@@ -279,6 +279,8 @@ func Render(path string) string {
 
 func renderObject(path string, obj interface{}) string {
 	glyph := obj.(eve.LogoGraph)
+
+	tpl, isTemplate := obj.(eve.PageTemplate)
 	ld := glyph.JsonLD()
 	q := eve.ParseQuery(path)
 	if edit, ok := q["edit"]; ok && len(edit) > 0 && edit[0] == "true" {
@@ -316,6 +318,10 @@ func renderObject(path string, obj interface{}) string {
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
 	sb.WriteString("[" + glyph.Thumbnail() + "](" + path + "&embed=thumbnail" + ")\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
+
+	if isTemplate {
+        sb.WriteString(tpl.Header())
+    }
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
 	if proj, ok := obj.(eve.Projectable); ok {
@@ -332,14 +338,22 @@ func renderObject(path string, obj interface{}) string {
 	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
 	sb.WriteString("\n[![svg image](" + dataUrl + ")](" + path + "&embed=img" + ")\n\n")
 
+	if isTemplate {
+        sb.WriteString(tpl.Body(path))
+    }
+
+	if isTemplate {
+        sb.WriteString(tpl.Footer())
+    }
+
 	links := ld.MarkdownLinks()
 	if links != "" {
 		sb.WriteString("\n### Links\n")
 		sb.WriteString(links + "\n")
 	}
+
 	sb.WriteString("\n#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.StringWithCID()) + "\n```\n")
-
 	sb.WriteString("\n---\n\n")
 	sb.WriteString("[← index](?)\n")
 	return sb.String()

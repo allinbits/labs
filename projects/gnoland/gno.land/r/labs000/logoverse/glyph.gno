@@ -22,6 +22,7 @@ var Glyph = glyphObj{
 
 var _ eve.LogoGraph = Glyph
 var _ eve.Projectable = Glyph
+var _ eve.PageTemplate = Glyph
 
 func (g glyphObj) String() string {
 	return g.Url
@@ -142,4 +143,69 @@ func (g glyphObj) JsonLD() eve.JsonLDMap {
 		"name":        g.Name,
 		"description": g.Description,
 	}
+}
+
+func (glyphObj) Header() string {
+    return "---\n"
+}
+
+// TODO: expand to render the projection the glyph describes.
+func (g glyphObj) Body(path string) string {
+    return Glyph.Introduction() + "\n"
+}
+
+func (glyphObj) Footer() string {
+    return Glyph.Diagram() + "\n---\n"
+}
+
+func (glyphObj) Diagram() string {
+return "```" + `
+(source URL) ──► [Browser] ──► [GnoWeb: Render(path)]
+                             │
+                             ▼
+                        (ABCI query)
+                             │
+                             ▼
+                      [Blockchain state]
+                             │
+                   projection/JSON-LD/SVG
+                             │
+                             ▼
+                         [Browser] ──► (User edits)
+                             │                 │
+                             │                 ▼
+                             └────────── sign tx ◄── [User/Signer]
+                                               │
+                                               ▼
+                                       [Blockchain commit]
+                                               │
+                                         emits events
+                                               │
+                                               ▼
+                              (new CID / state) ──► [GnoWeb]
+                                               │
+                                               ▼
+                                            [Browser]
+` + "```"
+}
+
+
+func (glyphObj) Introduction() string {
+return `
+## What are Glyphs?
+
+A **Glyph** is a small, portable piece of information in the Logoverse.
+Think of it like a digital card that carries a name, description, and a unique ID (CID).
+Each Glyph can point to other Glyphs (its “parents”), forming a chain of ideas and history.
+
+## How to Use
+
+- **View**: Open a Glyph in your browser to see its details, images, or JSON data.
+- **Link**: Copy the Glyph’s URL and share it—others will see the same canonical view.
+- **Edit or Extend**: You can make changes or create a new Glyph based on an existing one.
+- **Commit**: When you save, the blockchain locks in the new Glyph with its own unique ID.
+
+Glyphs are designed to be **simple, durable, and easy to share**, so anyone can build on them without worrying about things disappearing or changing behind the scenes.
+
+`
 }

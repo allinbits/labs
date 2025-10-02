@@ -12,6 +12,8 @@ import (
 	"gno.land/p/demo/avl"
 	eve "gno.land/p/eve000/event/component"
 )
+// FIXME: Consider relocating eve/event/component to /eve/component
+// leave event-specific registry + utils in eve/event
 
 type Api interface {
 	AddOrganizer(addr std.Address)

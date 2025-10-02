@@ -12,6 +12,12 @@ type Editable interface {
 	RenderForm(path string) string
 }
 
+type PageTemplate interface {
+    Header() string
+    Body(path string) string
+    Footer() string
+}
+
 type Projectable interface {
 	ToPath(obj interface{}) string
 	FromPath(path string) interface{}

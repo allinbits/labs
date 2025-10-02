@@ -13,9 +13,7 @@ type Editable interface {
 }
 
 type PageTemplate interface {
-    Header() string
-    Body(path string) string
-    Footer() string
+    Render(path string) string
 }
 
 type Projectable interface {

@@ -110,15 +110,7 @@ This is **Software as a Universe**.
 Stop writing services. **Start minting universes.**`
 }
 
-func (logoVerse) Footer() string {
-    return ""
-}
-
-func (logoVerse) Header() string {
-    return ""
-}
-
-func (logoVerse) Body(path string) string {
+func (logoVerse) Render(path string) string {
     return LogoVerse.Introduction()
 }
 

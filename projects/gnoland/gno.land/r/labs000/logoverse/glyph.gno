@@ -150,16 +150,8 @@ func (g glyphObj) JsonLD() eve.JsonLDMap {
 	}
 }
 
-func (glyphObj) Header() string {
-    return ""
-}
-
-func (g glyphObj) Body(path string) string {
+func (g glyphObj) Render(path string) string {
     return Glyph.Introduction() + "\n" + Glyph.Diagram()
-}
-
-func (glyphObj) Footer() string {
-    return ""
 }
 
 func (glyphObj) Diagram() string {

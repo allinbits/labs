@@ -327,9 +327,6 @@ func renderObject(path string, obj interface{}) string {
 	sb.WriteString("[" + glyph.Thumbnail() + "](" + path + "&embed=thumbnail" + ")\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
 
-	if isTemplate {
-        sb.WriteString(tpl.Header())
-    }
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
 	if proj, ok := obj.(eve.Projectable); ok {
@@ -347,11 +344,7 @@ func renderObject(path string, obj interface{}) string {
 	sb.WriteString("\n[![svg image](" + dataUrl + ")](" + path + "&embed=img" + ")\n\n")
 
 	if isTemplate {
-        sb.WriteString(tpl.Body(path))
-    }
-
-	if isTemplate {
-        sb.WriteString(tpl.Footer())
+        sb.WriteString(tpl.Render(path))
     }
 
 	links := ld.MarkdownLinks()
@@ -420,5 +413,5 @@ func isCIDv1(s string) bool {
 func renderPage(path string, object interface{}) string {
     template := object.(eve.PageTemplate)
     cid := object.(eve.LogoGraph).Cid()
-    return template.Header() + template.Body(path) + template.Footer() + "\n\n---\n\n" + "[← index](?) | [permalink](?cid=" + cid + ")"
+    return template.Render(path) + "\n\n---\n\n" + "[← index](?) |  [" + cid[len(cid)-8:] + "](?cid=" + cid + ") | [permalink](?cid=" + cid + "&embed=page)"
 }

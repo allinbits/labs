@@ -69,7 +69,7 @@ func (logoVerse) JsonLD() eve.JsonLDMap {
 		"@id":         "{{CID}}", // filled in by projection
 		"name":        "Logoverse",
 		"description": LogoVerse.Description(),
-		"url":         LogoVerse.URL(),
+		"url":      LogoVerse.URL("?glyph=Logoverse&embed=page"),
 		"banner":      LogoVerse.URL("?glyph=Logoverse&embed=img"),
 		"thumbnail":   LogoVerse.URL("?glyph=Logoverse&embed=thumbnail"),
 		"author": map[string]any{
@@ -111,14 +111,14 @@ Stop writing services. **Start minting universes.**`
 }
 
 func (logoVerse) Footer() string {
-    return "\n---\n"
+    return ""
 }
 
 func (logoVerse) Header() string {
-    return "\n---\n"
+    return ""
 }
 
 func (logoVerse) Body(path string) string {
-    return LogoVerse.Introduction() + "\n"
+    return LogoVerse.Introduction()
 }
 

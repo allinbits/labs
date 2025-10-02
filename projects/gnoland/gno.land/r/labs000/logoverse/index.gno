@@ -147,10 +147,8 @@ var rows = []string{
 	Register(Event),
 	Register(Glyph),
 	Register(LogoVerse),
-	Register(Metamodel),
 	Register(officehours.OfficeHours{}),
 	Register(PepeSilvia),
-	Register(Pflow),
 	Register(Photon),
 	Register(Wojak),
 }
@@ -158,7 +156,11 @@ var rows = []string{
 var columns = []string{"cid", "name", "description", "committer"}
 
 func (e Record) String() string {
-	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "](?glyph=" + url.QueryEscape(e.Name) + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
+    link := "?glyph="+url.QueryEscape(e.Name)
+    if _, ok := e.Object.(eve.PageTemplate); ok {
+        link = link + "&embed=page"
+    }
+	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "]("+ link + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
 }
 
 func Render(path string) string {
@@ -300,6 +302,12 @@ func renderObject(path string, obj interface{}) string {
 			return "![svg image](" + dataUrl + ")"
 		case "thumbnail":
 			return glyph.Thumbnail()
+	    case "page":
+            if isTemplate {
+                return renderPage(path, obj)
+            } else {
+                return "object does not implement PageTemplate"
+            }
 		case "name":
 			return ld.StringVal("name")
 		case "description":
@@ -406,4 +414,11 @@ func isCIDv1(s string) bool {
 		return false
 	}
 	return true
+}
+
+
+func renderPage(path string, object interface{}) string {
+    template := object.(eve.PageTemplate)
+    cid := object.(eve.LogoGraph).Cid()
+    return template.Header() + template.Body(path) + template.Footer() + "\n\n---\n\n" + "[← index](?) | [permalink](?cid=" + cid + ")"
 }

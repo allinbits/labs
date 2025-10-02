@@ -16,6 +16,7 @@ func (metamodelObj) Cid() string {
 
 var _ eve.LogoGraph = metamodelObj{}
 
+// TODO: eventually make this a projectable object
 func (metamodelObj) JsonLD() eve.JsonLDMap {
 	return eve.JsonLDMap{
 		"@context":    []string{"https://schema.org", "https://pflow.xyz"},

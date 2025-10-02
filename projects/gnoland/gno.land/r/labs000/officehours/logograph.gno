@@ -112,7 +112,8 @@ func (o OfficeHours) JsonLD() eve.JsonLDMap {
 			"thumbnail": packagePath[8:] + "?embed=thumbnail",
 			"admin":     admin,
 		},
-		"representativeOfPage": true,
+		// REVIEW: any page with a @graph should not use representativeOfPage
+		//"representativeOfPage": true,
 	}
 }
 

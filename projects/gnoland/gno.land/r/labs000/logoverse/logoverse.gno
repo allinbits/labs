@@ -25,6 +25,7 @@ var LogoverseContext = eve.JsonLDMap{
 
 var LogoVerse = logoVerse{}
 var _ eve.LogoGraph = LogoVerse
+var _ eve.PageTemplate = LogoVerse
 
 func (logoVerse) Cid() string {
 	return LogoVerse.JsonLD().Cid()
@@ -95,15 +96,29 @@ func (logoVerse) Description() string {
 }
 
 func (logoVerse) Introduction() string {
+	return `## What is the Logoverse?
+The [**Logoverse**](/r/labs000/logoverse?glyph=Logoverse) is like a digital universe made up of tiny building blocks called **objects**.
+Each object has a permanent identity (a **CID**) and can be combined with others to form bigger ideas.
 
-	desc := `The [**logoverse**](/r/labs000/logoverse) is a universe of immutable, composable objects with CIDs.
+- **Immutable:** once created, objects never change.
+- **Composable:** you can link and combine objects to make new ones.
+- **Transparent:** every object carries its own history by default.
 
-Links aren’t static—they compute new objects.\
-Software as a Universe.\
-Every object has a CID (base) and a sealed CID (projection).\
-Immutable, composable, attributed by default.
+Think of it as a library where every page is alive: when you follow a link, it doesn’t just show you something—it *creates* a new object.
 
-Stop writing services. Start minting universes.`
-
-	return desc
+This is **Software as a Universe**.
+Stop writing services. **Start minting universes.**`
 }
+
+func (logoVerse) Footer() string {
+    return "\n---\n"
+}
+
+func (logoVerse) Header() string {
+    return "\n---\n"
+}
+
+func (logoVerse) Body(path string) string {
+    return LogoVerse.Introduction() + "\n"
+}
+

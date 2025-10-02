@@ -99,7 +99,9 @@ func (g glyphObj) ToPath(o interface{}) string {
 func (g glyphObj) Compose(obj interface{}) eve.LogoGraph {
 	switch v := obj.(type) {
 	case string:
-		return glyphObj{Url: v}
+		obj := glyphObj{Url: v}
+		obj.ParentCids = append(obj.ParentCids, g.Cid())
+		return obj
 	case glyphObj:
 		v.ParentCids = append(v.ParentCids, g.Cid())
 		if v.LDType == "" {
@@ -146,16 +148,15 @@ func (g glyphObj) JsonLD() eve.JsonLDMap {
 }
 
 func (glyphObj) Header() string {
-    return "---\n"
+    return "\n---\n"
 }
 
-// TODO: expand to render the projection the glyph describes.
 func (g glyphObj) Body(path string) string {
-    return Glyph.Introduction() + "\n"
+    return Glyph.Introduction() + "\n" + Glyph.Diagram()
 }
 
 func (glyphObj) Footer() string {
-    return Glyph.Diagram() + "\n---\n"
+    return "\n---\n"
 }
 
 func (glyphObj) Diagram() string {
@@ -206,6 +207,13 @@ Each Glyph can point to other Glyphs (its “parents”), forming a chain of ide
 - **Commit**: When you save, the blockchain locks in the new Glyph with its own unique ID.
 
 Glyphs are designed to be **simple, durable, and easy to share**, so anyone can build on them without worrying about things disappearing or changing behind the scenes.
+
+## Projections
+
+Glyphs can be projected into different formats, like SVG images or JSON-LD data, making them versatile for various applications.
+
+If a Glyph implements the [**eve.PageTemplate**](/p/eve000/event/component$source&file=logograph.gno) interface, it can also render a full web page with a header, body, and footer.
+
 
 `
 }

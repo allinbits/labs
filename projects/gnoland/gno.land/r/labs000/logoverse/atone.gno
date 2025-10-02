@@ -21,28 +21,55 @@ func (atoneToken) JsonLD() eve.JsonLDMap {
 		"@context":     "https://schema.org",
 		"@type":        "FinancialProduct",
 		"@id":          "{{CID}}",
-		"name":         "$atone",
+		"name":         "AtomOne",
 		"description":  "AtomOne is a community-driven, constitutionally governed blockchain designed to prioritize security, decentralization, and innovation within the Cosmos ecosystem.",
 		"url":          "https://atom.one",
 		"banner":       LogoVerse.URL("?glyph=$atone&embed=img"),
 		"thumbnail":    LogoVerse.URL("?glyph=$atone&embed=thumbnail"),
 		"tickerSymbol": "$ATONE",
-		"hasPart": []interface{}{
+		"@graph": []any{
+			eve.JsonLDMap{
+				"@type":         "FinancialProduct",
+				"name":          "ATONE",
+				"tickerSymbol":  "ATONE",
+				"alternateName": "$ATONE",
+				"description":   "AtomOne staking & base currency.",
+				"url":           "https://atom.one",
+				"sameAs": []string{
+					"https://app.osmosis.zone/assets/ibc/BC26A7A805ECD6822719472BCB7842A48EF09DF206182F8F259B2593EB5D23FB",
+				},
+				"additionalProperty": []any{
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "coinMinimalDenom", "value": "uatone"},
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "coinDecimals", "value": 6},
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "role", "value": "stakeCurrency"},
+				},
+			},
+			eve.JsonLDMap{
+				"@type":         "MonetaryAmount",
+				"name":          "PHOTON",
+				"currency":      "PHOTON",
+				"description":   "Fee currency on AtomOne.",
+				"alternateName": "$PHOTON",
+				"sameAs": []string{
+                    "https://app.osmosis.zone/assets/ibc/D6E02C5AE8A37FC2E3AB1FC8AC168878ADB870549383DFFEA9FD020C234520A7",
+                    "/r/labs000/logoverse?glyph=Photon",
+				},
+				"additionalProperty": []any{
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "coinMinimalDenom", "value": "uphoton"},
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "coinDecimals", "value": 6},
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "role", "value": "feeCurrency"},
+				},
+			},
+		},
+		"hasPart": []any{
 			eve.JsonLDMap{
 				"@type": "CreativeWork",
 				"name":  "Constitution",
 				"url":   "https://github.com/atomone-hub/genesis/blob/main/CONSTITUTION.md",
 			},
-			eve.JsonLDMap{
-				"@type":        "Product",
-				"name":         "Osmosis Asset",
-				"url":          "https://app.osmosis.zone/assets/ibc/BC26A7A805ECD6822719472BCB7842A48EF09DF206182F8F259B2593EB5D23FB",
-				"tickerSymbol": "$ATONE",
-			},
 		},
 	}
 }
-
 func (atoneToken) SVG() string {
 	return `<svg id="` + Atone.Cid() + `" xmlns="http://www.w3.org/2000/svg" width="608" height="144" viewBox="0 0 600 150" fill="none">
 	<g transform="translate(-3,3)">

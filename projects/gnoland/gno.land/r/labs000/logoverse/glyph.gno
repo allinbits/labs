@@ -22,6 +22,7 @@ var Glyph = glyphObj{
 
 var _ eve.LogoGraph = Glyph
 var _ eve.Projectable = Glyph
+var _ eve.PageTemplate = Glyph
 
 func (g glyphObj) String() string {
 	return g.Url
@@ -98,7 +99,9 @@ func (g glyphObj) ToPath(o interface{}) string {
 func (g glyphObj) Compose(obj interface{}) eve.LogoGraph {
 	switch v := obj.(type) {
 	case string:
-		return glyphObj{Url: v}
+		obj := glyphObj{Url: v}
+		obj.ParentCids = append(obj.ParentCids, g.Cid())
+		return obj
 	case glyphObj:
 		v.ParentCids = append(v.ParentCids, g.Cid())
 		if v.LDType == "" {
@@ -141,5 +144,70 @@ func (g glyphObj) JsonLD() eve.JsonLDMap {
 		},
 		"name":        g.Name,
 		"description": g.Description,
+		"url": "/r/labs000/logoverse?glyph=Glyph&embed=page",
+		"banner": "/r/labs000/logoverse?glyph=Glyph&embed=img",
+		"thumbnail": "/r/labs000/logoverse?glyph=Glyph&embed=thumbnail",
 	}
+}
+
+func (g glyphObj) Render(path string) string {
+    return Glyph.Introduction() + "\n" + Glyph.Diagram()
+}
+
+func (glyphObj) Diagram() string {
+return "```" + `
+(source URL) ──► [Browser] ──► [GnoWeb: Render(path)]
+                             │
+                             ▼
+                        (ABCI query)
+                             │
+                             ▼
+                      [Blockchain state]
+                             │
+                   projection/JSON-LD/SVG
+                             │
+                             ▼
+                         [Browser] ──► (User edits)
+                             │                 │
+                             │                 ▼
+                             └────────── sign tx ◄── [User/Signer]
+                                               │
+                                               ▼
+                                       [Blockchain commit]
+                                               │
+                                         emits events
+                                               │
+                                               ▼
+                              (new CID / state) ──► [GnoWeb]
+                                               │
+                                               ▼
+                                            [Browser]
+` + "```"
+}
+
+
+func (glyphObj) Introduction() string {
+return `
+## What are Glyphs?
+
+A **Glyph** is a small, portable piece of information in the Logoverse.
+Think of it like a digital card that carries a name, description, and a unique ID (CID).
+Each Glyph can point to other Glyphs (its “parents”), forming a chain of ideas and history.
+
+## How to Use
+
+- **View**: Open a Glyph in your browser to see its details, images, or JSON data.
+- **Link**: Copy the Glyph’s URL and share it—others will see the same canonical view.
+- **Edit or Extend**: You can make changes or create a new Glyph based on an existing one.
+- **Commit**: When you save, the blockchain locks in the new Glyph with its own unique ID.
+
+Glyphs are designed to be **simple, durable, and easy to share**, so anyone can build on them without worrying about things disappearing or changing behind the scenes.
+
+## Projections
+
+Glyphs can be projected into different formats, like SVG images or JSON-LD data, making them versatile for various applications.
+
+If a Glyph implements the [**eve.PageTemplate**](/p/eve000/event/component$source&file=logograph.gno) interface, it can also be rendered as a page.
+
+`
 }

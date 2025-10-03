@@ -21,17 +21,31 @@ func (photonToken) JsonLD() eve.JsonLDMap {
 		"@context":     "https://schema.org",
 		"@type":        "FinancialProduct",
 		"@id":          "{{CID}}",
-		"name":         "$photon",
-		"description":  "Photon is a digital asset in the AtomOne ecosystem.",
+		"name":         "Photon",
+		"description":  "Photon is a digital asset in the AtomOne ecosystem, used as the fee currency.",
 		"url":          "https://atom.one/blog/atomone-v2-the-photon-powered-upgrade/",
+		"banner":       LogoVerse.URL("?glyph=$photon&embed=img"),
+		"thumbnail":    LogoVerse.URL("?glyph=$photon&embed=thumbnail"),
 		"tickerSymbol": "$PHOTON",
-		"hasPart": []interface{}{
+		"@graph": []any{
 			eve.JsonLDMap{
-				"@type":        "Product",
-				"name":         "Osmosis Asset",
-				"url":          "https://app.osmosis.zone/assets/ibc/D6E02C5AE8A37FC2E3AB1FC8AC168878ADB870549383DFFEA9FD020C234520A7",
-				"tickerSymbol": "$PHOTON",
+				"@type":         "MonetaryAmount",
+				"name":          "PHOTON",
+				"currency":      "PHOTON",
+				"description":   "Fee currency on AtomOne.",
+				"alternateName": "$PHOTON",
+				"url":           "https://atom.one/blog/atomone-v2-the-photon-powered-upgrade/",
+				"sameAs": []string{
+					"https://app.osmosis.zone/assets/ibc/D6E02C5AE8A37FC2E3AB1FC8AC168878ADB870549383DFFEA9FD020C234520A7",
+				},
+				"additionalProperty": []any{
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "coinMinimalDenom", "value": "uphoton"},
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "coinDecimals", "value": 6},
+					eve.JsonLDMap{"@type": "PropertyValue", "name": "role", "value": "feeCurrency"},
+				},
 			},
+		},
+		"hasPart": []any{
 			eve.JsonLDMap{
 				"@type": "WebPage",
 				"name":  "Photon Proposal",

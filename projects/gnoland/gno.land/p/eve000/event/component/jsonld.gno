@@ -8,6 +8,7 @@ import (
 
 const DateFormatJsonLD = "2006-01-02T15:04:05-07:00"
 
+// REVIEW: consider removing or relocating inside Flyer as a valid LogoGraph impl
 func EventJsonLD(_ string, a *Flyer) string {
 	var sb strings.Builder
 	sb.WriteString(`{

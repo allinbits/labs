@@ -147,10 +147,8 @@ var rows = []string{
 	Register(Event),
 	Register(Glyph),
 	Register(LogoVerse),
-	Register(Metamodel),
 	Register(officehours.OfficeHours{}),
 	Register(PepeSilvia),
-	Register(Pflow),
 	Register(Photon),
 	Register(Wojak),
 }
@@ -158,7 +156,11 @@ var rows = []string{
 var columns = []string{"cid", "name", "description", "committer"}
 
 func (e Record) String() string {
-	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "](?glyph=" + url.QueryEscape(e.Name) + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
+    link := "?glyph="+url.QueryEscape(e.Name)
+    if _, ok := e.Object.(eve.PageTemplate); ok {
+        link = link + "&embed=page"
+    }
+	return "| [" + e.Cid[len(e.Cid)-8:] + "](?cid=" + e.Cid + ") | [" + e.Name + "]("+ link + ") | " + e.Description + " | [" + e.Committer[len(e.Committer)-8:] + "](/u/" + e.Committer + ") |\n"
 }
 
 func Render(path string) string {
@@ -279,6 +281,8 @@ func Render(path string) string {
 
 func renderObject(path string, obj interface{}) string {
 	glyph := obj.(eve.LogoGraph)
+
+	tpl, isTemplate := obj.(eve.PageTemplate)
 	ld := glyph.JsonLD()
 	q := eve.ParseQuery(path)
 	if edit, ok := q["edit"]; ok && len(edit) > 0 && edit[0] == "true" {
@@ -298,6 +302,12 @@ func renderObject(path string, obj interface{}) string {
 			return "![svg image](" + dataUrl + ")"
 		case "thumbnail":
 			return glyph.Thumbnail()
+	    case "page":
+            if isTemplate {
+                return renderPage(path, obj)
+            } else {
+                return "object does not implement PageTemplate"
+            }
 		case "name":
 			return ld.StringVal("name")
 		case "description":
@@ -316,6 +326,7 @@ func renderObject(path string, obj interface{}) string {
 	sb.WriteString("### " + ld.StringVal("name") + "\n")
 	sb.WriteString("[" + glyph.Thumbnail() + "](" + path + "&embed=thumbnail" + ")\n\n")
 	sb.WriteString(ld.StringVal("description") + "\n\n")
+
 	sb.WriteString("#### CID\n")
 	cid := ld.Cid()
 	if proj, ok := obj.(eve.Projectable); ok {
@@ -332,14 +343,18 @@ func renderObject(path string, obj interface{}) string {
 	dataUrl := "data:image/svg+xml;utf8," + url.PathEscape(glyph.SVG())
 	sb.WriteString("\n[![svg image](" + dataUrl + ")](" + path + "&embed=img" + ")\n\n")
 
+	if isTemplate {
+        sb.WriteString(tpl.Render(path))
+    }
+
 	links := ld.MarkdownLinks()
 	if links != "" {
 		sb.WriteString("\n### Links\n")
 		sb.WriteString(links + "\n")
 	}
+
 	sb.WriteString("\n#### JSON-LD\n")
 	sb.WriteString("```json\n" + strings.TrimSpace(ld.StringWithCID()) + "\n```\n")
-
 	sb.WriteString("\n---\n\n")
 	sb.WriteString("[← index](?)\n")
 	return sb.String()
@@ -392,4 +407,11 @@ func isCIDv1(s string) bool {
 		return false
 	}
 	return true
+}
+
+
+func renderPage(path string, object interface{}) string {
+    template := object.(eve.PageTemplate)
+    cid := object.(eve.LogoGraph).Cid()
+    return template.Render(path) + "\n\n---\n\n" + "[← index](?) |  [" + cid[len(cid)-8:] + "](?cid=" + cid + ") | [permalink](?cid=" + cid + "&embed=page)"
 }

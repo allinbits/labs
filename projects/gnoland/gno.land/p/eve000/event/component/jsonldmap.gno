@@ -89,10 +89,15 @@ func (ld JsonLDMap) MarkdownLinks() string {
 				if path != "" {
 					newPath = path + "." + k
 				}
-				if k == "url" {
+				if k == "url" || k == "sameAs" {
 					if urlStr, ok := v2.(string); ok {
 						urls[newPath] = "[" + urlStr + "](" + urlStr + ")"
 					}
+					if urlArr, ok := v2.([]string); ok {
+                        for i, u := range urlArr {
+                            urls[newPath+ufmt.Sprintf("[%d]", i)] = "[" + u + "](" + u + ")"
+                        }
+                    }
 				} else if k == "license" {
 					if licStr, ok := v2.(string); ok && (strings.HasPrefix(licStr, "http://") || strings.HasPrefix(licStr, "https://")) {
 						urls[newPath] = "[" + licStr + "](" + licStr + ")"

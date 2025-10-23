@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Event View — JSON‑LD demo</title>
+  <link rel="stylesheet" href="event-view.css" />
+</head>
+<body>
+  <main style="max-width:900px;margin:28px auto;padding:0 12px;font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial;">
+    <h1 style="font-size:20px;margin-bottom:10px;">Event View — JSON‑LD</h1>
+
+    <div class="event-controls" style="margin-bottom:8px;">
+      <button id="exportBtn">Export JSON (console)</button>
+      <button id="toggleCompact" class="secondary">Toggle Compact</button>
+    </div>
+
+    <!-- the component will look for an embedded script[type="application/ld+json"] -->
+    <event-view id="ev" data-json-editor>
+      <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "Open Data & Community Meetup",
+  "startDate": "2025-11-10T18:00:00-08:00",
+  "endDate": "2025-11-10T21:00:00-08:00",
+  "description": "A friendly meetup for people interested in open data, tooling, and community projects.",
+  "location": {
+    "@type": "Place",
+    "name": "Community Hall",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "123 Main St",
+      "addressLocality": "Anytown",
+      "addressRegion": "CA",
+      "postalCode": "90210",
+      "addressCountry": "US"
+    }
+  },
+  "organizer": {
+    "@type": "Organization",
+    "name": "Open Community",
+    "url": "https://example.org"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+      </script>
+    </event-view>
+
+    <script type="module" src="event-view.js"></script>
+
+    <script>
+      // small UI wiring for the controls
+      const ev = document.getElementById('ev');
+      document.getElementById('exportBtn').addEventListener('click', () => {
+        try {
+          console.log('Exported event JSON:', ev.exportJSON());
+          alert('Event JSON exported to console.');
+        } catch (e) {
+          console.error(e);
+          alert('Failed to export JSON.');
+        }
+      });
+      document.getElementById('toggleCompact').addEventListener('click', (evt) => {
+        if (ev.hasAttribute('data-compact')) ev.removeAttribute('data-compact');
+        else ev.setAttribute('data-compact', '');
+        evt.target.textContent = ev.hasAttribute('data-compact') ? 'Compact ON' : 'Compact OFF';
+      });
+    </script>
+  </main>
+</body>
+</html>

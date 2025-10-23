@@ -1,0 +1,93 @@
+:host,
+event-view {
+  display: block;
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 0 12px;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* style the internal root created by the component */
+event-view .ev-root {
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 14px;
+  color: #111;
+  box-shadow: 0 1px 2px rgba(16,24,40,0.03);
+}
+
+/* header */
+event-view .ev-root h3 {
+  font-size: 16px;
+  margin: 0;
+  color: #0b213f;
+  font-weight: 600;
+}
+
+/* metadata / dates */
+event-view .ev-root > div > div + div,
+event-view .ev-root .ev-meta {
+  color: #666;
+  font-size: 12px;
+}
+
+/* description */
+event-view .ev-root p {
+  margin: 8px 0;
+  line-height: 1.45;
+  color: #222;
+}
+
+/* location / info list */
+event-view .ev-root div[style] strong {
+  color: #222;
+}
+event-view .ev-root div {
+  color: #333;
+  font-size: 13px;
+}
+
+/* editor textarea override (component injects inline styles; these reinforce) */
+event-view textarea {
+  width: 100%;
+  min-height: 160px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+  font-size: 13px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #d0d7de;
+  background: #fbfdff;
+  color: #0b2140;
+  box-sizing: border-box;
+}
+
+/* buttons */
+.event-controls {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  align-items: center;
+}
+.event-controls button {
+  background: #0b5fff;
+  color: #fff;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.event-controls button.secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+.event-controls button:active { transform: translateY(1px); }
+
+/* responsive */
+@media (max-width: 420px) {
+  event-view { padding: 0 8px; }
+  event-view .ev-root { padding: 10px; }
+}
